@@ -1,0 +1,9 @@
+tunnel: [トンネルのUUID]
+credentials-file: C:\Users\[パソコンのユーザー名]\.cloudflared\[トンネルのUUID].json
+
+ingress:
+  - hostname: 公開するWebhookエンドポイントのドメイン
+    service: https://localhost:3000 ←ローカルのアドレスとポート
+    originRequest:
+      noTLSVerify: true ←TwitchAPIがSSL必須のためHTTPSアクセスに設定
+  - service: http_status:404 ←httpアクセスは404で返す

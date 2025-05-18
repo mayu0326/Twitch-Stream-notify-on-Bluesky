@@ -1,0 +1,6 @@
+🔴 放送を開始しました！\n
+{display_name} has started streaming on Twitch now! \n
+タイトル: {title}\n
+カテゴリ: {category}\n
+URL: {url} \n
+#Twitch配信通知
