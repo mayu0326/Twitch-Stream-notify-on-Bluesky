@@ -5,10 +5,14 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from version import __version__
+
 __author__    = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__   = "GPLv2"
-__version__   = "1.0.0"
+__version__ = __version__
+
+
 
 # Twitch Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
