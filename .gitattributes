@@ -143,3 +143,6 @@ config.yml export-ignore
 =======
 .github/ISSUE_TEMPLATE/* export-ignore
 >>>>>>> 7ef5b45 (.gitattributes の追加)
+
+# ファイル制作時の場所(ローカルに置けばいいので)
+/release/*
