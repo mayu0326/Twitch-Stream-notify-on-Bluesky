@@ -1,0 +1,4 @@
+- repo: https://github.com/GitGuardian/ggshield
+  rev: v1.25.0  # 最新バージョンを指定
+  hooks:
+    - id: ggshield

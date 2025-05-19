@@ -37,13 +37,31 @@ import datetime
 from utils import retry_on_exception
 from dotenv import load_dotenv
 from pathlib import Path
+import pytz
+from tzlocal import get_localzone
 
 # 環境設定ファイルの場所
 env_path = Path(__file__).parent / "settings.env"
 load_dotenv(dotenv_path=env_path)
 
+# ログの設定
 logger = logging.getLogger("AppLogger")
 audit_logger = logging.getLogger("AuditLogger")
+
+# タイムゾーンの設定
+TIMEZONE_NAME = os.getenv("TIMEZONE", "system")
+if TIMEZONE_NAME == "system":
+    TIMEZONE = get_localzone()  # システムのタイムゾーンを自動取得
+else:
+    try:
+        TIMEZONE = pytz.timezone(TIMEZONE_NAME)
+    except pytz.UnknownTimeZoneError:
+        logger.warning(f"無効なタイムゾーン: {TIMEZONE_NAME}。システムタイムゾーンを使用します")
+        TIMEZONE = get_localzone()
+
+# タイムゾーン付き現在時刻取得関数
+def get_current_time():
+    return datetime.datetime.now(TIMEZONE)
 
 # 環境変数
 TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
@@ -122,6 +140,7 @@ def setup_broadcaster_id():
             logger.critical(f"ユーザーID変換に失敗しました: {e}", exc_info=True)
             raise
 
+# Signatureの検証
 def verify_signature(request):
     required_headers = [
         "Twitch-Eventsub-Message-Id",
@@ -132,24 +151,36 @@ def verify_signature(request):
         if h not in request.headers:
             logger.warning(f"Webhookリクエストにヘッダー {h} がありません")
             return False
+
     signature = request.headers.get("Twitch-Eventsub-Message-Signature", "")
     message_id = request.headers["Twitch-Eventsub-Message-Id"]
     timestamp = request.headers["Twitch-Eventsub-Message-Timestamp"]
     body = request.get_data().decode("utf-8")
-    try:
-        event_time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
-    except ValueError:
-        try:
-            event_time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-        except ValueError:
-            logger.warning(f"不正なタイムスタンプ形式: {timestamp}")
-            return False
 
-    now = datetime.datetime.now(datetime.UTC)
+        # タイムスタンプのパース（ナノ秒対応）
+    def parse_timestamp(ts: str):
+        if '.' in ts and ts.endswith('Z'):
+            ts = ts[:-1]  # 'Z'を除去
+            main_part, fractional = ts.split('.')
+            fractional = fractional[:6]  # マイクロ秒（6桁）に切り捨て
+            return datetime.datetime.fromisoformat(f"{main_part}.{fractional}+00:00").astimezone(TIMEZONE)
+        return datetime.datetime.fromisoformat(ts.replace('Z', '+00:00')).astimezone(TIMEZONE)
+
+    # 現在時刻をJSTで取得
+    now = datetime.datetime.now(TIMEZONE) 
+
+    try:
+        event_time = parse_timestamp(timestamp).astimezone(TIMEZONE)
+    except Exception as e:
+        logger.warning(f"タイムスタンプ解析エラー: {str(e)}")
+        return False
+    
+    # 時間差チェック（5分以内か）
     delta = abs((now - event_time).total_seconds())
     if delta > 300:  # 5分（300秒）を超えていれば拒否
         logger.warning(f"タイムスタンプが許容範囲外: {timestamp} (差分: {delta}秒)")
         return False
+
     hmac_message = message_id + timestamp + body
 
     if not WEBHOOK_SECRET:
@@ -158,9 +189,11 @@ def verify_signature(request):
 
     digest = hmac.new(
         WEBHOOK_SECRET.encode(), hmac_message.encode(), hashlib.sha256
-        ).hexdigest()
+    ).hexdigest()
     expected_signature = f"sha256={digest}"
+
     return hmac.compare_digest(signature, expected_signature)
+
 
 def get_existing_eventsub_subscriptions():
     url = "https://api.twitch.tv/helix/eventsub/subscriptions"

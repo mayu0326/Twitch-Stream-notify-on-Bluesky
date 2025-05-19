@@ -108,9 +108,10 @@ Cloudflaredインストール先のフォルダに置いてください。
   ```
   config.yml.example → config.yml に変更する
   ``` 
-- cloudflaredのインストール先は以下の場所です。
+- cloudflaredの設定ファイルは以下の場所に置いてください。\
+※すでにトンネルuuidのjsonとcert.pemがあるフォルダです。
   ```
-  C:\Program Files (x86)\cloudflared\cloudflared.exe 
+  C:\Users\[お使いのパソコンのuser名]\.cloudflared\config.yml
   ``` 
 
 ### 5. **settings.env を編集**  
@@ -140,6 +141,9 @@ Cloudflaredインストール先のフォルダに置いてください。
    # Discord通知設定
    discord_error_notifier_url=https://discord.com/api/webhooks/xxxxxx/xxxxxx
    discord_notify_level=CRITICAL
+
+   # タイムゾーン設定 (例: Asia/Tokyo )
+   TIMEZONE=Asia/Tokyo
 
    # ログ関連機能の設定
    LOG_LEVEL=INFO
