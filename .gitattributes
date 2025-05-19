@@ -134,8 +134,12 @@ settings.env export-ignore
 config.yml export-ignore
 
 # GitHubテンプレート（必要に応じて除外）
+<<<<<<< HEAD
 /.github/* export-ignore
 !/.github/workflows/* export-ignore
 
 # ファイル制作時の場所(ローカルに置けばいいので)
 /release/*
+=======
+.github/ISSUE_TEMPLATE/* export-ignore
+>>>>>>> 7ef5b45 (.gitattributes の追加)
