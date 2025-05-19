@@ -1,0 +1,36 @@
+name: Auto PR from dev to main
+
+on:
+  push:
+    branches:
+      - dev  # devブランチへのpush時にトリガー
+with:
+  token: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Auto-update from dev"
+          title: "Auto PR: dev → main"
+          body: |
+            **devブランチからmainブランチへの自動PR**
+            - トリガー: ${{ github.sha }}
+            - 実行者: ${{ github.actor }}
+          base: main  # マージ先
+          branch: dev # マージ元
+          labels: |
+            auto-pr
+          delete-branch: false  # devブランチを削除しない
