@@ -7,9 +7,9 @@ on:
 
 jobs:
   scan:
-  name: GitGuardian Scan  # ←これを追加！
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth:
+    name: GitGuardian Scan  # ←これを追加！
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth:
