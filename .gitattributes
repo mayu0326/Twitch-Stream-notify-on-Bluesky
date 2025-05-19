@@ -135,7 +135,7 @@ config.yml export-ignore
 
 # GitHubテンプレート（必要に応じて除外）
 <<<<<<< HEAD
-/.github/* export-ignore
+/.github/* 
 !/.github/workflows/* export-ignore
 
 # ファイル制作時の場所(ローカルに置けばいいので)
