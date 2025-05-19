@@ -9,7 +9,6 @@ on:
       - dev
   merge_group:
 
-
 jobs:
   scan:
     name: GitGuardian Scan  # ←これを追加！
