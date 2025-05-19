@@ -351,7 +351,7 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 そうすれば、次回起動時に再生成されます。
 </details>
 
-## 開発・運用上の注意
+## 運用上の注意
 
 - この Bot は個人運用・検証を想定しています。商用利用や大規模運用時は自己責任でお願いします。
 - セキュリティのため、API キーやパスワードは絶対に公開リポジトリに含めないでください。
@@ -367,6 +367,15 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 - 不要なEventSubサブスクリプションはBot起動時に自動削除されます。
 
 ---
+
+## このアプリを開発・改変されたい方へ
+- mainブランチは「直push禁止＆PR必須」になっています。\
+そのため、mainブランチにMerge希望の場合はブランチ作成→PRでお願いします。
+- 安全のためGitGuardianを導入しています。\
+導入されていない方は以下の方法で導入してください。
+ ```
+ pip install ggshield pre-commit
+ ```
 
 ## 自動テストの実行方法
 
