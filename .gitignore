@@ -183,3 +183,4 @@ cspell.json
 settings.env
 config.yml
 .github\ISSUE_TEMPLATE\*
+/release/*
