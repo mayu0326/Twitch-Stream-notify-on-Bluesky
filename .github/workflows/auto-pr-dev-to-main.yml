@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - dev  # devブランチへのpush時にトリガー
+with:
+  token: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   create-pr:
