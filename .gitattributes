@@ -137,8 +137,8 @@ config.yml export-ignore
 .github/ISSUE_TEMPLATE/* export-ignore
 
 # release用ZIP
-/release/* export-ignore
+release/* export-ignore
 
 # GitHub（必要に応じて除外）
-/.github/* 
-/.github/workflows/* 
+.github/* export-ignore
+!.github/workflows/* export-ignore
