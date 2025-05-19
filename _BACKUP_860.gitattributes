@@ -140,5 +140,9 @@ config.yml export-ignore
 /release/* export-ignore
 
 # GitHub（必要に応じて除外）
+<<<<<<< HEAD
+/.github/ISSUE_TEMPLATE/ export-ignore
+=======
 /.github/* 
 /.github/workflows/* 
+>>>>>>> cddc43fe690b23d6d4b0fcb203b128a569c5ac93

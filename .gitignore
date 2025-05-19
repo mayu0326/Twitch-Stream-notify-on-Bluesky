@@ -182,6 +182,7 @@ cython_debug/
 cspell.json
 settings.env
 config.yml
-/.github/
-!/.github/workflow/*
+/.github/*
+!/.github/workflows/
 /release/*
+.github\ISSUE_TEMPLATE\*

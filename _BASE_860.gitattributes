@@ -134,11 +134,8 @@ settings.env export-ignore
 config.yml export-ignore
 
 # GitHubテンプレート（必要に応じて除外）
-.github/ISSUE_TEMPLATE/* export-ignore
+/.github/* export-ignore
+!/.github/workflows/* export-ignore
 
-# release用ZIP
-/release/* export-ignore
-
-# GitHub（必要に応じて除外）
-/.github/* 
-/.github/workflows/* 
+# ファイル制作時の場所(ローカルに置けばいいので)
+/release/*
