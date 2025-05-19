@@ -139,16 +139,6 @@ config.yml export-ignore
 # release用ZIP
 /release/* export-ignore
 
-# GitHubテンプレート（必要に応じて除外）
-<<<<<<< HEAD
+# GitHub（必要に応じて除外）
 /.github/* 
 /.github/workflows/* 
-
-# ファイル制作時の場所(ローカルに置けばいいので)
-/release/*
-=======
-.github/ISSUE_TEMPLATE/* export-ignore
->>>>>>> 7ef5b45 (.gitattributes の追加)
-
-# ファイル制作時の場所(ローカルに置けばいいので)
-/release/*
