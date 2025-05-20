@@ -70,7 +70,6 @@ def handle_404(e):
 def handle_webhook():
     if request.method == "GET":
         app.logger.info("Webhookエンドポイントは正常に稼働しています。")
-        logger.info("Webhookエンドポイントは正常に稼働しています。")
         return "Webhook endpoint is working! POST requests only.", 200
 
     # 1. 署名検証（最優先）

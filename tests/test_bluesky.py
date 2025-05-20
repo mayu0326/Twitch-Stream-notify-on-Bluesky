@@ -43,5 +43,5 @@ def test_post_stream_online_valid(monkeypatch):
     poster = BlueskyPoster("user", "pass")
     # Bluesky APIを実際に叩かないようにsend_postをモンキーパッチ
     monkeypatch.setattr(poster.client, "login", lambda u, p: None)
-    monkeypatch.setattr(poster.client, "send_post", lambda x: None)
+    monkeypatch.setattr(poster.client, "send_post", lambda x, embed=None: None)
     assert poster.post_stream_online("title", "cat", "https://example.com")
