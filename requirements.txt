@@ -1,4 +1,4 @@
-﻿annotated-types==0.7.0
+annotated-types==0.7.0
 anyio==4.9.0
 atproto==0.0.61
 black==25.1.0
@@ -42,3 +42,4 @@ waitress==3.0.2
 pytz==2025.2  
 tzlocal==5.3.1  
 pytest==8.3.5
+pip==25.1.1
