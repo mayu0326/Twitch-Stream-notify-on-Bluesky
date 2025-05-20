@@ -9,6 +9,7 @@ from main import app
 import os
 import pytest
 from version import __version__
+from unittest.mock import patch
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -51,6 +52,16 @@ def test_webhook_get(client):
     response = client.get("/webhook")
     assert response.status_code == 200
     assert b"Webhook endpoint is working!" in response.data
+
+# setup_broadcaster_idやget_broadcaster_idをモック
+
+
+@pytest.fixture(autouse=True)
+def mock_broadcaster_id(monkeypatch):
+    # eventsub.get_broadcaster_idを常に"dummy_id"を返すようにモック
+    monkeypatch.setattr("eventsub.get_broadcaster_id",
+                        lambda username: "dummy_id")
+    monkeypatch.setattr("eventsub.setup_broadcaster_id", lambda: None)
 
 
 def test_webhook_invalid_signature(client, monkeypatch):
