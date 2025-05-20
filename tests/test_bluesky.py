@@ -5,13 +5,14 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from bluesky import BlueskyPoster
+import pytest
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
-
 
 
 # Twitch Stream notify on Bluesky
@@ -31,13 +32,12 @@ __version__ = __version__
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import pytest
-from bluesky import BlueskyPoster
 
 def test_post_stream_online_invalid_url(monkeypatch):
     poster = BlueskyPoster("user", "pass")
     assert not poster.post_stream_online("title", "cat", "ftp://example.com")
     assert not poster.post_stream_online("title", "cat", "")
+
 
 def test_post_stream_online_valid(monkeypatch):
     poster = BlueskyPoster("user", "pass")

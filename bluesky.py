@@ -5,11 +5,17 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from datetime import datetime
+from utils import retry_on_exception
+import os
+import csv
+import logging
+from atproto import Client, exceptions
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
 
 # Twitch Stream notify on Bluesky
@@ -29,21 +35,17 @@ __version__ = __version__
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-from atproto import Client, exceptions
-import logging
-import csv
-import os
-from utils import retry_on_exception
 
 RETRY_MAX = int(os.getenv("RETRY_MAX", 3))
 RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 
-from datetime import datetime
 
 logger = logging.getLogger("AppLogger")
 
 # settings.envでテンプレートパスを指定
-TEMPLATE_PATH = os.getenv("BLUESKY_TEMPLATE_PATH", "templates/default_template.txt")
+TEMPLATE_PATH = os.getenv("BLUESKY_TEMPLATE_PATH",
+                          "templates/default_template.txt")
+
 
 def load_template(path=None):
     if path is None:
@@ -56,29 +58,32 @@ def load_template(path=None):
         # デフォルトテンプレートを返す
         return "🔴 放送を開始しました！\nタイトル: {title}\nカテゴリ: {category}\nURL: {url}"
 
+
 def is_valid_url(url):
     return isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))
 
+
 audit_logger = logging.getLogger("AuditLogger")
+
 
 class BlueskyPoster:
     def __init__(self, username, password):
         self.client = Client()
         self.username = username
         self.password = password
+
     def upload_image(self, image_path):
         with open(image_path, "rb") as img_file:
             img_bytes = img_file.read()
         blob = self.client.upload_blob(img_bytes)
         return blob
-        
+
     @retry_on_exception(
         max_retries=RETRY_MAX,
         wait_seconds=RETRY_WAIT,
         exceptions=(exceptions.AtProtocolError,)
     )
-
-    def post_stream_online(self, title, category, url,username=None, display_name=None, image_path=None):
+    def post_stream_online(self, title, category, url, username=None, display_name=None, image_path=None):
         if not title or not category or not is_valid_url(url):
             logger.warning("Bluesky投稿の入力値が不正です")
             return False

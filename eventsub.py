@@ -5,11 +5,23 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from tzlocal import get_localzone
+import pytz
+from pathlib import Path
+from dotenv import load_dotenv
+from utils import retry_on_exception
+import datetime
+import logging
+import time
+import hashlib
+import hmac
+import requests
+import os
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
 
 # Twitch Stream notify on Bluesky
@@ -29,18 +41,6 @@ __version__ = __version__
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import os
-import requests
-import hmac
-import hashlib
-import time
-import logging
-import datetime
-from utils import retry_on_exception
-from dotenv import load_dotenv
-from pathlib import Path
-import pytz
-from tzlocal import get_localzone
 
 # 環境設定ファイルの場所
 env_path = Path(__file__).parent / "settings.env"
@@ -62,8 +62,11 @@ else:
         TIMEZONE = get_localzone()
 
 # タイムゾーン付き現在時刻取得関数
+
+
 def get_current_time():
     return datetime.datetime.now(TIMEZONE)
+
 
 # 環境変数
 TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
@@ -76,12 +79,12 @@ RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 TWITCH_APP_ACCESS_TOKEN = None
 TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT = 0
 
+
 @retry_on_exception(
     max_retries=RETRY_MAX,
     wait_seconds=RETRY_WAIT,
     exceptions=(requests.RequestException,)
 )
-
 # アクセストークンの管理
 def get_app_access_token():
     url = "https://id.twitch.tv/oauth2/token"
@@ -102,15 +105,19 @@ def get_app_access_token():
         return None, 0
 
 # アクセストークンの検証
+
+
 def get_valid_app_access_token():
     global TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT
     if not TWITCH_APP_ACCESS_TOKEN or time.time() > TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT:
         TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT = (
-    get_app_access_token()
+            get_app_access_token()
         )
     return TWITCH_APP_ACCESS_TOKEN
 
 # Twitchのユーザー名からBROADCASTER_IDを取得
+
+
 def get_broadcaster_id(username):
     url = "https://api.twitch.tv/helix/users"
     headers = {
@@ -143,6 +150,8 @@ def setup_broadcaster_id():
             raise
 
 # Signatureの検証
+
+
 def verify_signature(request):
     required_headers = [
         "Twitch-Eventsub-Message-Id",
@@ -159,7 +168,7 @@ def verify_signature(request):
     timestamp = request.headers["Twitch-Eventsub-Message-Timestamp"]
     body = request.get_data().decode("utf-8")
 
-        # タイムスタンプのパース（ナノ秒対応）
+    # タイムスタンプのパース（ナノ秒対応）
     def parse_timestamp(ts: str):
         if '.' in ts and ts.endswith('Z'):
             ts = ts[:-1]  # 'Z'を除去
@@ -169,14 +178,14 @@ def verify_signature(request):
         return datetime.datetime.fromisoformat(ts.replace('Z', '+00:00')).astimezone(TIMEZONE)
 
     # 現在時刻をJSTで取得
-    now = datetime.datetime.now(TIMEZONE) 
+    now = datetime.datetime.now(TIMEZONE)
 
     try:
         event_time = parse_timestamp(timestamp).astimezone(TIMEZONE)
     except Exception as e:
         logger.warning(f"タイムスタンプ解析エラー: {str(e)}")
         return False
-    
+
     # 時間差チェック（5分以内か）
     delta = abs((now - event_time).total_seconds())
     if delta > 300:  # 5分（300秒）を超えていれば拒否
@@ -187,7 +196,8 @@ def verify_signature(request):
 
     if not WEBHOOK_SECRET:
         logger.critical("WEBHOOK_SECRETが設定されていません。settings.envを確認してください。")
-        raise ValueError("WEBHOOK_SECRET is None or empty. Please set it in settings.env")
+        raise ValueError(
+            "WEBHOOK_SECRET is None or empty. Please set it in settings.env")
 
     digest = hmac.new(
         WEBHOOK_SECRET.encode(), hmac_message.encode(), hashlib.sha256
@@ -255,16 +265,20 @@ def create_eventsub_subscription():
         return result
     except requests.exceptions.HTTPError as e:
         reason = f"{e} | {getattr(e.response, 'text', '')}"
-        audit_logger.warning(f"EventSubサブスクリプション作成: stream.online 失敗: {reason}")
+        audit_logger.warning(
+            f"EventSubサブスクリプション作成: stream.online 失敗: {reason}")
         logger.error(f"EventSubサブスクリプション作成失敗: {reason}")
         return {"status": "error", "reason": reason}
     except Exception as e:
         reason = str(e)
-        audit_logger.warning(f"EventSubサブスクリプション作成: stream.online 失敗: {reason}")
+        audit_logger.warning(
+            f"EventSubサブスクリプション作成: stream.online 失敗: {reason}")
         logger.error(f"EventSubサブスクリプション作成失敗: {reason}")
         return {"status": "error", "reason": reason}
 
 # サブスクリプションの削除
+
+
 def delete_eventsub_subscription(subscription_id):
     url = f"https://api.twitch.tv/helix/eventsub/subscriptions?id={subscription_id}"
     headers = {
@@ -276,10 +290,14 @@ def delete_eventsub_subscription(subscription_id):
         logger.info(f"EventSubサブスクリプション削除: {subscription_id} 成功")
         audit_logger.info(f"EventSubサブスクリプション削除: {subscription_id}")
     else:
-        logger.warning(f"EventSubサブスクリプション削除: {subscription_id} 失敗: {response.text}")
-        audit_logger.warning(f"EventSubサブスクリプション削除: {subscription_id} 失敗: {response.text}")
+        logger.warning(
+            f"EventSubサブスクリプション削除: {subscription_id} 失敗: {response.text}")
+        audit_logger.warning(
+            f"EventSubサブスクリプション削除: {subscription_id} 失敗: {response.text}")
 
 # サブスクリプションの確認と削除の処理
+
+
 def cleanup_eventsub_subscriptions(webhook_callback_url):
     subs = get_existing_eventsub_subscriptions()
     for sub in subs:

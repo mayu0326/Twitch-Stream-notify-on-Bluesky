@@ -7,9 +7,9 @@ Twitch Stream notify on Bluesky
 
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
 
 

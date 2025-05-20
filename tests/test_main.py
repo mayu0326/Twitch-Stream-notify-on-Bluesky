@@ -5,11 +5,14 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from main import app
+import os
+import pytest
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
 
 
@@ -30,9 +33,6 @@ __version__ = __version__
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-import pytest
-import os
-from main import app
 
 os.environ["BLUESKY_USERNAME"] = "dummy_user"
 os.environ["BLUESKY_PASSWORD"] = "dummy_password"
@@ -59,10 +59,11 @@ def test_webhook_invalid_signature(client, monkeypatch):
     assert response.status_code == 403
 
 
-def test_webhook_invalid_json(client,monkeypatch):
+def test_webhook_invalid_json(client, monkeypatch):
     # 署名検証を常にTrueにモック
     monkeypatch.setattr("main.verify_signature", lambda req: True)
-    response = client.post("/webhook", data="notjson", content_type="application/json")
+    response = client.post("/webhook", data="notjson",
+                           content_type="application/json")
     assert response.status_code == 400
 
 
