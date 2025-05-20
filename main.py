@@ -34,7 +34,6 @@ from eventsub import (
 from logging_config import configure_logging
 from eventsub import cleanup_eventsub_subscriptions
 from tunnel import start_tunnel, stop_tunnel
-from waitress import serve
 from bluesky import BlueskyPoster
 from flask import Flask, request
 import os
