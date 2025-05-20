@@ -31,7 +31,7 @@ jobs:
 
       - name: flake8 Lint
         uses: py-actions/flake8@v2
-
+        
       - name: Run pytest
         run: pytest
 
