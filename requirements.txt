@@ -42,3 +42,4 @@ waitress==3.0.2
 pytz==2025.2  
 tzlocal==5.3.1  
 pytest==8.3.5
+pip==25.1.1
