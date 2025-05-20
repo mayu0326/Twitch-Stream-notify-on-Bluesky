@@ -5,23 +5,6 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
-from eventsub import setup_broadcaster_id
-from utils import rotate_secret_if_needed
-from flask import jsonify
-from eventsub import (
-    get_valid_app_access_token,
-    create_eventsub_subscription,
-    verify_signature,
-)
-from logging_config import configure_logging
-from eventsub import cleanup_eventsub_subscriptions
-from tunnel import start_tunnel, stop_tunnel
-from waitress import serve
-from bluesky import BlueskyPoster
-from flask import Flask, request, jsonify
-import os
-from version import __version__
-
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
@@ -42,8 +25,25 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
+from eventsub import setup_broadcaster_id
+from utils import rotate_secret_if_needed
+from flask import jsonify
+from eventsub import (
+    get_valid_app_access_token,
+    create_eventsub_subscription,
+    verify_signature,
+)
+from logging_config import configure_logging
+from eventsub import cleanup_eventsub_subscriptions
+from tunnel import start_tunnel, stop_tunnel
+from waitress import serve
+from bluesky import BlueskyPoster
+from flask import Flask, request, jsonify
+import os
+from version import __version__
 
 # Flaskアプリの生成
 app = Flask(__name__)
@@ -109,7 +109,9 @@ def handle_webhook():
             for key in keys:
                 value = value.get(key)
                 if value is None:
-                    return jsonify({"error": f"Missing required field: {field}"}), 400
+                    return jsonify(
+                        {"error": f"Missing required field: {field}"}
+                    ), 400
 
         # Bluesky投稿処理（例外処理追加）
         try:
@@ -125,7 +127,9 @@ def handle_webhook():
             )
             app.logger.info(
                 f"Bluesky投稿成功: {data['event']['broadcaster_user_login']}")
-            return jsonify({"status": "success" if success else "bluesky error"}), 200 if success else 500
+            return jsonify(
+                {"status": "success" if success else "bluesky error"}
+            ), 200 if success else 500
         except Exception as e:
             app.logger.error(f"Bluesky投稿エラー: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500

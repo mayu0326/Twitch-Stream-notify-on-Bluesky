@@ -33,7 +33,8 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
 
 RETRY_MAX = int(os.getenv("RETRY_MAX", 3))
@@ -43,8 +44,10 @@ RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 logger = logging.getLogger("AppLogger")
 
 # settings.envでテンプレートパスを指定
-TEMPLATE_PATH = os.getenv("BLUESKY_TEMPLATE_PATH",
-                          "templates/default_template.txt")
+TEMPLATE_PATH = os.getenv(
+    "BLUESKY_TEMPLATE_PATH",
+    "templates/default_template.txt"
+)
 
 
 def load_template(path=None):
@@ -54,13 +57,18 @@ def load_template(path=None):
         with open(path, encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        logger.error(f"テンプレートファイルが見つかりません: {path}")
+        logger.error(
+            f"テンプレートファイルが見つかりません: {path}"
+        )
         # デフォルトテンプレートを返す
-        return "🔴 放送を開始しました！\nタイトル: {title}\nカテゴリ: {category}\nURL: {url}"
+        return "" \
+            "🔴 放送を開始しました！\nタイトル: {title}\nカテゴリ: {category}\nURL: {url}"
 
 
 def is_valid_url(url):
-    return isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))
+    return isinstance(url, str) and (
+        url.startswith("http://") or url.startswith("https://")
+    )
 
 
 audit_logger = logging.getLogger("AuditLogger")
@@ -83,7 +91,15 @@ class BlueskyPoster:
         wait_seconds=RETRY_WAIT,
         exceptions=(exceptions.AtProtocolError,)
     )
-    def post_stream_online(self, title, category, url, username=None, display_name=None, image_path=None):
+    def post_stream_online(
+        self,
+        title,
+        category,
+        url,
+        username=None,
+        display_name=None,
+        image_path=None
+    ):
         if not title or not category or not is_valid_url(url):
             logger.warning("Bluesky投稿の入力値が不正です")
             return False

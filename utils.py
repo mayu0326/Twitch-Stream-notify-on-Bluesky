@@ -80,7 +80,11 @@ SECRET_KEY_NAME = "WEBHOOK_SECRET"
 ROTATED_KEY_NAME = "SECRET_LAST_ROTATED"
 
 
-def retry_on_exception(max_retries: int = 3, wait_seconds: float = 2, exceptions=(Exception,)):
+def retry_on_exception(
+        max_retries: int = 3,
+        wait_seconds: float = 2,
+        exceptions=(Exception,)
+):
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_exception = None
@@ -89,7 +93,11 @@ def retry_on_exception(max_retries: int = 3, wait_seconds: float = 2, exceptions
                     return func(*args, **kwargs)
                 except exceptions as e:
                     logging.getLogger("AppLogger").warning(
-                        f"リトライ{attempt}/{max_retries}回目: {func.__name__} 例外: {e}"
+                        f"リトライ{
+                            attempt}/{
+                                max_retries}回目: {
+                                    func.__name__
+                        } 例外: {e}"
                     )
                     last_exception = e
                     time.sleep(wait_seconds)
