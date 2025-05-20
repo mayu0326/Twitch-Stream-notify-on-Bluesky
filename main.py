@@ -177,7 +177,6 @@ cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL)
 try:
     tunnel_proc = start_tunnel(logger)
     try:
-        from eventsub import get_valid_app_access_token
         TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token()
         if TWITCH_APP_ACCESS_TOKEN:
             sub_response = create_eventsub_subscription()

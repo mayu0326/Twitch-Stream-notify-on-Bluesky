@@ -141,7 +141,8 @@ def rotate_secret_if_needed(logger=None, force=False):
                 dt = None
                 try:
                     dt = datetime.datetime.strptime(
-                        last_rotated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).astimezone(jst)
+                        last_rotated, "%Y-%m-%dT%H:%M:%SZ").replace(
+                            tzinfo=datetime.timezone.utc).astimezone(jst)
                 except Exception:
                     dt = datetime.datetime.strptime(
                         last_rotated, "%Y-%m-%dT%H:%M:%S%z")
@@ -170,4 +171,5 @@ def rotate_secret_if_needed(logger=None, force=False):
 
 
 def is_valid_url(url):
-    return isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))
+    return isinstance(url, str) and (
+        url.startswith("http://") or url.startswith("https://"))
