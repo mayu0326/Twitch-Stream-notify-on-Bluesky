@@ -139,7 +139,6 @@ def handle_webhook():
 
 if __name__ == "__main__":
     logger, app_logger_handlers, audit_logger = configure_logging(app)
-    from utils import rotate_secret_if_needed
     WEBHOOK_SECRET = rotate_secret_if_needed(logger)
     os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
 

@@ -284,8 +284,10 @@ def create_eventsub_subscription():
 
 
 def delete_eventsub_subscription(subscription_id):
-    url = f"https://api.twitch.tv/helix/eventsub/subscriptions?id={
-        subscription_id}"
+    url = (
+        f"https://api.twitch.tv/helix/eventsub/subscriptions?"
+        f"id={subscription_id}"
+    )
     headers = {
         "Client-ID": TWITCH_CLIENT_ID,
         "Authorization": f"Bearer {get_valid_app_access_token()}"
