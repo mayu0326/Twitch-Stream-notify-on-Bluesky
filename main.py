@@ -5,11 +5,6 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
-__author__ = "mayuneco(mayunya)"
-__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__ = "GPLv2"
-__version__ = __version__
-
 # Twitch Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
@@ -41,9 +36,14 @@ from eventsub import cleanup_eventsub_subscriptions
 from tunnel import start_tunnel, stop_tunnel
 from waitress import serve
 from bluesky import BlueskyPoster
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import os
 from version import __version__
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
 
 # Flaskアプリの生成
 app = Flask(__name__)
@@ -188,5 +188,5 @@ try:
         serve(app, host="0.0.0.0", port=3000)
     finally:
         stop_tunnel(tunnel_proc, logger)
-except Exception as e:
+except Exception:
     pass

@@ -93,11 +93,8 @@ def retry_on_exception(
                     return func(*args, **kwargs)
                 except exceptions as e:
                     logging.getLogger("AppLogger").warning(
-                        f"リトライ{
-                            attempt}/{
-                                max_retries}回目: {
-                                    func.__name__
-                        } 例外: {e}"
+                        f"リトライ{attempt}/{max_retries}回目: {func.__name__
+                                                          } 例外: {e}"
                     )
                     last_exception = e
                     time.sleep(wait_seconds)

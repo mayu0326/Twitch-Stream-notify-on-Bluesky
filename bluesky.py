@@ -126,7 +126,7 @@ class BlueskyPoster:
                         }
                     ]
                 }
-            self.client.send_post(post_text)
+            self.client.send_post(post_text, embed=embed)
             logger.info("Blueskyへの自動投稿に成功しました")
             success = True
             return True

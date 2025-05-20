@@ -39,7 +39,8 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
 
 # 環境設定ファイルの場所
@@ -109,7 +110,8 @@ def get_app_access_token():
 
 def get_valid_app_access_token():
     global TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT
-    if not TWITCH_APP_ACCESS_TOKEN or time.time() > TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT:
+    if not TWITCH_APP_ACCESS_TOKEN or time.time(
+    ) > TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT:
         TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT = (
             get_app_access_token()
         )
@@ -174,8 +176,10 @@ def verify_signature(request):
             ts = ts[:-1]  # 'Z'を除去
             main_part, fractional = ts.split('.')
             fractional = fractional[:6]  # マイクロ秒（6桁）に切り捨て
-            return datetime.datetime.fromisoformat(f"{main_part}.{fractional}+00:00").astimezone(TIMEZONE)
-        return datetime.datetime.fromisoformat(ts.replace('Z', '+00:00')).astimezone(TIMEZONE)
+            return datetime.datetime.fromisoformat(
+                f"{main_part}.{fractional}+00:00").astimezone(TIMEZONE)
+        return datetime.datetime.fromisoformat(
+            ts.replace('Z', '+00:00')).astimezone(TIMEZONE)
 
     # 現在時刻をJSTで取得
     now = datetime.datetime.now(TIMEZONE)
@@ -302,5 +306,8 @@ def cleanup_eventsub_subscriptions(webhook_callback_url):
     subs = get_existing_eventsub_subscriptions()
     for sub in subs:
         # 自分のWebhook URLと異なるもの、またはstatusが"enabled"でないものを削除
-        if sub.get("transport", {}).get("callback") != webhook_callback_url or sub.get("status") != "enabled":
+        if sub.get(
+            "transport", {}
+        ).get("callback") != webhook_callback_url or sub.get(
+                "status") != "enabled":
             delete_eventsub_subscription(sub["id"])
