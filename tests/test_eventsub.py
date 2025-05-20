@@ -6,8 +6,6 @@ Twitch Stream notify on Bluesky
 """
 
 from eventsub import verify_signature
-import datetime
-import pytest
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
