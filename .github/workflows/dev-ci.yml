@@ -26,6 +26,7 @@ jobs:
       - name: Install dependencies
         run: I
           pip install -r requirements.txt
+          pip install -r development-requirements.txt
 
       - name: Run flake8
         run: flake8 .
