@@ -32,6 +32,9 @@ jobs:
       - name: flake8 Lint
         uses: py-actions/flake8@v2
 
-      - name: Skip pytest
-        if: true
-        run: echo "Skipping pytest for dev branch"
+      #- name: Skip pytest
+      #  if: true
+      #  run: echo "Skipping pytest for dev branch"
+                
+      - name: Run pytest
+        run: python -m pytest
