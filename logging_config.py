@@ -5,11 +5,16 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from pathlib import Path
+from dotenv import load_dotenv
+import os
+from logging.handlers import TimedRotatingFileHandler
+import logging
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
 
 # Twitch Stream notify on Bluesky
@@ -27,13 +32,8 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import os
-from dotenv import load_dotenv
-from pathlib import Path
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
 
 def configure_logging(app=None):
@@ -44,15 +44,16 @@ def configure_logging(app=None):
     # ログレベルや保管日数の設定
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     LEVEL_MAP = {
-    "DEBUG": logging.DEBUG,
-    "INFO": logging.INFO,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR,
-    "CRITICAL": logging.CRITICAL,
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
     }
     log_level = LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
 
-    DISCORD_NOTIFY_LEVEL = os.getenv("discord_notify_level", "CRITICAL").upper()
+    DISCORD_NOTIFY_LEVEL = os.getenv(
+        "discord_notify_level", "CRITICAL").upper()
     LEVEL_MAP = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -62,7 +63,7 @@ def configure_logging(app=None):
     }
     discord_level = LEVEL_MAP.get(DISCORD_NOTIFY_LEVEL, logging.CRITICAL)
     log_retention_days = int(os.getenv("LOG_RETENTION_DAYS", "14"))
-        # 監査ログ専用ロガーとハンドラ
+    # 監査ログ専用ロガーとハンドラ
     audit_logger = logging.getLogger("AuditLogger")
     audit_logger.setLevel(logging.INFO)
     audit_format = logging.Formatter("%(asctime)s [AUDIT] %(message)s")
@@ -76,7 +77,7 @@ def configure_logging(app=None):
     audit_file_handler.setLevel(logging.INFO)
     audit_file_handler.setFormatter(audit_format)
     audit_logger.addHandler(audit_file_handler)
-    
+
     # ロガー作成
     logger = logging.getLogger("AppLogger")
     logger.setLevel(log_level)
@@ -92,8 +93,8 @@ def configure_logging(app=None):
         backupCount=log_retention_days,
         encoding="utf-8",
     )
-    info_file_handler.setLevel(log_level)  
-    info_file_handler.setFormatter(error_format) 
+    info_file_handler.setLevel(log_level)
+    info_file_handler.setFormatter(error_format)
     logger.addHandler(info_file_handler)
 
     error_file_handler = TimedRotatingFileHandler(
@@ -120,13 +121,15 @@ def configure_logging(app=None):
     if discord_webhook_url:
         from discord_logging.handler import DiscordHandler
 
-        discord_handler = DiscordHandler("StreamApp_ErrorNotifier", discord_webhook_url)
+        discord_handler = DiscordHandler(
+            "StreamApp_ErrorNotifier", discord_webhook_url)
         discord_handler.setLevel(discord_level)
         discord_handler.setFormatter(
             logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
         )
         logger.addHandler(discord_handler)
-        app_logger_handlers = [error_file_handler, console_handler, discord_handler]
+        app_logger_handlers = [error_file_handler,
+                               console_handler, discord_handler]
     else:
         msg = "WebhookURLが読み取れなかったため、Discordへのエラー通知はオフになっています"
         logger.warning(msg)

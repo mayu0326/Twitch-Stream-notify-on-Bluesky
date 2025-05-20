@@ -5,13 +5,14 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+from utils import is_valid_url, retry_on_exception
+import pytest
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
-
 
 
 # Twitch Stream notify on Bluesky
@@ -29,10 +30,9 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
-import pytest
-from utils import is_valid_url, retry_on_exception
 
 def test_is_valid_url():
     assert is_valid_url("http://example.com")
@@ -41,14 +41,17 @@ def test_is_valid_url():
     assert not is_valid_url("example.com")
     assert not is_valid_url("")
 
+
 def test_retry_on_exception_success():
     @retry_on_exception(max_retries=2, wait_seconds=0.1)
     def always_ok():
         return 42
     assert always_ok() == 42
 
+
 def test_retry_on_exception_retry():
     calls = {"count": 0}
+
     @retry_on_exception(max_retries=2, wait_seconds=0.1)
     def fail_once():
         if calls["count"] < 1:
@@ -57,10 +60,10 @@ def test_retry_on_exception_retry():
         return 99
     assert fail_once() == 99
 
+
 def test_retry_on_exception_fail():
     @retry_on_exception(max_retries=2, wait_seconds=0.1)
     def always_fail():
         raise ValueError("fail")
     with pytest.raises(ValueError):
         always_fail()
-

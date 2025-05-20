@@ -25,11 +25,12 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r development-requirements.txt
 
-      - name: Run flake8
-        run: flake8 .
+      - name: flake8 Lint
+        uses: py-actions/flake8@v2
 
       - name: Skip pytest
         if: true

@@ -5,13 +5,18 @@ Twitch Stream notify on Bluesky
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
 
+import re
+import datetime
+import os
+import secrets
+import logging
+import time
 from version import __version__
 
-__author__    = "mayuneco(mayunya)"
+__author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
-__license__   = "GPLv2"
+__license__ = "GPLv2"
 __version__ = __version__
-
 
 
 # Twitch Stream notify on Bluesky
@@ -29,14 +34,9 @@ __version__ = __version__
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
 
-import time
-import logging
-import secrets
-import os
-import datetime
-import re
 
 def update_env_file_preserve_comments(file_path, updates):
     """
@@ -74,11 +74,17 @@ def update_env_file_preserve_comments(file_path, updates):
     with open(file_path, 'w', encoding='utf-8') as f:
         f.writelines(new_lines)
 
+
 SETTINGS_ENV_PATH = "settings.env"
 SECRET_KEY_NAME = "WEBHOOK_SECRET"
 ROTATED_KEY_NAME = "SECRET_LAST_ROTATED"
 
-def retry_on_exception(max_retries: int = 3, wait_seconds: float = 2, exceptions=(Exception,)):
+
+def retry_on_exception(
+        max_retries: int = 3,
+        wait_seconds: float = 2,
+        exceptions=(Exception,)
+):
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_exception = None
@@ -87,7 +93,8 @@ def retry_on_exception(max_retries: int = 3, wait_seconds: float = 2, exceptions
                     return func(*args, **kwargs)
                 except exceptions as e:
                     logging.getLogger("AppLogger").warning(
-                        f"リトライ{attempt}/{max_retries}回目: {func.__name__} 例外: {e}"
+                        f"リトライ{attempt}/{max_retries}回目: {func.__name__} "
+                        f"例外: {e}"
                     )
                     last_exception = e
                     time.sleep(wait_seconds)
@@ -98,8 +105,10 @@ def retry_on_exception(max_retries: int = 3, wait_seconds: float = 2, exceptions
         return wrapper
     return decorator
 
+
 def generate_secret(length=32):
     return secrets.token_hex(length)
+
 
 def read_env(path=SETTINGS_ENV_PATH):
     env = {}
@@ -112,7 +121,10 @@ def read_env(path=SETTINGS_ENV_PATH):
                 env[k] = v
     return env
 
+
 audit_logger = logging.getLogger("AuditLogger")
+
+
 def rotate_secret_if_needed(logger=None, force=False):
     env = read_env()
     # JSTタイムゾーンで現在時刻を取得
@@ -129,9 +141,12 @@ def rotate_secret_if_needed(logger=None, force=False):
                 # 既存値がUTC表記ならパース方法に注意
                 dt = None
                 try:
-                    dt = datetime.datetime.strptime(last_rotated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).astimezone(jst)
+                    dt = datetime.datetime.strptime(
+                        last_rotated, "%Y-%m-%dT%H:%M:%SZ").replace(
+                            tzinfo=datetime.timezone.utc).astimezone(jst)
                 except Exception:
-                    dt = datetime.datetime.strptime(last_rotated, "%Y-%m-%dT%H:%M:%S%z")
+                    dt = datetime.datetime.strptime(
+                        last_rotated, "%Y-%m-%dT%H:%M:%S%z")
                 if (now - dt).days >= 30:
                     need_rotate = True
             except Exception:
@@ -155,5 +170,7 @@ def rotate_secret_if_needed(logger=None, force=False):
     else:
         return env[SECRET_KEY_NAME]
 
+
 def is_valid_url(url):
-    return isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))
+    return isinstance(url, str) and (
+        url.startswith("http://") or url.startswith("https://"))
