@@ -54,14 +54,10 @@ def test_webhook_get(client):
 
 # setup_broadcaster_idやget_broadcaster_idをモック
 
-
 @pytest.fixture(autouse=True)
 def mock_broadcaster_id(monkeypatch):
     # eventsub.get_broadcaster_idを常に"dummy_id"を返すようにモック
-    monkeypatch.setattr("eventsub.get_broadcaster_id",
-                        lambda username: "dummy_id")
     monkeypatch.setattr("eventsub.setup_broadcaster_id", lambda: None)
-
 
 def test_webhook_invalid_signature(client, monkeypatch):
     # verify_signatureを常にFalseを返すようモック
