@@ -33,6 +33,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 ## 必要な環境
 ### パソコン環境
 - Windows10以降（11を推奨）
+**※このアプリはWindows専用です**
 **※LinuxやMacには対応していません。**
 - Python 3.10 以上 推奨
 - Git 2.49 以上 推奨
@@ -45,7 +46,8 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 - Cloudflareのアカウント（Cloudflare Tunnel用）
 
 ### その他に必要なもの
-- CloudflareでDNS管理されている独自ドメイン（推奨）
+- CloudflareでDNS管理されている独自ドメイン（推奨）\
+または[ngrokなど]他のトンネルソフト(サポート対象外)
 ---
 ## ファイル構成
 このプログラムは以下のファイル構成/フォルダで構成されています。
@@ -79,6 +81,8 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 ---
 ## セットアップ手順
+- **※このアプリはWindows専用です。LinuxやMacには対応していません。**
+- もし仮にWindows以外の環境で動いたとしてもサポート対象外です。
 
 ### 1. **リポジトリをクローン**
 
@@ -102,40 +106,49 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 - Cloudflare Zero Trust でトンネルを作成し、設定ファイル(config.yml)を準備してください。\
 ※詳細は[Cloudflare Tunnel 公式ドキュメント](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)を参照。
-- **Cloudflaredの設定ファイル config.yml のサンプル**は「Cloudflared」フォルダにあります。\
-必要に応じてコピーしてファイル名を以下のように変更し、\
-Cloudflaredインストール先のフォルダに置いてください。
+- **Cloudflaredの設定ファイル config.yml のサンプル**は、\
+本アプリケーションの「Cloudflared」フォルダ内にあります。\
+- 必要に応じてコピーを作成して、ファイル名を以下のように変更してください。
   ```
   config.yml.example → config.yml に変更する
   ``` 
-- cloudflaredの設定ファイルは以下の場所に置いてください。\
+- 上の手順で作成したcloudflaredの設定ファイル(config.yml)は以下の場所に置いてください。\
 ※すでにトンネルuuidのjsonとcert.pemがあるフォルダです。
   ```
   C:\Users\[お使いのパソコンのuser名]\.cloudflared\config.yml
   ``` 
+#### Cloudflare Tunnelを使わない運用について
+- [TUNNEL_CMD]を書き換えればngrokなど他のトンネルアプリでも動作可能だと考えられます。
+ただし、検証を行っているわけではないためサポート対象外とさせていただいています。
 
 ### 5. **settings.env を編集**  
-  - settings.env.example をコピーして settings.env を作成し、必要な値を記入してください。\
-   ※WEBHOOK_SECRETは初回起動時に自動生成されます。\
-   ※シークレットの最終生成日時はSECRET_LAST_ROTATEDに自動で入力されます。\
+  - `settings.env.example`をコピーしたあとファイル名を`settings.env`に変更し、\
+このアプリケーションのフォルダ内に置いてください。
+
+- 設定ができる内容は以下の通りとなっています。\
+以下の設定例を参考に必要な値を記入してください。
+
+- WEBHOOK_SECRETは初回起動時に自動生成されます。
+- シークレットの最終生成日時はSECRET_LAST_ROTATEDに自動で入力されます。
+
   ### settings.envの設定例
 
    ```
    # Twitch設定
-   TWITCH_CLIENT_ID=デベロッパーコンソールで取得したクライアントID
-   TWITCH_CLIENT_SECRET=デベロッパーコンソールで取得したクライアントシークレット
-   TWITCH_BROADCASTER_ID=あなたのTwitchユーザーID
+   TWITCH_CLIENT_ID=[デベロッパーコンソールで取得したクライアントID]
+   TWITCH_CLIENT_SECRET=[デベロッパーコンソールで取得したクライアントシークレット]
+   TWITCH_BROADCASTER_ID=[あなたのTwitchユーザーID]
 
    # Bluesky設定
-   BLUESKY_USERNAME=xxxxxxx.bsky.social または 独自ドメイン等ご利用中のID
-   BLUESKY_PASSWORD=Blueskyのアプリパスワード
+   BLUESKY_USERNAME=[xxxxxxx.bsky.social または 独自ドメイン等ご利用中のID]
+   BLUESKY_PASSWORD=[Blueskyのアプリパスワード]
    BLUESKY_IMAGE_PATH=images/noimage.png
    BLUESKY_TEMPLATE_PATH=templates/default_template.txt
 
    # Webhook設定
-   WEBHOOK_SECRET=
-   SECRET_LAST_ROTATED=
-   WEBHOOK_CALLBACK_URL=Webhookを受け取り可能なドメインのURL
+   WEBHOOK_SECRET=[自動で入力されますので空欄にしてください]
+   SECRET_LAST_ROTATED=[自動で入力されますので空欄にしてください]
+   WEBHOOK_CALLBACK_URL=[Webhookを受け取り可能なドメインのURL]
    例えば、https://example.net/webhook
 
    # Discord通知設定
@@ -150,7 +163,7 @@ Cloudflaredインストール先のフォルダに置いてください。
    LOG_RETENTION_DAYS=14
 
    # Cloudflareトンネルの設定
-  TUNNEL_CMD=トンネルの起動コマンドを指定する。
+  TUNNEL_CMD=[トンネルの起動コマンドを指定する。]
 
    # APIエラー時のリトライ
    RETRY_MAX=3
@@ -186,7 +199,17 @@ Cloudflaredインストール先のフォルダに置いてください。
   ngrok 等、他のトンネルサービスにも\
   `TUNNEL_CMD`を書き換えることで対応可能です(ただしサポート対象外)。
 ### **投稿テンプレートの切り替え**
-テンプレートを編集しない場合は以下の内容が投稿されます。
+
+- **テンプレートに使用できる変数は以下のとおりです。**
+  ```
+  {title} ：配信タイトルです
+  {category}：配信カテゴリです
+  {url}：配信場所のURLです
+  {username}：ユーザー名です
+  {display_name}：ユーザー名(表示名)です
+  ```
+
+- テンプレートを編集しない場合は以下の内容が投稿されます。
   ```
   🔴 放送を開始しました！
   {display_name} has started streaming on Twitch now! 
@@ -195,14 +218,7 @@ Cloudflaredインストール先のフォルダに置いてください。
   URL: {url} 
   #Twitch配信通知
   ```
- ##### **テンプレートに使用できる変数は以下のとおりです。**
-  ```
-  {title} ：配信タイトルです
-  {category}：配信カテゴリです
-  {url}：配信場所のURLです
-  {username}：ユーザー名です
-  {display_name}：ユーザー名(表示名)です
-  ```
+
 - テンプレートを切り替える場合、\
 **settings.env** の **BLUESKY_TEMPLATE_PATH** を使用するテンプレートの\
 ファイル名に書き換えてください。
@@ -217,20 +233,26 @@ Cloudflaredインストール先のフォルダに置いてください。
 
 ### Q. ドメインをもっていなくても利用できますか？
 
-A. アプリ自体は、ngrokなど他のサービスを使う事によって使用できます。\
-ただし、**具体的な設定方法の説明や動作保証、およびサポート対象の範囲外**とさせていただいています。
+A. **アプリ自体は起動するのか**という意味であれば、利用は可能です。
+- 現時点では、ドメインを持っていない場合はCloudflare Tunnelを使用できませんので、\
+本アプリケーションの全機能の動作について保証およびサポートの対象外とさせていただいています。
+- 今後の機能追加で、ドメインを持っていない場合やCloudflare DNSが使えない場合にも、
+本アプリケーションの全機能が利用可能となる「エンドポイント貸出機能」の提供を予定しています。
 
 ### Q. Cloudflare以外でDNS管理をしていない場合でもこのアプリを利用できますか？
 
-A. アプリ自体は、ngrokなど他のサービスを使う事によって使用できます。\
-ただし、以下の制約があります。
+A. アプリ自体は**他のサービスを使う事によって使用できます。**\
+- ただし、公式でのサポート対象は、\
+Cloudflare DNSにより管理されたドメインを用いてCloudflare Tunnelを使うこととなっています。
+そのため、Cloudflare DNSが使えない場合は公式サポートの対象外とさせていただいています。
+
 - Cloudflare Tunnelは、\
 独自ドメインの所有やCloudflareによるDNS管理が前提となるため、\
 **ドメインを持っていない場合**や**CloudflareでDNSを管理していない場合**には利用できません。
 
 - ドメインをCloudflareのDNSで管理していない場合は、\
-**ngrokなどほかの方法で接続を行う必要があります**が、具体的な設定方法の説明や動作保証、\
-およびサポート対象の範囲外とさせていただいています。
+Cloudflare DNSが使えない場合は、**ngrokなど代替トンネルを使うことも可能**ですが、\
+公式サポート対象の対象外とさせていただいています。
 </details>
 
 ### エラー関連
@@ -241,10 +263,12 @@ A. アプリ自体は、ngrokなど他のサービスを使う事によって使
 A. 事前に[公式ページ](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)から cloudflared をダウンロードし、\
 settings.env の TUNNEL_CMD でパスを正しく指定してください。\
 ※運用環境によってはPathをダブルクォーテーションで囲って記載する必要がある場合があります。
-- (例：)wingetコマンドでインストールした場合の記載例
+- (例：)wingetコマンドでインストールした場合の記載例。※[ ]内がコマンドです。
   ```
-  TUNNEL_CMD="C:\Program Files (x86)\cloudflared\cloudflared.exe tunnel --config C:\Program Files (x86)\cloudflared\config.yml run <トンネル名>"
+  TUNNEL_CMD=["C:\Program Files (x86)\cloudflared\cloudflared.exe tunnel --config C:\Program Files (x86)\cloudflared\config.yml run <トンネル名>]"
   ```
+※例えば上の記載例のように、**ファイルパス内に空白がある場合**は、\
+**ダブルクォーテーションで囲って記載する**必要がありますので注意してください。
 
 ### Q. テンプレートファイルが見つからないというエラーがでます。
 
@@ -268,7 +292,7 @@ A. **ファイル名の指定**が間違っている可能性があるので確�
 A. アプリを起動後、設定したWebhookエンドポイントのURLにブラウザでアクセスしてください。\
 下記の状態であれば、外部との通信ができる状態になっています。
 - ブラウザの表示が **Webhook endpoint is working! POST requests only.** である。
-- コンソールの出力に **Webhookエンドポイントは正常に稼働しています**というinfoログがある。
+- コンソールやログファイルの出力に **Webhookエンドポイントは正常に稼働しています**というinfoログがある。
 
 ### Q. アプリにはエラーが出力されていないのに疎通確認が取れません。
 
@@ -324,7 +348,7 @@ A. imagesフォルダに画像を置いて、settings.envの`BLUESKY_IMAGE_PATH`
 
 - **正しいファイル名の指定形式**は以下のとおりです。
   ```
-  BLUESKY_IMAGE_PATH=images\noimage.png
+  BLUESKY_IMAGE_PATH=images/noimage.png
   ```
 ファイル名指定の際、**/から書いてしまうと認識できない**ことがあります。\
 また、**拡張子を記載しない場合も認識できない**ことがあるので注意してください。
@@ -411,6 +435,31 @@ python -m pytest
 - 詳細な使い方は [pytest公式ドキュメント](https://docs.pytest.org/) を参照してください。
 ---
 ### 今後の開発予定
+- ここに書かれてある内容は将来的に実装を計画している、または検討している項目であり、\
+具体的な実装時期等は未定です。決まり次第作者のSNSなどでお知らせします。
+
+- **独自ドメイン未所持ユーザー向けのトンネル利用機能**
+  - 管理者所有ドメインのサブドメインを貸し出し、\
+  独自ドメインがなくてもCloudflare Tunnel経由でWebhookを受信できる仕組みを提供予定です。
+
+- **Bluesky投稿テンプレートのカスタマイズ強化**
+  - 投稿テンプレートの多様化・カスタマイズ性の向上、より柔軟な変数展開や条件分岐の実装を検討しています。
+
+- **配信終了時のBluesky自動投稿**
+  - 現状は配信開始のみですが、配信終了時にも自動でBlueskyに通知できる機能を追加予定です。
+
+- **Docker対応・デプロイ手順の整備**
+  - Dockerfileやdocker-compose.ymlを用意する予定です。
+
+- **多言語対応（READMEやUIの英語化など）**
+  - 現時点ではこのアプリは日本語話者による利用が想定されていますが、
+  今後、必要に応じて海外ユーザーやコントリビューター向けのドキュメントや、
+  UIの英語対応を進めます。ただし、サポート対象は今後も日本語限定となる予定です。
+
+- **Twitch以外のイベント連携（YouTube等）**
+  - 将来的にYouTubeやニコニコ生放送等、他の配信サービスから配信通知を受け取り\
+  Blueskyに投稿するという機能の実装も検討しています。\
+  この実装がされた際はアプリ名が変更となる予定です。
 
 ---
 ## ライセンス
