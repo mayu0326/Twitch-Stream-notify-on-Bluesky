@@ -30,7 +30,7 @@ jobs:
           pip install -r development-requirements.txt
 
       - name: Run flake8
-        run: flake8 .
+        run: python -m flake8 .
 
       - name: Run pytest
         run: pytest
