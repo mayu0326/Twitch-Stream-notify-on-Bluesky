@@ -33,5 +33,5 @@ jobs:
         uses: py-actions/flake8@v2
         
       - name: Run pytest
-        run: pytest
+        run: python -m pytest
 
