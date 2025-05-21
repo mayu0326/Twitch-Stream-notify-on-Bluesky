@@ -34,10 +34,10 @@ from eventsub import (
 from logging_config import configure_logging
 from eventsub import cleanup_eventsub_subscriptions
 from tunnel import start_tunnel, stop_tunnel
-from bluesky import BlueskyPoster
+from bluesky import BlueskyPoster # Ensure BlueskyPoster is imported
 from flask import Flask, request
 import os
-import sys # Added for sys.exit
+import sys 
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -55,7 +55,7 @@ def validate_settings():
         "BLUESKY_PASSWORD",
         "TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
-        "TWITCH_BROADCASTER_ID", # Added from setup_broadcaster_id logic
+        "TWITCH_BROADCASTER_ID", 
         "WEBHOOK_CALLBACK_URL"
     ]
     missing_keys = [key for key in required_keys if not os.getenv(key)]
@@ -70,17 +70,17 @@ def validate_settings():
     for key, default_value in numeric_keys_defaults.items():
         try:
             value_str = os.getenv(key, default_value)
-            int(value_str) # Try converting to int
+            int(value_str) 
         except ValueError:
             raise ValueError(f"settings.envの数値設定値 '{key}' (値: {value_str}) が不正です")
 
 
 @app.errorhandler(404)
 def handle_404(e):
-    # Ensure logger is available or use print
+
     try:
         app.logger.warning(f"404エラー発生: {request.url} (User agent: {request.user_agent.string})")
-    except AttributeError: # app.logger might not be configured if error occurs very early
+    except AttributeError: 
         print(f"Warning: 404 error for URL {request.url}")
     return "Not Found", 404
 
@@ -91,210 +91,209 @@ def handle_webhook():
         app.logger.info("Webhookエンドポイントは正常に稼働しています。")
         return "Webhook endpoint is working! POST requests only.", 200
 
+    if not verify_signature(request): 
     # 1. 署名検証（最優先）
-    if not verify_signature(request): # verify_signature should handle logging internally
         return jsonify({"status": "signature mismatch"}), 403
 
-    # 2. JSONデータ取得（例外処理付き）
     try:
         data = request.get_json()
-        if data is None: # Handle cases where get_json returns None for non-JSON or empty body
+        if data is None: 
             app.logger.warning("Webhook受信: 無効なJSONデータまたは空のボディ")
             return jsonify({"error": "Invalid JSON or empty body"}), 400
     except Exception as e:
         app.logger.error(f"Webhook受信: JSON解析エラー: {e}", exc_info=e)
         return jsonify({"error": "Invalid JSON"}), 400
 
-    # 3. メッセージタイプ取得
     message_type = request.headers.get("Twitch-Eventsub-Message-Type")
+    subscription_payload = data.get("subscription", {}) if isinstance(data, dict) else {}
+    subscription_type = subscription_payload.get("type")
 
-    # 4. 検証用チャレンジ処理
     if message_type == "webhook_callback_verification":
-        challenge = data.get("challenge", "")
-        app.logger.info(f"Webhook検証チャレンジ受信: {challenge[:50]}...") # Log part of challenge
+        challenge = data.get("challenge", "") if isinstance(data, dict) else ""
+        app.logger.info(f"Webhook検証チャレンジ受信 ({subscription_type if subscription_type else 'タイプ不明'}): {challenge[:50]}...") 
         return challenge, 200, {"Content-Type": "text/plain"}
 
-    # 5. 通知処理
     if message_type == "notification":
-        # 必須フィールドチェック（ネスト構造対応）
-        required_fields = [
-            "subscription.type",
-            "event.title",
-            "event.category_name",
-            "event.broadcaster_user_login"
-        ]
+        event_data = data.get("event", {}) if isinstance(data, dict) else {}
+        broadcaster_user_login = event_data.get("broadcaster_user_login")
+        broadcaster_user_name = event_data.get("broadcaster_user_name", broadcaster_user_login) 
 
-        # ネスト構造チェック（再帰的検証）
-        missing_data_fields = []
-        for field in required_fields:
-            keys = field.split('.')
-            value = data
-            valid_path = True
-            for key in keys:
-                if isinstance(value, dict) and key in value:
-                    value = value.get(key)
-                else:
-                    missing_data_fields.append(field)
-                    valid_path = False
-                    break
-            if not valid_path: # No need to check further if path is broken
-                continue
-        
-        if missing_data_fields:
-            app.logger.warning(f"Webhook通知: 必須フィールドが不足しています: {', '.join(missing_data_fields)}. 受信データ: {data}")
-            return jsonify(
-                {"error": f"Missing required field(s): {', '.join(missing_data_fields)}"}
-            ), 400
+        if not broadcaster_user_login:
+            app.logger.warning(f"Webhook通知 ({subscription_type}): 'event.broadcaster_user_login' が不足しています。処理をスキップします。イベントデータ: {event_data}")
+            return jsonify({"error": "Missing required field: event.broadcaster_user_login"}), 400
 
-        # Bluesky投稿処理（例外処理追加）
-        try:
-            bluesky_poster = BlueskyPoster(
-                os.getenv("BLUESKY_USERNAME"),
-                os.getenv("BLUESKY_PASSWORD")
-            )
-            success = bluesky_poster.post_stream_online(
-                data["event"]["title"],
-                data["event"]["category_name"],
-                f"https://twitch.tv/{data['event']['broadcaster_user_login']}",
-                username=data['event'].get('broadcaster_user_name'), # Pass username if available
-                display_name=data['event'].get('broadcaster_user_name'), # Pass display_name if available
-                image_path=os.getenv("BLUESKY_IMAGE_PATH")
-            )
-            if success:
-                app.logger.info(
-                    f"Bluesky投稿成功: {data['event']['broadcaster_user_login']}")
-                return jsonify({"status": "success"}), 200
+        app.logger.info(f"通知受信 ({subscription_type}) for {broadcaster_user_name or broadcaster_user_login}")
+
+        # Read notification settings
+        notify_on_online_str = os.getenv("NOTIFY_ON_ONLINE", "True").lower()
+        NOTIFY_ON_ONLINE = notify_on_online_str == "true"
+
+        notify_on_offline_str = os.getenv("NOTIFY_ON_OFFLINE", "False").lower()
+        NOTIFY_ON_OFFLINE = notify_on_offline_str == "true"
+
+        if subscription_type == "stream.online":
+            if NOTIFY_ON_ONLINE:
+                online_specific_fields = ["title", "category_name"]
+                missing_online_fields = [f"event.{f}" for f in online_specific_fields if event_data.get(f) is None]
+                
+                if missing_online_fields:
+                    app.logger.warning(f"Webhook通知 (stream.online): 必須フィールドが不足しています: {', '.join(missing_online_fields)}. イベントデータ: {event_data}")
+                    return jsonify({"error": f"Missing required field(s) for stream.online: {', '.join(missing_online_fields)}"}), 400
+                
+                try:
+                    bluesky_poster = BlueskyPoster(
+                        os.getenv("BLUESKY_USERNAME"),
+                        os.getenv("BLUESKY_PASSWORD")
+                    )
+                    success = bluesky_poster.post_stream_online(
+                        event_data["title"],
+                        event_data["category_name"],
+                        f"https://twitch.tv/{broadcaster_user_login}", 
+                        username=broadcaster_user_login,
+                        display_name=broadcaster_user_name,
+                        image_path=os.getenv("BLUESKY_IMAGE_PATH")
+                    )
+                    if success:
+                        app.logger.info(f"Bluesky投稿成功 (stream.online): {broadcaster_user_login}")
+                        return jsonify({"status": "success"}), 200
+                    else:
+                        app.logger.error(f"Bluesky投稿処理失敗 (stream.online - BlueskyPoster.post_stream_online returned False): {broadcaster_user_login}")
+                        return jsonify({"status": "bluesky error processing stream.online"}), 500
+                except Exception as e:
+                    app.logger.error(f"Bluesky投稿中の未処理例外 (stream.online): {str(e)}", exc_info=e)
+                    return jsonify({"error": "Internal server error during stream.online processing"}), 500
             else:
-                app.logger.error(f"Bluesky投稿処理失敗 (BlueskyPoster.post_stream_online returned False): {data['event']['broadcaster_user_login']}")
-                return jsonify({"status": "bluesky error"}), 500 # Or another appropriate error code
-        except Exception as e:
-            app.logger.error(f"Bluesky投稿中の未処理例外: {str(e)}", exc_info=e)
-            return jsonify({"error": "Internal server error during Bluesky post"}), 500
+                app.logger.info(f"stream.online通知は設定によりスキップされました: {broadcaster_user_login}")
+                return jsonify({"status": "skipped, online notifications disabled"}), 200
 
-    # 6. 未知のメッセージタイプ or リボークなどその他
-    app.logger.info(f"受信したTwitch EventSubメッセージタイプ: {message_type if message_type else '不明'}. データ: {data}")
-    # For 'revocation' or other types, just acknowledge receipt.
+        elif subscription_type == "stream.offline":
+            if NOTIFY_ON_OFFLINE:
+                display_name_for_offline = broadcaster_user_name 
+                login_name_for_offline = broadcaster_user_login
+
+                app.logger.info(f"stream.offlineイベント処理開始: {display_name_for_offline} ({login_name_for_offline})")
+                try:
+                    bluesky_poster = BlueskyPoster(
+                        os.getenv("BLUESKY_USERNAME"),
+                        os.getenv("BLUESKY_PASSWORD")
+                    )
+                    success = bluesky_poster.post_stream_offline(
+                        broadcaster_display_name=display_name_for_offline,
+                        broadcaster_username=login_name_for_offline
+                    )
+                    app.logger.info(
+                        f"Bluesky投稿試行 (stream.offline): {login_name_for_offline}, 成功: {success}")
+                    # Return 200 even on Bluesky error to ack notification to Twitch,
+                    # but reflect actual success in status.
+                    return jsonify(
+                        {"status": "success, offline notification posted" if success else "bluesky error, offline notification not posted"}
+                    ), 200 
+                except Exception as e:
+                    app.logger.error(f"Bluesky投稿エラー (stream.offline): {str(e)}", exc_info=True)
+                    return jsonify({"error": "Internal server error during stream.offline processing"}), 500
+            else:
+                app.logger.info(f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login}")
+                return jsonify({"status": "skipped, offline notifications disabled"}), 200
+        
+        else:
+            app.logger.warning(f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login}")
+            return jsonify({"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
+
     if message_type == 'revocation':
-        app.logger.warning(f"Twitch EventSubサブスクリプション失効通知受信: サブスクリプションタイプ - {data.get('subscription', {}).get('type')}, ステータス - {data.get('subscription', {}).get('status')}")
+        revocation_status = subscription_payload.get("status", "不明なステータス")
+        app.logger.warning(f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {data.get('event', {}).get('broadcaster_user_login', 'N/A')}")
         return jsonify({"status": "revocation notification received"}), 200
 
-    return jsonify({"status": "unhandled message type or event"}), 200 # Return 200 for unhandled but valid Twitch messages to prevent retries
+    app.logger.info(f"受信した未処理のTwitch EventSubメッセージタイプ: {message_type if message_type else '不明'}. データ: {data}")
+    return jsonify({"status": "unhandled message type or event"}), 200
 
 
-# This should be defined before it's used in the if __name__ == "__main__": block
 logger = None
 audit_logger = None
 
 if __name__ == "__main__":
+    tunnel_proc = None 
     try:
         logger, app_logger_handlers, audit_logger = configure_logging(app)
         WEBHOOK_SECRET = rotate_secret_if_needed(logger)
         os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
 
-        # ブロードキャスターID設定 (TWITCH_BROADCASTER_IDがここで設定される)
         setup_broadcaster_id(logger=logger) 
-
-        # 設定検証 (setup_broadcaster_id の後で、TWITCH_BROADCASTER_ID が設定されるため)
         validate_settings()
         logger.info("設定ファイルの検証が完了しました。")
-
-        # 既存サブスクリプション削除
-        WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
-        # cleanup_eventsub_subscriptions needs token, so get it first.
         
-        tunnel_proc = None # Initialize tunnel_proc
         TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token(logger=logger)
         if not TWITCH_APP_ACCESS_TOKEN:
             logger.critical("Twitchアプリのアクセストークン取得に失敗しました。アプリケーションは起動できません。")
-            # tunnel_proc is not started yet, so no need to stop it here.
             sys.exit(1)
         logger.info("Twitchアプリのアクセストークンを正常に取得しました。")
 
-        cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger=logger) # Now with token and logger
+        WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
+        cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger=logger)
 
-        # トンネル起動とメイン処理
-        tunnel_proc = start_tunnel(logger) # tunnel_proc is now defined
-        
-        # EventSubサブスクリプション作成
-        sub_response = create_eventsub_subscription(logger=logger) # Pass logger
-        # logger.info(f"サブスクリプション作成試行結果: {sub_response}") # Log raw response for debugging
-
-        # Check for successful subscription
-        # A successful response usually has a 'data' list with the subscription details.
-        # An error response might have a 'status' field indicating an error code, or 'message'.
-        if not sub_response or not isinstance(sub_response, dict) or \
-           not sub_response.get("data") or not isinstance(sub_response["data"], list) or not sub_response["data"]:
-            # If 'data' is missing, empty, or not a list, or if the response itself is bad
-            # Also check if Twitch returned an error status explicitly
-            twitch_error_status = sub_response.get("status") if isinstance(sub_response, dict) else None
-            twitch_error_message = sub_response.get("message") if isinstance(sub_response, dict) else None
-
-            log_message = f"EventSubサブスクリプション作成に失敗しました。"
-            if twitch_error_status:
-                log_message += f" ステータス: {twitch_error_status}."
-            if twitch_error_message:
-                log_message += f" メッセージ: {twitch_error_message}."
-            # Log the full response for more details if it's not too large or sensitive
-            # For now, just logging the status and message should be enough for critical log
-            logger.critical(log_message + " アプリケーションは起動できません。")
-            
-            if tunnel_proc: # Check if tunnel_proc was defined and is not None
-                stop_tunnel(tunnel_proc, logger)
+        tunnel_proc = start_tunnel(logger)
+        if not tunnel_proc: 
+            logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
+        
+        event_types_to_subscribe = ["stream.online", "stream.offline"]
+        all_subscriptions_successful = True
+        for event_type in event_types_to_subscribe:
+            logger.info(f"{event_type} のEventSubサブスクリプションを作成します...")
+            sub_response = create_eventsub_subscription(event_type, logger_to_use=logger)
+            
+            if not sub_response or not isinstance(sub_response, dict) or \
+               not sub_response.get("data") or not isinstance(sub_response["data"], list) or not sub_response["data"]:
+                twitch_error_status = sub_response.get("status") if isinstance(sub_response, dict) else None
+                twitch_error_message = sub_response.get("message") if isinstance(sub_response, dict) else None
+                log_message = f"{event_type} EventSubサブスクリプションの作成に失敗しました。"
+                if twitch_error_status:
+                    log_message += f" ステータス: {twitch_error_status}."
+                if twitch_error_message:
+                    log_message += f" メッセージ: {twitch_error_message}."
+                logger.critical(log_message + f" 詳細: {sub_response}")
+                all_subscriptions_successful = False
+                break 
+            
+            if sub_response.get("status") == "already exists":
+                 logger.info(f"{event_type} EventSubサブスクリプションは既に存在します。ID: {sub_response.get('id')}")
+            else:
+                subscription_details = sub_response['data'][0]
+                logger.info(f"{event_type} EventSubサブスクリプション作成成功。ID: {subscription_details.get('id')}, ステータス: {subscription_details.get('status')}")
 
-        logger.info(f"EventSubサブスクリプション作成成功: {sub_response['data'][0].get('type')}, ID: {sub_response['data'][0].get('id')}")
-
+        if not all_subscriptions_successful:
+            logger.critical("必須EventSubサブスクリプションの作成に失敗したため、アプリケーションは起動できません。")
+            sys.exit(1)
 
         logger.info("Flask (waitress) サーバーを起動します。ポート: 3000")
         from waitress import serve
         serve(app, host="0.0.0.0", port=3000)
 
-    except ValueError as ve: # Catch validation errors specifically
-        # Logger might not be fully configured if error is in logging_config itself or early settings.
+    except ValueError as ve: 
         log_msg = f"設定エラー: {ve}. アプリケーションは起動できません。"
-        try:
-            if logger:
-                logger.critical(log_msg)
-            else:
-                print(f"CRITICAL: {log_msg}")
-        except NameError:
-             print(f"CRITICAL: {log_msg}")
-        if 'tunnel_proc' in locals() and tunnel_proc:
-            stop_tunnel(tunnel_proc, logger if 'logger' in locals() and logger else None)
+        if logger: logger.critical(log_msg)
+        else: print(f"CRITICAL: {log_msg}")
         sys.exit(1)
     except Exception as e:
-        # Use logger if available, otherwise print
         log_msg_critical = "初期化中の未処理例外によりアプリケーションの起動に失敗しました。"
-        try:
-            if logger:
-                logger.critical(log_msg_critical, exc_info=e)
-            else:
-                print(f"CRITICAL: {log_msg_critical} {e}")
-        except NameError: # logger might not be defined if configure_logging failed
-            print(f"CRITICAL: {log_msg_critical} {e}")
-        if 'tunnel_proc' in locals() and tunnel_proc: # Check if tunnel_proc was defined
-            stop_tunnel(tunnel_proc, logger if 'logger' in locals() and logger else None)
-        sys.exit(1) # Exit with a non-zero code to indicate failure
+        if logger: logger.critical(log_msg_critical, exc_info=e)
+        else: print(f"CRITICAL: {log_msg_critical} {e}")
+        sys.exit(1)
     finally:
-        # Ensure tunnel is stopped if it was started and the application is exiting for any reason
-        # other than a sys.exit() call that already handled it.
-        # This block might be redundant if sys.exit() is called in all error paths that start the tunnel.
-        if 'tunnel_proc' in locals() and tunnel_proc and 'serve' not in locals(): # if server didn't start
-             if logger:
-                logger.info("アプリケーション終了前にトンネルを停止します。")
-             else:
-                print("アプリケーション終了前にトンネルを停止します。")
-             stop_tunnel(tunnel_proc, logger if 'logger' in locals() and logger else None)
-
+        if tunnel_proc: 
+             if logger: logger.info("アプリケーション終了前にトンネルを停止します。")
+             else: print("アプリケーション終了前にトンネルを停止します。")
+             stop_tunnel(tunnel_proc, logger)
 
 @app.errorhandler(Exception)
 def handle_exception(e):
     # This handler is for exceptions during request processing by Flask, not startup.
+
     app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
     return (
         jsonify(
             {
-                "error": "予期せぬサーバーエラーが発生しました。" # Generic message to user
+                "error": "予期せぬサーバーエラーが発生しました。"
             }
         ),
         500,
