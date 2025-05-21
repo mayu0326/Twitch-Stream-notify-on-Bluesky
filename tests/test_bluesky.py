@@ -83,32 +83,35 @@ class TestBlueskyPoster:
         invalid_context = {"broadcaster_user_name": "Test"} # Missing many required keys
         assert not poster.post_stream_online(invalid_context)
 
-    @patch("bluesky.Client") 
-    @patch("bluesky.BlueskyPoster._write_post_history") 
-    @patch("bluesky.load_template") 
-    @patch("os.path.isfile") 
+    @patch("bluesky.Client")
+    @patch("bluesky.BlueskyPoster._write_post_history")
+    @patch("bluesky.load_template")
+    @patch("bluesky.BlueskyPoster.upload_image") # Changed from os.path.isfile
     def test_post_stream_online_success_with_image(
-        self, mock_isfile, mock_load_template_func, mock_write_history, mock_atproto_client_class, 
+        self, mock_upload_image, mock_load_template_func, mock_write_history, mock_atproto_client_class, # mock_isfile removed, mock_upload_image added
         mock_env, mock_event_context_online
     ):
-        mock_isfile.return_value = True 
-        
         # Mock for Jinja2 Template object returned by load_template
         mock_template_obj = MagicMock(spec=Template)
         mock_template_obj.render.return_value = "Rendered Online Template Text"
         mock_load_template_func.return_value = mock_template_obj
-        
+
         mock_client_instance = MagicMock()
         mock_atproto_client_class.return_value = mock_client_instance
-        
+
         dummy_blob = MagicMock()
-        mock_client_instance.upload_blob.return_value = dummy_blob
+        # mock_client_instance.upload_blob.return_value = dummy_blob # No longer needed here
+        mock_upload_image.return_value = dummy_blob # upload_image will return the dummy_blob
 
         poster = BlueskyPoster("user", "pass")
-        result = poster.post_stream_online(
-            event_context=mock_event_context_online,
-            image_path="images/test_image.png"
-        )
+        # We still need to mock os.path.isfile for the condition before upload_image is called
+        with patch("os.path.isfile", return_value=True) as mock_isfile_inner:
+            result = poster.post_stream_online(
+                event_context=mock_event_context_online,
+                image_path="images/test_image.png"
+            )
+            mock_isfile_inner.assert_called_once_with("images/test_image.png")
+
 
         assert result is True
         mock_client_instance.login.assert_called_once_with("user", "pass")
@@ -119,6 +122,9 @@ class TestBlueskyPoster:
         
         # Assert template.render was called with the event_context
         mock_template_obj.render.assert_called_once_with(**mock_event_context_online, template_path=expected_template_path)
+
+        # Assert that our mock_upload_image was called
+        mock_upload_image.assert_called_once_with("images/test_image.png")
         
         mock_client_instance.send_post.assert_called_once()
         call_args = mock_client_instance.send_post.call_args
@@ -306,27 +312,63 @@ class TestBlueskyPoster:
         mock_write_history.assert_called_once()
 
     @patch("bluesky.Client")
-    @patch("bluesky.BlueskyPoster._write_post_history")
+    # We are testing the internals of _write_post_history, so we don't mock it directly here.
+    # Instead, we mock what it uses (like builtins.open) or what leads to it.
+    @patch("bluesky.load_template") # Mock load_template to prevent file access there
     def test_write_post_history_io_error(
-        self, mock_write_history_method_itself, mock_atproto_client_class, mock_env, caplog,
+        self, mock_load_template_func, mock_atproto_client_class, mock_env, caplog,
         mock_event_context_offline
     ):
+        # Setup mock for load_template to return a functional Template object
+        mock_template_obj = MagicMock(spec=Template)
+        mock_template_obj.render.return_value = "Rendered Offline Template Text"
+        mock_load_template_func.return_value = mock_template_obj
+
         mock_client_instance = MagicMock()
         mock_atproto_client_class.return_value = mock_client_instance
         # Make send_post succeed so it tries to write history
-        mock_client_instance.send_post.return_value = None 
-        
-        poster = BlueskyPoster("user", "pass")
-        
-        with patch("builtins.open", mock_open()) as mock_file_open:
-            mock_file_open.side_effect = IOError("Test CSV write error")
-            
-            # Call a method that triggers _write_post_history
-            poster.post_stream_offline(mock_event_context_offline) 
+        mock_client_instance.send_post.return_value = None
 
-        assert "投稿履歴CSVへの書き込みに失敗しました" in caplog.text
+        poster = BlueskyPoster("user", "pass")
+
+        # Custom mock for builtins.open to control when IOError is raised
+        original_open = open
+        def conditional_mock_open(file, mode="r", **kwargs):
+            if file == "logs/post_history.csv" and mode == "a":
+                raise IOError("Test CSV write error")
+            # For any other file call, use a generic mock_open like behavior or fall back to original if specific paths are known
+            # For this test, we only expect the CSV to be opened by the tested code path after load_template is mocked.
+            # If other files were opened by the function under test (not by load_template), 
+            # more sophisticated handling might be needed. Here, we'll use a pass-through mock for non-CSV files.
+            return mock_open()(file, mode, **kwargs)
+
+
+        # We patch _write_post_history directly to ensure it's called,
+        # but the actual test of IOError is by patching `open` which it uses.
+        # This is a bit of a mix, let's refine.
+        # The goal is to have post_stream_offline call the *real* _write_post_history,
+        # and _write_post_history fails due to our mocked `open`.
+
+        with patch("builtins.open", side_effect=conditional_mock_open) as mock_file_open_custom:
+            # Call a method that triggers _write_post_history
+            # post_stream_offline will call load_template (mocked), then send_post (mocked to succeed),
+            # then in `finally` it calls the *real* _write_post_history.
+            # The real _write_post_history will then try to open "logs/post_history.csv",
+            # which our conditional_mock_open will intercept and raise IOError for.
+            poster.post_stream_offline(mock_event_context_offline)
+
+        # Assert that load_template was called (ensuring it was bypassed for file open)
+        offline_template_path = os.getenv("BLUESKY_OFFLINE_TEMPLATE_PATH", "templates/offline_template.txt") # Default from bluesky.py
+        mock_load_template_func.assert_called_once_with(path=offline_template_path)
+
+        # Check the log for the specific error from _write_post_history
+        assert "投稿履歴CSVへの書き込みに失敗しました: logs/post_history.csv, エラー: Test CSV write error" in caplog.text
+        # Optionally, ensure the "Test CSV write error" is part of the logged message.
         assert "Test CSV write error" in caplog.text
-        # The original mock_write_history_method_itself is not used here as we test the real one.
+        
+        # Ensure that send_post was called, meaning the main logic of post_stream_offline executed
+        mock_client_instance.send_post.assert_called_once()
+
 
     def test_upload_image_actual_file_not_found(self, mock_env, caplog):
         # This tests upload_image directly for FileNotFoundError

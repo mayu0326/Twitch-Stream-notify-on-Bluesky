@@ -94,38 +94,64 @@ def mock_env_for_rotate(monkeypatch, env_file):
     # rotate_secret_if_needed 内の SETTINGS_ENV_PATH をテスト用パスに差し替え
     monkeypatch.setattr("utils.SETTINGS_ENV_PATH", env_file)
     # read_env と update_env_file_preserve_comments はそのままテスト対象の関数を使う
-    # generate_secret は固定値を返すようにモック
-    monkeypatch.setattr("utils.generate_secret", lambda length=32: "mocked_secret_key_123")
+    # generate_secret will be mocked directly in the test method using @patch
     # os.getenv for TIMEZONE
     monkeypatch.setenv("TIMEZONE", "UTC") # Default to UTC for consistent testing
     return env_file
 
 
-def test_rotate_secret_if_needed_no_secret(mock_env_for_rotate, caplog):
+@patch('utils.generate_secret') # Mock generate_secret for this specific test
+def test_rotate_secret_if_needed_no_secret(mock_generate_secret_func, mock_env_for_rotate, caplog):
+    # Configure the mock to return the desired static value
+    mock_generate_secret_func.return_value = "mocked_secret_key_123"
+
     # settings.env に SECRET_KEY_NAME がない状態
+    # mock_env_for_rotate is the path to the test .env file
     with open(mock_env_for_rotate, "w", encoding='utf-8') as f:
-        f.write("OTHER_KEY=some_value\n")
+        f.write("OTHER_KEY=some_value\n") # Ensure WEBHOOK_SECRET is not present
     
-    new_secret = rotate_secret_if_needed(force=False)
+    # Call the function under test
+    new_secret = rotate_secret_if_needed(force=False) # logger can be passed if needed for finer log control
+    
+    # Assert that the function returned the mocked secret
     assert new_secret == "mocked_secret_key_123"
+    
+    # Assert that our mock was called (once, with default length 32)
+    mock_generate_secret_func.assert_called_once_with(32)
+    
+    # Verify the .env file content
     with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
         content = f.read()
     assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
     assert "SECRET_LAST_ROTATED=" in content # Check if last rotated is also set
+    
+    # Verify log message
     assert "WEBHOOK_SECRETが見つからないため、新規生成します。" in caplog.text
 
 
-def test_rotate_secret_if_needed_force_rotation(mock_env_for_rotate, caplog):
+import logging # Import logging for caplog.set_level
+
+@patch('utils.generate_secret') # Mock generate_secret for this specific test too
+def test_rotate_secret_if_needed_force_rotation(mock_generate_secret_func, mock_env_for_rotate, caplog):
+    mock_generate_secret_func.return_value = "mocked_secret_key_123" # Configure mock
+    
+    # Ensure caplog captures INFO level logs from the relevant loggers
+    caplog.set_level(logging.INFO, logger="AppLogger")
+    caplog.set_level(logging.INFO, logger="AuditLogger")
+
     with open(mock_env_for_rotate, "w", encoding='utf-8') as f:
         f.write("WEBHOOK_SECRET=old_secret\n")
         f.write("SECRET_LAST_ROTATED=2023-01-01T00:00:00+00:00\n") # Dummy old date
     
     new_secret = rotate_secret_if_needed(force=True) # Force rotation
+    
     assert new_secret == "mocked_secret_key_123"
+    mock_generate_secret_func.assert_called_once_with(32) # Verify mock call
+
     with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
         content = f.read()
     assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
-    assert "WEBHOOK_SECRETを自動生成・ローテーションしました" in caplog.text
+    assert "WEBHOOK_SECRETを自動生成・ローテーションしました" in caplog.text # This log indicates rotation happened
 
 
 class TestFormatDateTimeFilter:
