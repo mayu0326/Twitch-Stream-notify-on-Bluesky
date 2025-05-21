@@ -188,3 +188,4 @@ release\*.zip
 !.github\workflows\dev-ci.yml
 !.github\workflows\main-ci.yml
 !.github\workflows\gitguardian.yml
+.editorconfig
