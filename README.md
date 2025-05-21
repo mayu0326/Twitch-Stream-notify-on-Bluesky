@@ -463,6 +463,74 @@ python -m pytest
   この実装がされた際はアプリ名が変更となる予定です。
 
 ---
+
+## Running with Docker (Windows Containers)
+
+This application can be run using Docker with Windows containers. This simplifies dependency management and provides a consistent environment.
+
+### Prerequisites
+
+*   **Docker Desktop for Windows:** Ensure Docker Desktop is installed and configured to use Windows containers.
+
+### Setup
+
+1.  **Configure `settings.env`:**
+    Before running the Docker container, you **must** create a `settings.env` file in the root directory of this project (the same directory where `docker-compose.yml` is located).
+    You can do this by copying `settings.env.example` to `settings.env` and then filling in your actual credentials and settings:
+    ```powershell
+    copy settings.env.example settings.env
+    ```
+    Then, edit `settings.env` with your details.
+
+### Recommended: Using Docker Compose
+
+Using `docker-compose` is the recommended way to run the application with Docker as it simplifies command syntax and management.
+
+*   **Start the application in detached mode:**
+    ```bash
+    docker-compose up -d
+    ```
+
+*   **View application logs:**
+    ```bash
+    docker-compose logs -f
+    ```
+    (You can also specify the service name: `docker-compose logs -f twitch-bluesky-bot`)
+
+*   **Stop the application:**
+    ```bash
+    docker-compose down
+    ```
+
+*   **Rebuild and update the application (e.g., after code changes or Dockerfile updates):**
+    ```bash
+    docker-compose build && docker-compose up -d --force-recreate
+    ```
+
+### Alternative: Using `docker run`
+
+If you prefer not to use Docker Compose, you can build and run the container manually.
+
+1.  **Build the Docker image:**
+    (The Dockerfile will produce an image, you can tag it as you like)
+    ```bash
+    docker build -t my-twitch-bot .
+    ```
+
+2.  **Run the Docker container:**
+    Make sure to replace `my-twitch-bot` with the tag you used. This command mounts your local `settings.env` and `logs` directory into the container.
+    ```bash
+    docker run --name twitch-bluesky-bot-manual -v "%CD%\settings.env:C:\app\settings.env" -v "%CD%\logs:C:\app\logs" my-twitch-bot
+    ```
+    *Note: `%CD%` refers to the current directory in Windows Command Prompt. If using PowerShell, you might use `$(Get-Location)` or specify the full path.*
+
+### Accessing Logs
+
+When using either Docker Compose or `docker run` with the specified volume mounts, the application's log files will be persisted in the `./logs` directory on your host machine.
+---
+## Contributing
+Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more details on how to get started, report bugs, and submit pull requests.
+---
 ## ライセンス
 
 GPL License v2
