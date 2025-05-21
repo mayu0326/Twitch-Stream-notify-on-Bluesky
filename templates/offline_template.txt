@@ -1,4 +1,7 @@
 配信が終了しました。
-{display_name} さんのTwitch配信が終わりました。
+
+{{ broadcaster_user_name | default('配信者名不明') }} さんのTwitch配信が終わりました。
+チャンネル: {{ channel_url | default('チャンネルURL不明') }}
+
 またの配信をお楽しみに！
-#Twitch #配信終了
+#Twitch #配信終了 #{{ broadcaster_user_login | default('') }}

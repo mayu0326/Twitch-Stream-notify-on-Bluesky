@@ -77,7 +77,6 @@ def validate_settings():
 
 @app.errorhandler(404)
 def handle_404(e):
-
     try:
         app.logger.warning(f"404エラー発生: {request.url} (User agent: {request.user_agent.string})")
     except AttributeError: 
@@ -92,7 +91,6 @@ def handle_webhook():
         return "Webhook endpoint is working! POST requests only.", 200
 
     if not verify_signature(request): 
-    # 1. 署名検証（最優先）
         return jsonify({"status": "signature mismatch"}), 403
 
     try:
@@ -115,16 +113,15 @@ def handle_webhook():
 
     if message_type == "notification":
         event_data = data.get("event", {}) if isinstance(data, dict) else {}
-        broadcaster_user_login = event_data.get("broadcaster_user_login")
-        broadcaster_user_name = event_data.get("broadcaster_user_name", broadcaster_user_login) 
-
-        if not broadcaster_user_login:
+        broadcaster_user_login_from_event = event_data.get("broadcaster_user_login")
+        
+        if not broadcaster_user_login_from_event:
             app.logger.warning(f"Webhook通知 ({subscription_type}): 'event.broadcaster_user_login' が不足しています。処理をスキップします。イベントデータ: {event_data}")
             return jsonify({"error": "Missing required field: event.broadcaster_user_login"}), 400
 
-        app.logger.info(f"通知受信 ({subscription_type}) for {broadcaster_user_name or broadcaster_user_login}")
+        broadcaster_user_name_from_event = event_data.get("broadcaster_user_name", broadcaster_user_login_from_event) 
+        app.logger.info(f"通知受信 ({subscription_type}) for {broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
 
-        # Read notification settings
         notify_on_online_str = os.getenv("NOTIFY_ON_ONLINE", "True").lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
 
@@ -133,12 +130,26 @@ def handle_webhook():
 
         if subscription_type == "stream.online":
             if NOTIFY_ON_ONLINE:
-                online_specific_fields = ["title", "category_name"]
-                missing_online_fields = [f"event.{f}" for f in online_specific_fields if event_data.get(f) is None]
-                
-                if missing_online_fields:
-                    app.logger.warning(f"Webhook通知 (stream.online): 必須フィールドが不足しています: {', '.join(missing_online_fields)}. イベントデータ: {event_data}")
-                    return jsonify({"error": f"Missing required field(s) for stream.online: {', '.join(missing_online_fields)}"}), 400
+                # Specific checks for stream.online
+                if event_data.get("title") is None or event_data.get("category_name") is None:
+                    app.logger.warning(f"Webhook通知 (stream.online): 'title' または 'category_name' が不足しています. イベントデータ: {event_data}")
+                    return jsonify({"error": "Missing title or category_name for stream.online event"}), 400
+
+                event_context = {
+                    "broadcaster_user_id": event_data.get("broadcaster_user_id"),
+                    "broadcaster_user_login": broadcaster_user_login_from_event,
+                    "broadcaster_user_name": broadcaster_user_name_from_event,
+                    "title": event_data.get("title"),
+                    "category_name": event_data.get("category_name"),
+                    "game_id": event_data.get("game_id"), # Twitch uses game_id for category ID
+                    "game_name": event_data.get("game_name", event_data.get("category_name")), # game_name is often preferred
+                    "language": event_data.get("language"),
+                    "started_at": event_data.get("started_at"),
+                    "type": event_data.get("type"), # e.g., "live"
+                    "is_mature": event_data.get("is_mature"),
+                    "tags": event_data.get("tags", []),
+                    "stream_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
+                }
                 
                 try:
                     bluesky_poster = BlueskyPoster(
@@ -146,45 +157,39 @@ def handle_webhook():
                         os.getenv("BLUESKY_PASSWORD")
                     )
                     success = bluesky_poster.post_stream_online(
-                        event_data["title"],
-                        event_data["category_name"],
-                        f"https://twitch.tv/{broadcaster_user_login}", 
-                        username=broadcaster_user_login,
-                        display_name=broadcaster_user_name,
+                        event_context=event_context,
                         image_path=os.getenv("BLUESKY_IMAGE_PATH")
                     )
                     if success:
-                        app.logger.info(f"Bluesky投稿成功 (stream.online): {broadcaster_user_login}")
+                        app.logger.info(f"Bluesky投稿成功 (stream.online): {broadcaster_user_login_from_event}")
                         return jsonify({"status": "success"}), 200
                     else:
-                        app.logger.error(f"Bluesky投稿処理失敗 (stream.online - BlueskyPoster.post_stream_online returned False): {broadcaster_user_login}")
+                        app.logger.error(f"Bluesky投稿処理失敗 (stream.online - BlueskyPoster.post_stream_online returned False): {broadcaster_user_login_from_event}")
                         return jsonify({"status": "bluesky error processing stream.online"}), 500
                 except Exception as e:
                     app.logger.error(f"Bluesky投稿中の未処理例外 (stream.online): {str(e)}", exc_info=e)
                     return jsonify({"error": "Internal server error during stream.online processing"}), 500
             else:
-                app.logger.info(f"stream.online通知は設定によりスキップされました: {broadcaster_user_login}")
+                app.logger.info(f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
                 return jsonify({"status": "skipped, online notifications disabled"}), 200
 
         elif subscription_type == "stream.offline":
             if NOTIFY_ON_OFFLINE:
-                display_name_for_offline = broadcaster_user_name 
-                login_name_for_offline = broadcaster_user_login
-
-                app.logger.info(f"stream.offlineイベント処理開始: {display_name_for_offline} ({login_name_for_offline})")
+                event_context = {
+                    "broadcaster_user_id": event_data.get("broadcaster_user_id"),
+                    "broadcaster_user_login": broadcaster_user_login_from_event,
+                    "broadcaster_user_name": broadcaster_user_name_from_event,
+                    "channel_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
+                }
+                app.logger.info(f"stream.offlineイベント処理開始: {event_context.get('broadcaster_user_name')} ({event_context.get('broadcaster_user_login')})")
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
                         os.getenv("BLUESKY_PASSWORD")
                     )
-                    success = bluesky_poster.post_stream_offline(
-                        broadcaster_display_name=display_name_for_offline,
-                        broadcaster_username=login_name_for_offline
-                    )
+                    success = bluesky_poster.post_stream_offline(event_context=event_context)
                     app.logger.info(
-                        f"Bluesky投稿試行 (stream.offline): {login_name_for_offline}, 成功: {success}")
-                    # Return 200 even on Bluesky error to ack notification to Twitch,
-                    # but reflect actual success in status.
+                        f"Bluesky投稿試行 (stream.offline): {event_context.get('broadcaster_user_login')}, 成功: {success}")
                     return jsonify(
                         {"status": "success, offline notification posted" if success else "bluesky error, offline notification not posted"}
                     ), 200 
@@ -192,11 +197,11 @@ def handle_webhook():
                     app.logger.error(f"Bluesky投稿エラー (stream.offline): {str(e)}", exc_info=True)
                     return jsonify({"error": "Internal server error during stream.offline processing"}), 500
             else:
-                app.logger.info(f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login}")
+                app.logger.info(f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
                 return jsonify({"status": "skipped, offline notifications disabled"}), 200
         
         else:
-            app.logger.warning(f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login}")
+            app.logger.warning(f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login_from_event}")
             return jsonify({"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
 
     if message_type == 'revocation':
@@ -285,10 +290,9 @@ if __name__ == "__main__":
              else: print("アプリケーション終了前にトンネルを停止します。")
              stop_tunnel(tunnel_proc, logger)
 
+
 @app.errorhandler(Exception)
 def handle_exception(e):
-    # This handler is for exceptions during request processing by Flask, not startup.
-
     app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
     return (
         jsonify(
