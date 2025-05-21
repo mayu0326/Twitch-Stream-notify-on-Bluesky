@@ -41,6 +41,9 @@ def configure_logging(app=None):
     env_path = Path(__file__).parent / "settings.env"
     load_dotenv(dotenv_path=env_path)
 
+    # Ensure logs directory exists
+    os.makedirs("logs", exist_ok=True)
+
     # ログレベルや保管日数の設定
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     LEVEL_MAP = {
@@ -54,18 +57,22 @@ def configure_logging(app=None):
 
     DISCORD_NOTIFY_LEVEL = os.getenv(
         "discord_notify_level", "CRITICAL").upper()
-    LEVEL_MAP = {
-        "DEBUG": logging.DEBUG,
-        "INFO": logging.INFO,
-        "WARNING": logging.WARNING,
-        "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL,
-    }
+    # LEVEL_MAP is already defined, no need to redefine
     discord_level = LEVEL_MAP.get(DISCORD_NOTIFY_LEVEL, logging.CRITICAL)
-    log_retention_days = int(os.getenv("LOG_RETENTION_DAYS", "14"))
+    
+    try:
+        log_retention_days_str = os.getenv("LOG_RETENTION_DAYS", "14")
+        log_retention_days = int(log_retention_days_str)
+        if log_retention_days <= 0:
+            print(f"Warning: LOG_RETENTION_DAYS value '{log_retention_days_str}' is not positive. Defaulting to 14 days.")
+            log_retention_days = 14
+    except ValueError:
+        print(f"Warning: Invalid LOG_RETENTION_DAYS value '{os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
+        log_retention_days = 14
+
     # 監査ログ専用ロガーとハンドラ
     audit_logger = logging.getLogger("AuditLogger")
-    audit_logger.setLevel(logging.INFO)
+    audit_logger.setLevel(logging.INFO) # Audit logs are always INFO level or higher
     audit_format = logging.Formatter("%(asctime)s [AUDIT] %(message)s")
     audit_file_handler = TimedRotatingFileHandler(
         "logs/audit.log",
@@ -81,64 +88,70 @@ def configure_logging(app=None):
     # ロガー作成
     logger = logging.getLogger("AppLogger")
     logger.setLevel(log_level)
-    logger.propagate = False
+    logger.propagate = False # Prevent root logger from handling these logs as well
 
     # エラーログとコンソールハンドラ
     error_format = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
     info_file_handler = TimedRotatingFileHandler(
-        "logs/app.log",
+        "logs/app.log", # General application logs
         when="D",
         interval=1,
         backupCount=log_retention_days,
         encoding="utf-8",
     )
-    info_file_handler.setLevel(log_level)
+    info_file_handler.setLevel(log_level) # Use the configured log level
     info_file_handler.setFormatter(error_format)
     logger.addHandler(info_file_handler)
 
     error_file_handler = TimedRotatingFileHandler(
-        "logs/error.log",
+        "logs/error.log", # Dedicated error log file
         when="D",
         interval=1,
         backupCount=log_retention_days,
         encoding="utf-8",
     )
-    error_file_handler.setLevel(logging.ERROR)
+    error_file_handler.setLevel(logging.ERROR) # Only logs ERROR and CRITICAL
     error_file_handler.setFormatter(error_format)
+    logger.addHandler(error_file_handler) # Add to the same AppLogger
 
     # コンソール出力機能の実装
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level)
+    console_handler.setLevel(log_level) # Use the configured log level
     console_handler.setFormatter(error_format)
-
-    # ハンドラをロガーに追加
-    logger.addHandler(error_file_handler)
     logger.addHandler(console_handler)
 
     # エラー通知用Discord_Webhookの設定
     discord_webhook_url = os.getenv("discord_error_notifier_url")
-    if discord_webhook_url:
-        from discord_logging.handler import DiscordHandler
+    app_logger_handlers = [info_file_handler, error_file_handler, console_handler] # Initial handlers
 
-        discord_handler = DiscordHandler(
-            "StreamApp_ErrorNotifier", discord_webhook_url)
-        discord_handler.setLevel(discord_level)
-        discord_handler.setFormatter(
-            logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-        )
-        logger.addHandler(discord_handler)
-        app_logger_handlers = [error_file_handler,
-                               console_handler, discord_handler]
+    if discord_webhook_url:
+        try:
+            from discord_logging.handler import DiscordHandler
+
+            discord_handler = DiscordHandler(
+                "StreamApp_ErrorNotifier", discord_webhook_url)
+            discord_handler.setLevel(discord_level) # Use configured discord notification level
+            discord_handler.setFormatter(
+                logging.Formatter("%(asctime)s [%(levelname)s] %(message)s") # Consistent formatting
+            )
+            logger.addHandler(discord_handler)
+            app_logger_handlers.append(discord_handler) # Add to list for Flask
+        except ImportError:
+            msg = "Discord_logging library not found. Discord notifications will be disabled. Install with 'pip install discord-logging-handler'"
+            logger.warning(msg)
+            print(msg) # Also print as logger might not be fully up
+        except Exception as e:
+            msg = f"Failed to initialize DiscordHandler: {e}. Discord notifications will be disabled."
+            logger.warning(msg)
+            print(msg)
     else:
-        msg = "WebhookURLが読み取れなかったため、Discordへのエラー通知はオフになっています"
-        logger.warning(msg)
-        print(msg)
-        app_logger_handlers = [error_file_handler, console_handler]
+        msg = "discord_error_notifier_url not set. Discord error notifications are disabled."
+        logger.info(msg) # Use info level as this is a configuration choice
 
     # Flaskアプリが渡された場合のみ、Flaskのロガーにもハンドラを追加
     if app is not None:
-        app.logger.handlers.clear()
+        app.logger.handlers.clear() # Clear default Flask handlers
         for h in app_logger_handlers:
             app.logger.addHandler(h)
         app.logger.setLevel(log_level)

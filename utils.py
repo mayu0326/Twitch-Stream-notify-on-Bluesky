@@ -11,6 +11,8 @@ import os
 import secrets
 import logging
 import time
+import pytz # Added
+from tzlocal import get_localzone # Added
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -101,6 +103,8 @@ def retry_on_exception(
             if last_exception is not None:
                 raise last_exception
             else:
+                # This else block might not be reachable if all retries fail and last_exception is always set.
+                # Consider re-raising last_exception directly after the loop if it's set.
                 raise Exception("リトライ回数を超過したため、処理を終了します。")
         return wrapper
     return decorator
@@ -126,46 +130,103 @@ audit_logger = logging.getLogger("AuditLogger")
 
 
 def rotate_secret_if_needed(logger=None, force=False):
+    if logger is None:
+        logger_to_use = logging.getLogger("AppLogger")
+    else:
+        logger_to_use = logger
+
     env = read_env()
-    # JSTタイムゾーンで現在時刻を取得
-    jst = datetime.timezone(datetime.timedelta(hours=9))
-    now = datetime.datetime.now(jst)
-    last_rotated = env.get(ROTATED_KEY_NAME)
+    
+    TIMEZONE_NAME = os.getenv("TIMEZONE", "system")
+    tz_object = None
+    if TIMEZONE_NAME.lower() == "system":
+        try:
+            tz_object = get_localzone()
+        except Exception as e:
+            logger_to_use.warning(f"システムタイムゾーンの取得に失敗しました ({e})。UTCにフォールバックします。")
+            tz_object = pytz.utc
+    else:
+        try:
+            tz_object = pytz.timezone(TIMEZONE_NAME)
+        except pytz.UnknownTimeZoneError:
+            logger_to_use.warning(
+                f"指定されたタイムゾーン '{TIMEZONE_NAME}' は無効です。"
+                f"システムタイムゾーンにフォールバックします。"
+            )
+            try:
+                tz_object = get_localzone()
+            except Exception as e:
+                logger_to_use.warning(f"システムタイムゾーンの取得に失敗しました ({e})。UTCにフォールバックします。")
+                tz_object = pytz.utc
+        except Exception as e: # Catch other potential errors from pytz.timezone
+            logger_to_use.warning(f"タイムゾーン '{TIMEZONE_NAME}' の処理中にエラーが発生しました ({e})。UTCにフォールバックします。")
+            tz_object = pytz.utc
+
+    if tz_object is None: # Final fallback if all attempts fail
+        logger_to_use.warning("タイムゾーン解決に失敗しました。UTCを使用します。")
+        tz_object = pytz.utc
+
+    now = datetime.datetime.now(tz_object)
+    last_rotated_str = env.get(ROTATED_KEY_NAME)
     need_rotate = force
 
     if not env.get(SECRET_KEY_NAME):
         need_rotate = True
+        logger_to_use.info("WEBHOOK_SECRETが見つからないため、新規生成します。")
     else:
-        if last_rotated:
+        if last_rotated_str:
             try:
-                # 既存値がUTC表記ならパース方法に注意
-                dt = None
-                try:
-                    dt = datetime.datetime.strptime(
-                        last_rotated, "%Y-%m-%dT%H:%M:%SZ").replace(
-                            tzinfo=datetime.timezone.utc).astimezone(jst)
-                except Exception:
-                    dt = datetime.datetime.strptime(
-                        last_rotated, "%Y-%m-%dT%H:%M:%S%z")
-                if (now - dt).days >= 30:
+                # Attempt to parse with timezone info first (ISO 8601 format)
+                last_rotated_dt = datetime.datetime.fromisoformat(last_rotated_str)
+                # If naive, assume it was stored in the determined tz_object's timezone or convert if different
+                if last_rotated_dt.tzinfo is None:
+                    last_rotated_dt = tz_object.localize(last_rotated_dt)
+                else: # Ensure it's in the same timezone as 'now' for correct comparison
+                    last_rotated_dt = last_rotated_dt.astimezone(tz_object)
+
+                if (now - last_rotated_dt).days >= 30:
                     need_rotate = True
-            except Exception:
+                    logger_to_use.info(f"WEBHOOK_SECRETが30日以上経過しているため ({ (now - last_rotated_dt).days } 日)、ローテーションします。")
+            except ValueError:
+                logger_to_use.warning(
+                    f"SECRET_LAST_ROTATED の日付形式 '{last_rotated_str}' が不正です。"
+                    "WEBHOOK_SECRETをローテーションします。"
+                )
+                need_rotate = True # Force rotation if format is invalid
+            except Exception as e: # Catch other potential errors during date parsing
+                logger_to_use.warning(
+                    f"SECRET_LAST_ROTATED の処理中にエラーが発生しました ({e})。"
+                    "WEBHOOK_SECRETをローテーションします。"
+                )
                 need_rotate = True
         else:
-            need_rotate = True
+            need_rotate = True # No last_rotated date, so rotate
+            logger_to_use.info("SECRET_LAST_ROTATED が未設定のため、WEBHOOK_SECRETをローテーションします。")
+
 
     if need_rotate:
         new_secret = generate_secret(32)
-        # JSTでフォーマット
+        # Format with timezone information
+        new_rotated_time_str = now.strftime("%Y-%m-%dT%H:%M:%S%z") 
+        if not new_rotated_time_str.endswith("+0000") and not new_rotated_time_str.endswith("-0000") and len(new_rotated_time_str) > 19+5 : # ensure proper format
+            # Python's %z can produce HHMM, but ISO 8601 often prefers HH:MM.
+            # For simplicity and consistency with previous format if it was just Z, let's check.
+            # If timezone is UTC, strftime %z might be empty or +0000. If it has offset, ensure it's formatted.
+            # This part might need adjustment based on desired strictness of %z output.
+            # A simpler approach for ISO 8601 is `now.isoformat()`
+            new_rotated_time_str = now.isoformat()
+
+
         env[SECRET_KEY_NAME] = new_secret
-        env[ROTATED_KEY_NAME] = now.strftime("%Y-%m-%dT%H:%M:%S%z")
+        env[ROTATED_KEY_NAME] = new_rotated_time_str 
+        
         update_env_file_preserve_comments(SETTINGS_ENV_PATH, {
             SECRET_KEY_NAME: new_secret,
-            ROTATED_KEY_NAME: env[ROTATED_KEY_NAME]
+            ROTATED_KEY_NAME: new_rotated_time_str
         })
-        if logger:
-            audit_logger.info("WEBHOOK_SECRETを自動生成・ローテーションしました")
-        print("WEBHOOK_SECRETを自動生成・ローテーションしました")
+        # Use the passed or determined logger
+        logger_to_use.info("WEBHOOK_SECRETを自動生成・ローテーションしました")
+        audit_logger.info("WEBHOOK_SECRETを自動生成・ローテーションしました") # Keep audit log as it was
         return env[SECRET_KEY_NAME]
     else:
         return env[SECRET_KEY_NAME]
@@ -174,3 +235,47 @@ def rotate_secret_if_needed(logger=None, force=False):
 def is_valid_url(url):
     return isinstance(url, str) and (
         url.startswith("http://") or url.startswith("https://"))
+
+# Example of how to use the logger for this function if called directly for testing
+if __name__ == '__main__':
+    # Configure a basic logger for testing
+    test_logger = logging.getLogger("TestLogger")
+    test_logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    test_logger.addHandler(handler)
+    
+    # Test with system timezone
+    os.environ["TIMEZONE"] = "system"
+    print(f"System Timezone Test: New secret is {rotate_secret_if_needed(logger=test_logger, force=True)}")
+
+    # Test with a specific valid timezone
+    os.environ["TIMEZONE"] = "America/New_York"
+    print(f"America/New_York Test: New secret is {rotate_secret_if_needed(logger=test_logger, force=True)}")
+
+    # Test with an invalid timezone
+    os.environ["TIMEZONE"] = "Invalid/Timezone"
+    print(f"Invalid Timezone Test: New secret is {rotate_secret_if_needed(logger=test_logger, force=True)}")
+
+    # Test without TIMEZONE env var (should default to system)
+    if "TIMEZONE" in os.environ:
+        del os.environ["TIMEZONE"]
+    print(f"Default (System) Timezone Test: New secret is {rotate_secret_if_needed(logger=test_logger, force=True)}")
+
+    # Test with UTC
+    os.environ["TIMEZONE"] = "UTC"
+    print(f"UTC Test: New secret is {rotate_secret_if_needed(logger=test_logger, force=True)}")
+
+    # Create a dummy settings.env for testing rotation logic based on date
+    with open(SETTINGS_ENV_PATH, "w", encoding="utf-8") as f:
+        f.write(f"{SECRET_KEY_NAME}=oldsecret\n")
+        old_date = (datetime.datetime.now(pytz.utc) - datetime.timedelta(days=35)).isoformat()
+        f.write(f"{ROTATED_KEY_NAME}={old_date}\n")
+    
+    print(f"Rotation due to age test: New secret is {rotate_secret_if_needed(logger=test_logger)}")
+    
+    # Clean up dummy settings.env
+    if os.path.exists(SETTINGS_ENV_PATH):
+        os.remove(SETTINGS_ENV_PATH)
+
+    test_logger.info("Test complete.")
