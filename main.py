@@ -77,6 +77,7 @@ def validate_settings():
 
 @app.errorhandler(404)
 def handle_404(e):
+
     try:
         app.logger.warning(f"404エラー発生: {request.url} (User agent: {request.user_agent.string})")
     except AttributeError: 
@@ -91,6 +92,7 @@ def handle_webhook():
         return "Webhook endpoint is working! POST requests only.", 200
 
     if not verify_signature(request): 
+    # 1. 署名検証（最優先）
         return jsonify({"status": "signature mismatch"}), 403
 
     try:
@@ -283,9 +285,10 @@ if __name__ == "__main__":
              else: print("アプリケーション終了前にトンネルを停止します。")
              stop_tunnel(tunnel_proc, logger)
 
-
 @app.errorhandler(Exception)
 def handle_exception(e):
+    # This handler is for exceptions during request processing by Flask, not startup.
+
     app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
     return (
         jsonify(

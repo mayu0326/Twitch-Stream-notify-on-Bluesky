@@ -73,6 +73,12 @@ def mock_eventsub_utils(monkeypatch):
     # monkeypatch.setattr("eventsub.create_eventsub_subscription", MagicMock(return_value={"data": [{"id": "123"}]}))
     pass
 
+# setup_broadcaster_idやget_broadcaster_idをモック
+
+@pytest.fixture(autouse=True)
+def mock_broadcaster_id(monkeypatch):
+    # eventsub.get_broadcaster_idを常に"dummy_id"を返すようにモック
+    monkeypatch.setattr("eventsub.setup_broadcaster_id", lambda: None)
 
 class TestWebhookHandler:
     COMMON_HEADERS = {

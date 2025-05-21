@@ -64,6 +64,7 @@ def load_template(path=None):
         return "" 
 
 
+
 audit_logger = logging.getLogger("AuditLogger")
 
 
@@ -107,6 +108,7 @@ class BlueskyPoster:
         
         success = False
         try:
+
             self.client.login(self.username, self.password) 
             
             template_text = load_template() 
@@ -123,6 +125,7 @@ class BlueskyPoster:
             )
             
             embed = None
+
             if image_path and os.path.isfile(image_path): 
                 blob = self.upload_image(image_path) 
                 if blob: 
@@ -137,6 +140,7 @@ class BlueskyPoster:
                     }
                 else:
                     logger.warning(f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
+
             elif image_path and not os.path.isfile(image_path): 
                  logger.warning(f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
 
@@ -213,9 +217,10 @@ class BlueskyPoster:
         try:
             with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
+
                 if is_new_file:
                     writer.writerow(["日時", "イベントタイプ", "タイトル", "カテゴリ", "URL", "成功"]) # Corrected header
-                
+      
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 writer.writerow(
@@ -228,6 +233,7 @@ class BlueskyPoster:
                         "○" if success else "×",
                     ]
                 )
+
         except IOError as e: 
             logger.error(f"投稿履歴CSVへの書き込みに失敗しました: {csv_path}, エラー: {e}", exc_info=e)
         except Exception as e: 
