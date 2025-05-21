@@ -7,6 +7,7 @@ Twitch Stream notify on Bluesky
 
 import subprocess
 import os
+import shlex # Added
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -43,26 +44,62 @@ def start_tunnel(logger=None):
             print("TUNNEL_CMDが設定されていません。トンネルは起動しません。")
         return None
     try:
+        # Use shlex.split for proper parsing of command with quotes
+        # Redirect stdout and stderr to DEVNULL to prevent pipe buffer issues
+        # and to silence tunnel output unless explicitly logged or needed.
         proc = subprocess.Popen(
-            tunnel_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            shlex.split(tunnel_cmd), 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
         )
         if logger:
             logger.info(f"トンネルを起動しました: {tunnel_cmd}")
         else:
             print(f"トンネルを起動しました: {tunnel_cmd}")
         return proc
-    except Exception as e:
+    except FileNotFoundError: # Specific error for command not found
+        err_msg = f"トンネルコマンド '{tunnel_cmd.split()[0] if tunnel_cmd else ''}' が見つかりません。Pathが通っているか確認してください。"
         if logger:
-            logger.error(f"トンネル起動失敗: {e}")
+            logger.error(err_msg)
         else:
-            print(f"トンネル起動失敗: {e}")
+            print(err_msg)
+        return None
+    except Exception as e:
+        err_msg_generic = f"トンネル起動失敗: {e}"
+        if logger:
+            logger.error(err_msg_generic)
+        else:
+            print(err_msg_generic)
         return None
 
 
 def stop_tunnel(proc, logger=None):
     if proc:
-        proc.terminate()
+        try:
+            proc.terminate() # Try to terminate gracefully
+            proc.wait(timeout=5) # Wait for a bit for the process to terminate
+            if logger:
+                logger.info("トンネルを正常に終了しました。")
+            else:
+                print("トンネルを正常に終了しました。")
+        except subprocess.TimeoutExpired:
+            if logger:
+                logger.warning("トンネル終了がタイムアウトしました。強制終了します。")
+            else:
+                print("トンネル終了がタイムアウトしました。強制終了します。")
+            proc.kill() # Force kill if terminate doesn't work
+            if logger:
+                logger.info("トンネルを強制終了しました。")
+            else:
+                print("トンネルを強制終了しました。")
+        except Exception as e:
+            err_msg = f"トンネル終了中にエラーが発生しました: {e}"
+            if logger:
+                logger.error(err_msg)
+            else:
+                print(err_msg)
+    else:
         if logger:
-            logger.info("トンネルを終了しました。")
+            logger.info("トンネルプロセスが存在しないため、終了処理はスキップされました。")
         else:
-            print("トンネルを終了しました。")
+            print("トンネルプロセスが存在しないため、終了処理はスキップされました。")
