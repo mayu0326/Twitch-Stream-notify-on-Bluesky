@@ -227,14 +227,14 @@ if __name__ == "__main__":
         validate_settings()
         logger.info("設定ファイルの検証が完了しました。")
         
-        TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token(logger=logger)
+        TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token(logger_to_use=logger)
         if not TWITCH_APP_ACCESS_TOKEN:
             logger.critical("Twitchアプリのアクセストークン取得に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
         logger.info("Twitchアプリのアクセストークンを正常に取得しました。")
 
         WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
-        cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger=logger)
+        cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger_to_use=logger)
 
         tunnel_proc = start_tunnel(logger)
         if not tunnel_proc: 
