@@ -89,7 +89,6 @@ def test_update_env_file_preserve_comments_multiple_updates(env_file):
     assert "KEY_NEW=NEW_K_VAL\n" in content
     assert "KEY2=VALUE2 # Inline comment\n" in content # Original key2 preserved
 
-
 @pytest.fixture
 def mock_env_for_rotate(monkeypatch, env_file):
     # rotate_secret_if_needed 内の SETTINGS_ENV_PATH をテスト用パスに差し替え
@@ -110,6 +109,29 @@ def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_
     caplog.set_level(logging.INFO, logger="AppLogger")
     caplog.set_level(logging.INFO, logger="AuditLogger")
 
+    # settings.env に SECRET_KEY_NAME がない状態
+    # mock_env_for_rotate is the path to the test .env file
+    with open(mock_env_for_rotate, "w", encoding='utf-8') as f:
+        f.write("OTHER_KEY=some_value\n") # Ensure WEBHOOK_SECRET is not present
+    
+    # Call the function under test
+    new_secret = rotate_secret_if_needed(force=False) # logger can be passed if needed for finer log control
+    
+    # Assert that the function returned the mocked secret
+    assert new_secret == "mocked_secret_key_123"
+    
+    # Assert that secrets.token_hex was called (once, with default length 32 by generate_secret)
+    mock_secrets_token_hex.assert_called_once_with(32)
+    
+    # Verify the .env file content
+    with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
+        content = f.read()
+    assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
+    assert "SECRET_LAST_ROTATED=" in content # Check if last rotated is also set
+    
+    # Verify log message
+    assert "WEBHOOK_SECRETが見つからないため、新規生成します。" in caplog.text
+
 @patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
 def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
     # Configure the mock to return the desired static value
@@ -125,6 +147,7 @@ import logging # Import logging for caplog.set_level
 @patch('utils.secrets.token_hex') # Mock secrets.token_hex for this specific test too
 def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env_for_rotate, caplog):
     mock_secrets_token_hex.return_value = "mocked_secret_key_123" # Configure mock
+    
     # Ensure caplog captures INFO level logs from the relevant loggers
     caplog.set_level(logging.INFO, logger="AppLogger")
     caplog.set_level(logging.INFO, logger="AuditLogger")
@@ -142,7 +165,6 @@ def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env
         content = f.read()
     assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
     assert "WEBHOOK_SECRETを自動生成・ローテーションしました" in caplog.text # This log indicates rotation happened
-
 
 class TestFormatDateTimeFilter:
     def test_basic_formatting_default_utc(self, monkeypatch):
