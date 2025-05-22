@@ -89,7 +89,6 @@ def test_update_env_file_preserve_comments_multiple_updates(env_file):
     assert "KEY_NEW=NEW_K_VAL\n" in content
     assert "KEY2=VALUE2 # Inline comment\n" in content # Original key2 preserved
 
-
 @pytest.fixture
 def mock_env_for_rotate(monkeypatch, env_file):
     # rotate_secret_if_needed 内の SETTINGS_ENV_PATH をテスト用パスに差し替え
@@ -99,7 +98,6 @@ def mock_env_for_rotate(monkeypatch, env_file):
     # os.getenv for TIMEZONE
     monkeypatch.setenv("TIMEZONE", "UTC") # Default to UTC for consistent testing
     return env_file
-
 
 @patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
 def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
@@ -134,6 +132,15 @@ def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_
     # Verify log message
     assert "WEBHOOK_SECRETが見つからないため、新規生成します。" in caplog.text
 
+@patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
+def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+    # Configure the mock to return the desired static value
+    # This value will be directly returned by generate_secret as it calls secrets.token_hex
+    mock_secrets_token_hex.return_value = "mocked_secret_key_123"
+
+    # Ensure caplog captures INFO level logs from the relevant loggers
+    caplog.set_level(logging.INFO, logger="AppLogger")
+    caplog.set_level(logging.INFO, logger="AuditLogger")
 
 import logging # Import logging for caplog.set_level
 
@@ -158,7 +165,6 @@ def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env
         content = f.read()
     assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
     assert "WEBHOOK_SECRETを自動生成・ローテーションしました" in caplog.text # This log indicates rotation happened
-
 
 class TestFormatDateTimeFilter:
     def test_basic_formatting_default_utc(self, monkeypatch):
