@@ -100,7 +100,6 @@ def mock_env_for_rotate(monkeypatch, env_file):
     monkeypatch.setenv("TIMEZONE", "UTC") # Default to UTC for consistent testing
     return env_file
 
-
 @patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
 def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
     # Configure the mock to return the desired static value
@@ -124,7 +123,7 @@ def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_
     
     # Assert that secrets.token_hex was called (once, with default length 32 by generate_secret)
     mock_secrets_token_hex.assert_called_once_with(32)
-    
+
     # Verify the .env file content
     with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
         content = f.read()
@@ -139,8 +138,7 @@ import logging # Import logging for caplog.set_level
 
 @patch('utils.secrets.token_hex') # Mock secrets.token_hex for this specific test too
 def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env_for_rotate, caplog):
-    mock_secrets_token_hex.return_value = "mocked_secret_key_123" # Configure mock
-    
+    mock_secrets_token_hex.return_value = "mocked_secret_key_123" # Configure mock   
     # Ensure caplog captures INFO level logs from the relevant loggers
     caplog.set_level(logging.INFO, logger="AppLogger")
     caplog.set_level(logging.INFO, logger="AuditLogger")
@@ -151,7 +149,7 @@ def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env
     
     new_secret = rotate_secret_if_needed(force=True) # Force rotation
     
-    assert new_secret == "mocked_secret_key_123"
+    assert new_secret == "mocked_secret_key_1
     mock_secrets_token_hex.assert_called_once_with(32) # Verify mock call
 
     with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
