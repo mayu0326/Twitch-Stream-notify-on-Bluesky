@@ -223,7 +223,7 @@ if __name__ == "__main__":
         WEBHOOK_SECRET = rotate_secret_if_needed(logger)
         os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
 
-        setup_broadcaster_id(logger=logger) 
+        setup_broadcaster_id(logger_to_use=logger) 
         validate_settings()
         logger.info("設定ファイルの検証が完了しました。")
         

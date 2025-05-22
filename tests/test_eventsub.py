@@ -36,10 +36,12 @@ __version__ = __version__
 class DummyRequest:
     def __init__(self, headers, body):
         self.headers = headers
-        self._body = body
+        self.body = body # Changed from _body to body for clarity, matching usage
 
-    def get_data(self):
-        return self._body.encode("utf-8")
+    def get_data(self, as_text=None): # Added as_text parameter
+        if as_text:
+            return self.body # Return string body if as_text is True
+        return self.body.encode("utf-8") # Return bytes otherwise
 
     @property
     def remote_addr(self):
@@ -54,8 +56,8 @@ def test_verify_signature_missing_headers():
 def test_verify_signature_invalid_timestamp():
     headers = {
         "Twitch-Eventsub-Message-Id": "abc",
-        "Twitch-Eventsub-Message-Timestamp": "invalid",
+        "Twitch-Eventsub-Message-Timestamp": "invalid", # This timestamp will cause parsing to fail
         "Twitch-Eventsub-Message-Signature": "sig"
     }
-    req = DummyRequest(headers=headers, body="{}")
+    req = DummyRequest(headers=headers, body="{}") # Body is simple JSON string
     assert not verify_signature(req)
