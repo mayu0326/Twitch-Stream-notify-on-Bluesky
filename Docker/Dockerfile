@@ -1,28 +1,33 @@
-# Use an official Python runtime as a parent image for Windows Server Core
+# Base Image: Windows Server Core with Python 3.10
 FROM mcr.microsoft.com/windows/servercore/python:3.10-windowsservercore-ltsc2022
 
 # Set the working directory in the container
 WORKDIR C:/app
 
-# Download cloudflared.exe
+# Download and install cloudflared.exe
 SHELL ["powershell", "-Command"]
-RUN $ErrorActionPreference = 'Stop';         $ProgressPreference = 'SilentlyContinue';         New-Item -ItemType Directory -Force -Path C:/app/bin;         Invoke-WebRequest -Uri https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile C:/app/bin/cloudflared.exe
+RUN $ErrorActionPreference = 'Stop';     $ProgressPreference = 'SilentlyContinue';     New-Item -ItemType Directory -Force -Path C:/app/bin;     Invoke-WebRequest -Uri https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile C:/app/bin/cloudflared.exe
 
 # Add cloudflared directory to PATH
 ENV PATH C:/app/bin;%PATH%
 
-# Copy the requirements file into the container at C:/app
-COPY requirements.txt .
+# Copy requirements.txt from project root (build context) to C:/app/ in the image
+COPY requirements.txt C:/app/requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir -r C:/app/requirements.txt
 
-# Copy the rest of the application's source code from the host to the image's filesystem.
-COPY . .
+# Copy application files and directories from project root (build context) to C:/app/ in the image
+COPY main.py C:/app/
+COPY bluesky.py C:/app/
+COPY eventsub.py C:/app/
+COPY tunnel.py C:/app/
+COPY utils.py C:/app/
+COPY logging_config.py C:/app/
+COPY version.py C:/app/
 
-# Copy settings.env.example to settings.env
-# The user will be expected to mount their actual settings.env or pass environment variables
-COPY settings.env.example settings.env
+COPY templates/ C:/app/templates/
+COPY settings.env.example C:/app/settings.env
 
-# Run main.py when the container launches
+# Command to run the application
 CMD ["python", "main.py"]

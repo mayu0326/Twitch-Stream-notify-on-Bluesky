@@ -2,14 +2,15 @@ version: '3.8'
 
 services:
   twitch-bluesky-bot:
-    build: .
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
     container_name: twitch-bluesky-bot-container
     volumes:
-      # Mount the local settings.env file to the container
-      # Ensure you have a settings.env file in the same directory as this docker-compose.yml
-      - ./settings.env:C:/app/settings.env
-      # Mount the local logs directory to persist logs
-      - ./logs:C:/app/logs
+      # Mount settings.env from project root
+      - ../settings.env:C:/app/settings.env
+      # Mount logs directory from project root
+      - ../logs:C:/app/logs
     # Optional: Restart policy
     # restart: unless-stopped
     # restart: on-failure
