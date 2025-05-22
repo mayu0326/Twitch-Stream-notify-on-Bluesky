@@ -16,7 +16,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 - **APIエラー時**の自動リトライ機能(回数や間隔も調整可能)
 
 ### 投稿関連
-- **Bluesky**へ自動で配信開始通知を投稿
+- **Bluesky**へ自動で配信開始/終了通知を投稿(個別On/Off可能)
 - **Bluesky**へ投稿する内容はテンプレートで切り替え可能
 - **Bluesky**へ投稿するとき特定の画像を添付することも可能
 - **Bluesky**投稿した内容をCSVで投稿履歴として記録
@@ -32,8 +32,8 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 ## 必要な環境
 ### パソコン環境
-- Windows10以降（11を推奨）
-**※このアプリはWindows専用です**
+- Windows10以降（11を推奨）\
+**※このアプリはWindows専用です**\
 **※LinuxやMacには対応していません。**
 - Python 3.10 以上 推奨
 - Git 2.49 以上 推奨
@@ -54,28 +54,54 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 ```
 プロジェクトルート/
-├── bluesky.py          ← Blueskyへの投稿処理を担当
-├── eventsub.py         ← Twitch EventSub関連の機能を担当
-├── logging_config.py   ← ログ設定、Discord通知設定を担当
-├── main.py             ← Flaskサーバーの起動・ルーティング・主要な機能の呼び出し
-├── tunnel.py           ← Cloudflare Tunnel の起動終了の管理
-├── utils.py            ← 汎用的な処理をまとめたユーティリティ
-├── settings.env.example ← 認証情報・設定ファイルのサンプル
-├── requirements.txt     ← Pythonパッケージのインストール用リスト
+├── bluesky.py
+├── eventsub.py
+├── logging_config.py
+├── main.py
+├── tunnel.py
+├── utils.py
+├── version.py
+├── requirements.txt
+├── development-requirements.txt
+├── settings.env.example
+├── settings.env
 ├── README.md
-├── images/              ← 投稿用画像やサムネイル等を格納
-│   └── …  
-├── templates/           ← Bluesky投稿テンプレートを格納
-│   └── …  
-├── logs/                ← アプリ実行時のログファイル出力先
-│   └── …  
-├── Cloudflared/
-│   └── config.yml.example  ← Cloudflare Tunnel 設定ファイルのサンプル
-└── tests/               ← pytestテストコードを格納
-    ├── test_bluesky.py
-    ├── test_eventsub.py
-    ├── test_main.py
-    └── test_utils.py
+├── LICENSE
+├── .gitignore
+├── .gitattributes
+├── .pre-commit-config.yaml
+├── pytest.ini
+├── logs/
+│   └── ...(ログファイルやcsvフアイルはこちらに格納)
+├── images/
+│   └── noimage.png
+├── document/
+│   ├── comprehensive_summary_japanese.txt
+│   ├── consolidated_summary_japanese.txt
+│   ├── CONTRIBUTING.md
+│   └── contributing_readme_section.md
+├── templates/
+│   ├── default_template.txt
+│   └── offline_template.txt
+├── tests/
+│   ├── test_bluesky.py
+│   ├── test_eventsub.py
+│   ├── test_logging_config.py
+│   ├── test_main.py
+│   ├── test_tunnel.py
+│   └── test_utils.py
+├── Docker/
+│   ├── docker_readme_section.md
+│   ├── docker-compose.yml
+│   └── Dockerfile
+├── .github/(releaseファイルには含まれません)
+│   ├── ISSUE_TEMPLATE/
+│   │   └── バグ報告-改善要望.md
+│   └── workflows/
+│       └── gitguardian.yml
+└── Cloudflared/
+    └── config.yml.example
+
 
 ```
 
@@ -96,6 +122,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
    ```
    pip install -r requirements.txt
    ```
+  - 開発者の方はdevelopment-requirements.txtのほうをお使いください。
 
 ### 3. **Cloudflare Tunnel をインストール**  
    [公式手順](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)に従い、 cloudflared（cloudflared.exe 等）をインストールしてください。\
@@ -134,40 +161,81 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   ### settings.envの設定例
 
    ```
-   # Twitch設定
-   TWITCH_CLIENT_ID=[デベロッパーコンソールで取得したクライアントID]
-   TWITCH_CLIENT_SECRET=[デベロッパーコンソールで取得したクライアントシークレット]
-   TWITCH_BROADCASTER_ID=[あなたのTwitchユーザーID]
+  # --- Bluesky関連設定 ---
+  # Blueskyのユーザー名 (例: your-handle.bsky.social or 独自ドメイン等ご利用中のID)
+  BLUESKY_USERNAME=
 
-   # Bluesky設定
-   BLUESKY_USERNAME=[xxxxxxx.bsky.social または 独自ドメイン等ご利用中のID]
-   BLUESKY_PASSWORD=[Blueskyのアプリパスワード]
-   BLUESKY_IMAGE_PATH=images/noimage.png
-   BLUESKY_TEMPLATE_PATH=templates/default_template.txt
+  # Blueskyのアプリパスワード (Blueskyの設定画面で発行してください)
+  BLUESKY_PASSWORD=
+  
+  # Bluesky投稿時に使用する画像ファイルのパス (例: images/stream_image.png)
+  # 設定しない場合は画像なしで投稿されます。
+  BLUESKY_IMAGE_PATH=images/noimage.png
 
-   # Webhook設定
-   WEBHOOK_SECRET=[自動で入力されますので空欄にしてください]
-   SECRET_LAST_ROTATED=[自動で入力されますので空欄にしてください]
-   WEBHOOK_CALLBACK_URL=[Webhookを受け取り可能なドメインのURL]
-   例えば、https://example.net/webhook
+  # Blueskyへの配信開始通知用テンプレートファイルのパス
+  BLUESKY_TEMPLATE_PATH=templates/default_template.txt
 
-   # Discord通知設定
-   discord_error_notifier_url=https://discord.com/api/webhooks/xxxxxx/xxxxxx
-   discord_notify_level=CRITICAL
+  # Blueskyへの配信終了通知用テンプレートファイルのパス
+  BLUESKY_OFFLINE_TEMPLATE_PATH=templates/offline_template.txt
 
-   # タイムゾーン設定 (例: Asia/Tokyo )
-   TIMEZONE=Asia/Tokyo
+  # --- Twitch関連設定 ---
+  # TwitchアプリケーションのクライアントID (Twitch Developer Consoleで取得)
+  TWITCH_CLIENT_ID=
 
-   # ログ関連機能の設定
-   LOG_LEVEL=INFO
-   LOG_RETENTION_DAYS=14
+  # Twitchアプリケーションのクライアントシークレット (Twitch Developer Consoleで取得)
+  TWITCH_CLIENT_SECRET=
+  # 通知対象のTwitch配信者のユーザー名またはユーザーID(数字ID)
+  # ユーザー名を指定した場合、起動時に自動的にユーザーIDに変換されます。
+  TWITCH_BROADCASTER_ID=
 
-   # Cloudflareトンネルの設定
-  TUNNEL_CMD=[トンネルの起動コマンドを指定する。]
+  # Twitch EventSub WebhookのコールバックURL
+  # Cloudflare Tunnelなどで公開したこのアプリの /webhook エンドポイントのURL
+  # 例: https://your-tunnel-domain.com/webhook
+  WEBHOOK_CALLBACK_URL=
 
-   # APIエラー時のリトライ
-   RETRY_MAX=3
-   RETRY_WAIT=2
+  # Webhook署名検証用のシークレットキー・前回更新日時
+  # アプリケーション起動時に自動生成・ローテーションされますので空欄にしてください。
+  WEBHOOK_SECRET=
+  SECRET_LAST_ROTATED=
+
+  # Twitch EventSubの各APIリクエストが失敗した場合のリトライ回数
+  RETRY_MAX=3
+  # リトライ時の待機秒数
+  RETRY_WAIT=2
+
+  # --- 通知設定 ---
+  # 配信開始時にBlueskyへ通知するか (True/False)
+  NOTIFY_ON_ONLINE=True
+
+  # 配信終了時にBlueskyへ通知するか (True/False)
+  NOTIFY_ON_OFFLINE=False
+
+  # --- ロギング関連設定 ---
+  # アプリケーションのログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  LOG_LEVEL=INFO
+
+  # ログファイルのローテーション保持日数 (日単位の整数)
+  LOG_RETENTION_DAYS=14
+
+  # Discordエラー通知用のWebhook URL (設定しない場合は通知無効)
+  # エラー発生時にこのURLに通知が飛びます。
+  discord_error_notifier_url=
+
+  # Discordへ通知するログの最低レベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  # discord_error_notifier_url が設定されている場合のみ有効。
+  discord_notify_level=CRITICAL
+
+  # --- トンネル関連設定 ---
+  # Cloudflare Tunnelなどのトンネルを起動するコマンド 
+  # 設定しない場合はトンネルを起動しません。
+  TUNNEL_CMD=
+
+  # --- 一般設定 ---
+  # タイムゾーン設定 (例: Asia/Tokyo, UTC, America/New_York, Europe/London)
+  # "system" を指定すると、実行環境のシステムタイムゾーンを自動的に使用します。
+  # 無効な値や空の場合はシステムタイムゾーンまたはUTCにフォールバックします。
+  TIMEZONE=system
+  
    ```
 
 ### 6. **Blueskyへ投稿する際の投稿テンプレートの作成・編集(オプション)**
@@ -189,9 +257,9 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 ## 使い方・カスタマイズ
 
 ### **通知レベルの変更**
-  settings.env で`discord_notify_level`（例：CRITICAL, ERROR, INFO）を変更できます。
+  settings.env で`discord_notify_level`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。
 ### **ログレベルの一括変更**
-  settings.env で`LOG_LEVEL`（例：CRITICAL, ERROR, INFO）を変更できます。\
+  settings.env で`LOG_LEVEL`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。\
   ※コンソール表示とログ保存の２つをまとめて変更します。
 ### **Bluesky 投稿履歴**
   すべての投稿履歴は`logs/post_history.csv`に自動記録されます。
@@ -446,23 +514,13 @@ python -m pytest
   - 投稿テンプレートの多様化・カスタマイズ性の向上、\
   より柔軟な変数展開や条件分岐の実装を検討しています。
 
-- **配信終了時のBluesky自動投稿**
-  - 現状は配信開始のみですが、配信終了時にも自動でBlueskyに通知できる機能を追加予定です。
-
-- **Docker対応・デプロイ手順の整備**
-  - Dockerfileやdocker-compose.ymlを用意する予定です。
-
-- **多言語対応（READMEやUIの英語化など）**
-  - 現時点ではこのアプリは日本語話者による利用が想定されていますが、\
-  今後、必要に応じて海外ユーザーやコントリビューター向けのドキュメントや、\
-  UIの英語対応を進めます。ただし、サポート対象は今後も日本語限定となる予定です。
-
 - **Twitch以外のイベント連携（YouTube等）**
   - 将来的にYouTubeやニコニコ生放送等、他の配信サービスから配信通知を受け取り\
   Blueskyに投稿するという機能の実装も検討しています。\
   この実装がされた際はアプリ名が変更となる予定です。
 
 ---
+
 ## ライセンス
 
 GPL License v2

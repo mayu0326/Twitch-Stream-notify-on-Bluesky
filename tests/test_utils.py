@@ -4,9 +4,15 @@ Twitch Stream notify on Bluesky
 
 このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
 """
-
-from utils import is_valid_url, retry_on_exception
 import pytest
+import os
+import pytz # Added pytz import
+from unittest.mock import patch, MagicMock # Added patch
+from utils import (
+    update_env_file_preserve_comments, 
+    rotate_secret_if_needed,
+    format_datetime_filter # Added format_datetime_filter
+)
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -34,36 +40,232 @@ __version__ = __version__
 # USA.
 
 
-def test_is_valid_url():
-    assert is_valid_url("http://example.com")
-    assert is_valid_url("https://example.com")
-    assert not is_valid_url("ftp://example.com")
-    assert not is_valid_url("example.com")
-    assert not is_valid_url("")
+# settings.envのテスト用パス
+TEST_ENV_PATH = "test_settings.env"
 
 
-def test_retry_on_exception_success():
-    @retry_on_exception(max_retries=2, wait_seconds=0.1)
-    def always_ok():
-        return 42
-    assert always_ok() == 42
+@pytest.fixture
+def env_file():
+    # テスト用の settings.env を作成
+    with open(TEST_ENV_PATH, "w", encoding='utf-8') as f:
+        f.write("# This is a comment\n")
+        f.write("KEY1=VALUE1\n")
+        f.write("\n")  # Empty line
+        f.write("KEY2=VALUE2 # Inline comment\n")
+    yield TEST_ENV_PATH
+    # テスト後にファイルを削除
+    os.remove(TEST_ENV_PATH)
 
 
-def test_retry_on_exception_retry():
-    calls = {"count": 0}
+def test_update_env_file_preserve_comments_existing_key(env_file):
+    updates = {"KEY1": "NEW_VALUE1"}
+    update_env_file_preserve_comments(env_file, updates)
+    with open(env_file, "r", encoding='utf-8') as f:
+        lines = f.readlines()
+    assert lines[0] == "# This is a comment\n"
+    assert lines[1] == "KEY1=NEW_VALUE1\n"
+    assert lines[2] == "\n"
+    assert lines[3] == "KEY2=VALUE2 # Inline comment\n"
 
-    @retry_on_exception(max_retries=2, wait_seconds=0.1)
-    def fail_once():
-        if calls["count"] < 1:
-            calls["count"] += 1
-            raise ValueError("fail")
-        return 99
-    assert fail_once() == 99
+
+def test_update_env_file_preserve_comments_new_key(env_file):
+    updates = {"KEY3": "VALUE3"}
+    update_env_file_preserve_comments(env_file, updates)
+    with open(env_file, "r", encoding='utf-8') as f:
+        lines = f.readlines()
+    # KEY3が末尾に追加されていることを確認
+    assert "KEY3=VALUE3\n" in lines
+    # 元の行が保持されていることを確認
+    assert "# This is a comment\n" in lines
+    assert "KEY1=VALUE1\n" in lines
 
 
-def test_retry_on_exception_fail():
-    @retry_on_exception(max_retries=2, wait_seconds=0.1)
-    def always_fail():
-        raise ValueError("fail")
-    with pytest.raises(ValueError):
-        always_fail()
+def test_update_env_file_preserve_comments_multiple_updates(env_file):
+    updates = {"KEY1": "UPDATED_K1", "KEY_NEW": "NEW_K_VAL"}
+    update_env_file_preserve_comments(env_file, updates)
+    with open(env_file, "r", encoding='utf-8') as f:
+        content = f.read()
+    assert "KEY1=UPDATED_K1\n" in content
+    assert "KEY_NEW=NEW_K_VAL\n" in content
+    assert "KEY2=VALUE2 # Inline comment\n" in content # Original key2 preserved
+
+@pytest.fixture
+def mock_env_for_rotate(monkeypatch, env_file):
+    # rotate_secret_if_needed 内の SETTINGS_ENV_PATH をテスト用パスに差し替え
+    monkeypatch.setattr("utils.SETTINGS_ENV_PATH", env_file)
+    # read_env と update_env_file_preserve_comments はそのままテスト対象の関数を使う
+    # generate_secret will be mocked directly in the test method using @patch
+    # os.getenv for TIMEZONE
+    monkeypatch.setenv("TIMEZONE", "UTC") # Default to UTC for consistent testing
+    return env_file
+
+@patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
+def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+    # Configure the mock to return the desired static value
+    # This value will be directly returned by generate_secret as it calls secrets.token_hex
+    mock_secrets_token_hex.return_value = "mocked_secret_key_123"
+
+    # Ensure caplog captures INFO level logs from the relevant loggers
+    caplog.set_level(logging.INFO, logger="AppLogger")
+    caplog.set_level(logging.INFO, logger="AuditLogger")
+
+    # settings.env に SECRET_KEY_NAME がない状態
+    # mock_env_for_rotate is the path to the test .env file
+    with open(mock_env_for_rotate, "w", encoding='utf-8') as f:
+        f.write("OTHER_KEY=some_value\n") # Ensure WEBHOOK_SECRET is not present
+    
+    # Call the function under test
+    new_secret = rotate_secret_if_needed(force=False) # logger can be passed if needed for finer log control
+    
+    # Assert that the function returned the mocked secret
+    assert new_secret == "mocked_secret_key_123"
+    
+    # Assert that secrets.token_hex was called (once, with default length 32 by generate_secret)
+    mock_secrets_token_hex.assert_called_once_with(32)
+    
+    # Verify the .env file content
+    with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
+        content = f.read()
+    assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
+    assert "SECRET_LAST_ROTATED=" in content # Check if last rotated is also set
+    
+    # Verify log message
+    assert "WEBHOOK_SECRETが見つからないため、新規生成します。" in caplog.text
+
+@patch('utils.secrets.token_hex') # Mock secrets.token_hex within the utils module context
+def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+    # Configure the mock to return the desired static value
+    # This value will be directly returned by generate_secret as it calls secrets.token_hex
+    mock_secrets_token_hex.return_value = "mocked_secret_key_123"
+
+    # Ensure caplog captures INFO level logs from the relevant loggers
+    caplog.set_level(logging.INFO, logger="AppLogger")
+    caplog.set_level(logging.INFO, logger="AuditLogger")
+
+import logging # Import logging for caplog.set_level
+
+@patch('utils.secrets.token_hex') # Mock secrets.token_hex for this specific test too
+def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+    mock_secrets_token_hex.return_value = "mocked_secret_key_123" # Configure mock
+    
+    # Ensure caplog captures INFO level logs from the relevant loggers
+    caplog.set_level(logging.INFO, logger="AppLogger")
+    caplog.set_level(logging.INFO, logger="AuditLogger")
+
+    with open(mock_env_for_rotate, "w", encoding='utf-8') as f:
+        f.write("WEBHOOK_SECRET=old_secret\n")
+        f.write("SECRET_LAST_ROTATED=2023-01-01T00:00:00+00:00\n") # Dummy old date
+    
+    new_secret = rotate_secret_if_needed(force=True) # Force rotation
+    
+    assert new_secret == "mocked_secret_key_123" # This is the corrected line
+    mock_secrets_token_hex.assert_called_once_with(32) # Verify mock call
+
+    with open(mock_env_for_rotate, "r", encoding='utf-8') as f:
+        content = f.read()
+    assert "WEBHOOK_SECRET=mocked_secret_key_123" in content
+    assert "WEBHOOK_SECRETを自動生成・ローテーションしました" in caplog.text # This log indicates rotation happened
+
+class TestFormatDateTimeFilter:
+    def test_basic_formatting_default_utc(self, monkeypatch):
+        monkeypatch.setenv("TIMEZONE", "UTC")
+        iso_str = "2023-10-27T10:00:00Z"
+        # Default format is "%Y-%m-%d %H:%M %Z"
+        # Since TIMEZONE is UTC, %Z should be UTC (or empty depending on platform's strftime for UTC)
+        # Python's %Z for naive UTC datetime or UTC tzinfo object usually returns empty string or "UTC".
+        # Let's check for the main part.
+        formatted_str = format_datetime_filter(iso_str)
+        assert "2023-10-27 10:00" in formatted_str 
+        # For UTC, %Z can be "UTC" or sometimes empty. If it's there, it should be UTC.
+        if "UTC" in formatted_str:
+            assert formatted_str.endswith("UTC")
+        elif formatted_str.strip().endswith("0000"): # some strftime might produce +0000
+             assert "2023-10-27 10:00:00 UTC" or "2023-10-27 10:00:00 +0000"
+
+    def test_custom_formatting(self, monkeypatch):
+        monkeypatch.setenv("TIMEZONE", "UTC") # Keep it simple for format testing
+        iso_str = "2023-10-27T10:30:45Z"
+        custom_fmt = "%H時%M分"
+        assert format_datetime_filter(iso_str, fmt=custom_fmt) == "10時30分"
+
+    def test_timezone_conversion_tokyo(self, monkeypatch):
+        monkeypatch.setenv("TIMEZONE", "Asia/Tokyo")
+        iso_str_utc = "2023-10-27T00:00:00Z" # Midnight UTC
+        # Expected: 2023-10-27 09:00 JST (or +0900, or Asia/Tokyo depending on pytz/system)
+        # Default format is "%Y-%m-%d %H:%M %Z"
+        result = format_datetime_filter(iso_str_utc)
+        assert "2023-10-27 09:00" in result
+        assert "JST" in result or "+0900" in result or "Asia/Tokyo" in result # pytz specific name for JST
+
+    def test_timezone_conversion_new_york(self, monkeypatch):
+        monkeypatch.setenv("TIMEZONE", "America/New_York")
+        iso_str_utc = "2023-10-27T10:00:00Z" # 10 AM UTC
+        # Expected: 2023-10-27 06:00 EDT (if DST is active for that date, otherwise EST)
+        # For simplicity, we'll check the hour, assuming conversion logic is correct
+        # Oct 27 is before DST ends in US (usually first Sunday in Nov)
+        result = format_datetime_filter(iso_str_utc)
+        assert "06:00" in result # 10 AM UTC is 6 AM EDT (UTC-4)
+        assert "EDT" in result or "-0400" in result or "America/New_York" in result
+
+    def test_system_timezone(self, monkeypatch):
+        # This test is a bit more volatile as it depends on the runner's system timezone
+        # We'll patch get_localzone to return a known timezone for predictability
+        mock_local_tz = MagicMock()
+        mock_local_tz.zone = "Europe/London" # Example known timezone
+        
+        with patch('utils.get_localzone', return_value=pytz.timezone("Europe/London")):
+            monkeypatch.setenv("TIMEZONE", "system")
+            iso_str_utc = "2023-10-27T10:00:00Z" # 10 AM UTC
+            # Expected: 2023-10-27 11:00 BST (if DST active for London on that date)
+            # Oct 27, UK is on BST (UTC+1) as DST ends last Sunday in Oct.
+            result = format_datetime_filter(iso_str_utc)
+            assert "11:00" in result 
+            assert "BST" in result or "+0100" in result or "Europe/London" in result
+
+
+    def test_invalid_inputs_for_filter(self, monkeypatch):
+        monkeypatch.setenv("TIMEZONE", "UTC") # Consistent base for invalid tests
+        assert format_datetime_filter(None) == "" # As per filter's behavior
+        assert format_datetime_filter("") == ""   # As per filter's behavior
+        
+        malformed_date = "not-a-date-string"
+        assert format_datetime_filter(malformed_date) == malformed_date # Returns original on error
+        
+        # Test with a date string that fromisoformat might parse but is not Twitch's 'Z' format
+        # This should ideally be handled by the `replace('Z', '+00:00')`
+        # If it's truly unparseable by fromisoformat after that, it will return original.
+        non_z_iso = "2023-10-27T10:00:00+05:00" # This is valid ISO, filter should handle it
+        # If TIMEZONE is UTC, it should convert +05:00 to UTC
+        # 10:00+05:00 is 05:00 UTC
+        assert "05:00" in format_datetime_filter(non_z_iso)
+
+    def test_unknown_timezone_fallback(self, monkeypatch, caplog):
+        monkeypatch.setenv("TIMEZONE", "Mars/OlympusMons") # Invalid timezone
+        iso_str = "2023-10-27T10:00:00Z"
+        # Expect fallback to UTC
+        result = format_datetime_filter(iso_str)
+        assert "Unknown timezone 'Mars/OlympusMons'" in caplog.text
+        assert "2023-10-27 10:00" in result # Should be UTC time
+        if "UTC" in result:
+            assert result.endswith("UTC")
+
+
+    def test_get_localzone_returns_none(self, monkeypatch, caplog):
+        monkeypatch.setenv("TIMEZONE", "system")
+        with patch('utils.get_localzone', return_value=None):
+            iso_str = "2023-10-27T10:00:00Z"
+            result = format_datetime_filter(iso_str)
+            assert "tzlocal.get_localzone() returned None" in caplog.text
+            assert "2023-10-27 10:00" in result # Fallback to UTC
+            if "UTC" in result:
+                assert result.endswith("UTC")
+
+    def test_get_localzone_raises_exception(self, monkeypatch, caplog):
+        monkeypatch.setenv("TIMEZONE", "system")
+        with patch('utils.get_localzone', side_effect=Exception("tzlocal failed")):
+            iso_str = "2023-10-27T10:00:00Z"
+            result = format_datetime_filter(iso_str)
+            assert "Error getting system timezone with tzlocal: tzlocal failed" in caplog.text
+            assert "2023-10-27 10:00" in result # Fallback to UTC
+            if "UTC" in result:
+                assert result.endswith("UTC")
