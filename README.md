@@ -469,6 +469,11 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
  pip install ggshield pre-commit
  ```
 
+## 貢献
+このアプリケーションを改善し、拡張するための貢献を歓迎します！\
+バグの報告、機能強化の提案、プルリクエストの提出方法の詳細については、\
+[貢献ガイドライン](CONTRIBUTING.ja.md)をご覧ください。
+
 ## 自動テストの実行方法
 
 本アプリケーションは主要な機能やバリデーションの自動テストを備えています。  
