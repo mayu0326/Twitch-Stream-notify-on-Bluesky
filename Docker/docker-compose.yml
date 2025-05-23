@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  twitch-bluesky-bot:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: twitch-bluesky-bot-container
+    volumes:
+      # Mount settings.env from project root
+      - ../settings.env:C:/app/settings.env
+      # Mount logs directory from project root
+      - ../logs:C:/app/logs
+    # Optional: Restart policy
+    # restart: unless-stopped
+    # restart: on-failure
