@@ -137,4 +137,7 @@ config.yml export-ignore
 .github/* export-ignore
 
 # release ファイル
-/release/*
+/release/* export-ignore
+
+# 追加の GUI 関連ファイルを除外
+gui/* export-ignore

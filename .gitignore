@@ -186,3 +186,4 @@ config.yml
 .github/ISSUE_TEMPLATE\*.md
 release/*
 !.github/workflows/gitguardian.yml
+gui/*
