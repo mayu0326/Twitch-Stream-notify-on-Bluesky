@@ -10,6 +10,9 @@ from log_viewer import LogViewer
 from bot_process_manager import BotProcessManager
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 import os
+from account_settings_frame import AccountSettingsFrame
+from timezone_settings import TimeZoneSettings
+from tunnel_connection import TunnelConnection
 
 
 class MainWindow(tk.Tk):
@@ -50,142 +53,18 @@ class MainWindow(tk.Tk):
                 sub_notebook = tk.ttk.Notebook(self)
                 sub_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
                 # タイムゾーン設定タブ
-                import os
-                from dotenv import load_dotenv
-
-                class TimezoneSettingsFrame(tk.Frame):
-                    def __init__(self, master=None):
-                        super().__init__(master)
-                        import tkinter.ttk as ttk
-                        load_dotenv(os.path.join(
-                            os.path.dirname(__file__), '../settings.env'))
-                        timezone = os.getenv('TIMEZONE', 'system')
-                        self.var_timezone = tk.StringVar(value=timezone)
-                        # 中央寄せ用のサブフレーム
-                        center_frame = tk.Frame(self)
-                        center_frame.pack(expand=True)
-                        ttk.Label(center_frame, text="タイムゾーン設定:", style="Big.TLabel").grid(
-                            row=0, column=0, sticky=tk.W, pady=(10, 0))
-                        presets = ["system", "Asia/Tokyo", "UTC",
-                                   "America/New_York", "Europe/London"]
-                        self.combo_tz = ttk.Combobox(
-                            center_frame, values=presets, textvariable=self.var_timezone, width=24)
-                        self.combo_tz.grid(
-                            row=0, column=1, sticky=tk.W, pady=(10, 0))
-                        self.combo_tz.configure(font=("Meiryo", 12))
-                        ttk.Label(center_frame, text="任意のタイムゾーンを直接入力も可", style="Big.TLabel").grid(
-                            row=1, column=0, columnspan=2, sticky=tk.W)
-                        # 案内文を改行・太字・wraplength指定で見切れ防止
-                        label1 = tk.Label(center_frame, text='"system" を指定すると、実行環境のシステムタイムゾーンを自動的に使用します。', font=(
-                            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-                        label1.grid(row=2, column=0, columnspan=2,
-                                    sticky=tk.W, pady=(5, 0))
-                        label2 = tk.Label(center_frame, text='無効な値や空の場合は\nシステムタイムゾーンまたはUTCにフォールバックします。', font=(
-                            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-                        label2.grid(row=3, column=0, columnspan=2, sticky=tk.W)
-                        ttk.Button(center_frame, text="保存", command=self.save_timezone, style="Big.TButton").grid(
-                            row=4, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=40)
-
-                    def save_timezone(self):
-                        env_path = os.path.join(
-                            os.path.dirname(__file__), '../settings.env')
-                        with open(env_path, 'r', encoding='utf-8') as f:
-                            lines = f.readlines()
-                        new_lines = []
-                        found = False
-                        for line in lines:
-                            if line.startswith('TIMEZONE='):
-                                new_lines.append(
-                                    f'TIMEZONE={self.var_timezone.get()}\n')
-                                found = True
-                            else:
-                                new_lines.append(line)
-                        if not found:
-                            new_lines.append(
-                                f'TIMEZONE={self.var_timezone.get()}\n')
-                        with open(env_path, 'w', encoding='utf-8') as f:
-                            f.writelines(new_lines)
-                        load_dotenv(env_path, override=True)
-                tz_frame = TimezoneSettingsFrame(sub_notebook)
+                tz_frame = TimeZoneSettings(sub_notebook)
                 sub_notebook.add(tz_frame, text="タイムゾーン設定")
                 # トンネル通信設定タブ
-
-                class TunnelSettingsFrame(tk.Frame):
-                    def __init__(self, master=None):
-                        super().__init__(master)
-                        import tkinter.ttk as ttk
-                        import os
-                        from dotenv import load_dotenv
-                        load_dotenv(os.path.join(
-                            os.path.dirname(__file__), '../settings.env'))
-                        tunnel_cmd = os.getenv('TUNNEL_CMD', '')
-                        self.var_tunnel_cmd = tk.StringVar(value=tunnel_cmd)
-                        # 中央寄せ用のサブフレーム
-                        center_frame = tk.Frame(self)
-                        center_frame.pack(expand=True)
-                        center_frame.grid_columnconfigure(0, weight=1)
-                        center_frame.grid_columnconfigure(1, weight=1)
-                        ttk.Label(center_frame, text="トンネル起動コマンド:", style="Big.TLabel").grid(
-                            row=0, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
-                        entry = ttk.Entry(
-                            center_frame, textvariable=self.var_tunnel_cmd, width=48)
-                        entry.grid(row=1, column=0, columnspan=2,
-                                   sticky=tk.W, pady=(5, 0))
-                        entry.configure(font=("Meiryo", 12))
-                        # 案内文
-                        label1 = tk.Label(center_frame, text='Cloudflare Tunnelやngrokなど\nトンネル通信アプリケーションを起動するためのコマンドを\nここに入力し設定してください。', font=(
-                            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-                        label1.grid(row=2, column=0, columnspan=2,
-                                    sticky=tk.W, pady=(5, 0))
-                        # Cloudflare Tunnelインストールリンク
-
-                        def open_cloudflare_link(event=None):
-                            import webbrowser
-                            webbrowser.open_new(
-                                "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/")
-                        link = tk.Label(center_frame, text="[CloudflareTunnelのインストール]がまだの方はこちら", font=(
-                            "Meiryo", 11, "underline"), fg="blue", cursor="hand2", anchor="w", justify="left", wraplength=420)
-                        link.grid(row=3, column=0, columnspan=2, sticky=tk.W)
-                        link.bind("<Button-1>", open_cloudflare_link)
-                        # 注意文
-                        label2 = tk.Label(center_frame, text='コマンド例: cloudflared tunnel run <トンネル名>', font=(
-                            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-                        label2.grid(row=4, column=0, columnspan=2, sticky=tk.W)
-                        ttk.Button(center_frame, text="保存", command=self.save_tunnel_cmd, style="Big.TButton").grid(
-                            row=5, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=80)
-
-                    def save_tunnel_cmd(self):
-                        env_path = os.path.join(
-                            os.path.dirname(__file__), '../settings.env')
-                        with open(env_path, 'r', encoding='utf-8') as f:
-                            lines = f.readlines()
-                        new_lines = []
-                        found = False
-                        for line in lines:
-                            if line.startswith('TUNNEL_CMD='):
-                                new_lines.append(
-                                    f'TUNNEL_CMD={self.var_tunnel_cmd.get()}\n')
-                                found = True
-                            else:
-                                new_lines.append(line)
-                        if not found:
-                            new_lines.append(
-                                f'TUNNEL_CMD={self.var_tunnel_cmd.get()}\n')
-                        with open(env_path, 'w', encoding='utf-8') as f:
-                            f.writelines(new_lines)
-                        load_dotenv(env_path, override=True)
-                tunnel_frame = TunnelSettingsFrame(sub_notebook)
+                tunnel_frame = TunnelConnection(sub_notebook)
                 sub_notebook.add(tunnel_frame, text="トンネル通信設定")
         self.tab_general = GeneralSettingsFrame(notebook)
         notebook.add(self.tab_general, text="一般設定")
         # アカウント設定
 
-        class AccountSettingsFrame(tk.Frame):
-            def __init__(self, master=None):
-                super().__init__(master)
-                tk.Label(self, text="ここにアカウント設定UIを実装", font=(
-                    "Meiryo", 14)).pack(padx=20, pady=20)
-        self.tab_account = AccountSettingsFrame(notebook)
+        class AccountSettingsFrameWrapper(AccountSettingsFrame):
+            pass
+        self.tab_account = AccountSettingsFrameWrapper(notebook)
         notebook.add(self.tab_account, text="アカウント設定")
         # Bluesky投稿設定
         self.tab_bluesky_post = BlueskyPostSettingsFrame(notebook)
