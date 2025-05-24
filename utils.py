@@ -334,8 +334,9 @@ if __name__ == '__main__':
     util_logger.info("\nTesting rotate_secret_if_needed...")
     # Ensure TIMEZONE is set for rotate_secret_if_needed tests
     os.environ["TIMEZONE"] = "UTC"
-    print(
-        f"Rotation Test (forced): New secret is {rotate_secret_if_needed(logger=util_logger, force=True)}")
+    # セキュリティ上の理由でシークレット値は表示しない
+    rotate_secret_if_needed(logger=util_logger, force=True)
+    print("Rotation Test (forced): 新しいシークレットが生成されました（値は表示しません）")
     # Clean up dummy settings.env if created by rotate_secret_if_needed
     if os.path.exists(SETTINGS_ENV_PATH):
         os.remove(SETTINGS_ENV_PATH)

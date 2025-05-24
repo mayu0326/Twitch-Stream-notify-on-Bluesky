@@ -41,6 +41,7 @@ from niconico_monitor import NiconicoMonitor
 import os
 import sys
 from version import __version__
+from markupsafe import escape
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -81,10 +82,12 @@ def validate_settings():
 @app.errorhandler(404)
 def handle_404(e):
     try:
+        safe_url = escape(request.url)
+        safe_ua = escape(request.user_agent.string)
         app.logger.warning(
-            f"404エラー発生: {request.url} (User agent: {request.user_agent.string})")
+            f"404エラー発生: {safe_url} (User agent: {safe_ua})")
     except AttributeError:
-        print(f"Warning: 404 error for URL {request.url}")
+        print("Warning: 404 error (URL情報取得不可)")
     return "Not Found", 404
 
 
