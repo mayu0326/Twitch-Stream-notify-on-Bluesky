@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Twitch Stream notify on Bluesky
+Stream notify on Bluesky
 
-このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
 from eventsub import verify_signature
@@ -14,50 +14,52 @@ __license__ = "GPLv2"
 __version__ = __version__
 
 
-# Twitch Stream notify on Bluesky
+# Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-# USA.
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 class DummyRequest:
     def __init__(self, headers, body):
+        # テスト用のダミーリクエストオブジェクトを初期化
         self.headers = headers
-        self.body = body # Changed from _body to body for clarity, matching usage
+        self.body = body  # 本文データ
 
-    def get_data(self, as_text=None): # Added as_text parameter
+    def get_data(self, as_text=None):
+        # 本文データを取得（as_text=Trueならstr, それ以外はbytesで返す）
         if as_text:
-            return self.body # Return string body if as_text is True
-        return self.body.encode("utf-8") # Return bytes otherwise
+            return self.body
+        return self.body.encode("utf-8")
 
     @property
     def remote_addr(self):
+        # ダミーのリモートアドレス
         return "127.0.0.1"
 
 
 def test_verify_signature_missing_headers():
+    # 必須ヘッダーが不足している場合はFalseを返すことを確認
     req = DummyRequest(headers={}, body="{}")
     assert not verify_signature(req)
 
 
 def test_verify_signature_invalid_timestamp():
+    # 不正なタイムスタンプの場合はFalseを返すことを確認
     headers = {
         "Twitch-Eventsub-Message-Id": "abc",
-        "Twitch-Eventsub-Message-Timestamp": "invalid", # This timestamp will cause parsing to fail
+        "Twitch-Eventsub-Message-Timestamp": "invalid",  # パースできないタイムスタンプ
         "Twitch-Eventsub-Message-Signature": "sig"
     }
-    req = DummyRequest(headers=headers, body="{}") # Body is simple JSON string
+    req = DummyRequest(headers=headers, body="{}")
     assert not verify_signature(req)

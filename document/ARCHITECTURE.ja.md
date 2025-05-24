@@ -1,4 +1,4 @@
-## プロジェクトレビュー: Twitch Stream notify on Bluesky
+## プロジェクトレビュー: Stream notify on Bluesky
 
 ### 1. コアアプリケーションロジック
 
@@ -211,7 +211,7 @@
 
 ### 全体概要
 
-このプロジェクト「Twitch Stream notify on Bluesky」は、指定されたTwitchチャンネルがライブになったとき、またはオフラインになったときにBlueskyに自動的に通知するように設計された、よく構造化されたPythonボットです。リアルタイムのイベント検出のためにTwitchのEventSubシステムを活用し、ローカルマシンでこれらのイベントを受信するためにCloudflare Tunnelを利用しています。
+このプロジェクト「Stream notify on Bluesky」は、指定されたTwitchチャンネルがライブになったとき、またはオフラインになったときにBlueskyに自動的に通知するように設計された、よく構造化されたPythonボットです。リアルタイムのイベント検出のためにTwitchのEventSubシステムを活用し、ローカルマシンでこれらのイベントを受信するためにCloudflare Tunnelを利用しています。
 
 プロジェクトの主な強みは次のとおりです:
 

@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Twitch Stream notify on Bluesky
+Stream notify on Bluesky
 
-このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
 from datetime import datetime
-# Added format_datetime_filter
 from utils import retry_on_exception, is_valid_url, format_datetime_filter, notify_discord_error
 import os
 import csv
 import logging
 from atproto import Client, exceptions
-from jinja2 import Template  # Jinja2 Template import
+from jinja2 import Template
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -20,37 +19,37 @@ __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
 __version__ = __version__
 
-# Twitch Stream notify on Bluesky
+# Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-# USA.
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-
+# リトライ回数のデフォルト値を環境変数から取得
 RETRY_MAX = int(os.getenv("RETRY_MAX", 3))
 RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 
-
+# アプリケーション用ロガー
 logger = logging.getLogger("AppLogger")
 
-# Default template paths, specific paths are fetched within methods
+# デフォルトテンプレートパス（メソッド内で個別パスを取得）
 DEFAULT_ONLINE_TEMPLATE_PATH = "templates/default_online_template.txt"
 DEFAULT_OFFLINE_TEMPLATE_PATH = "templates/default_offline_template.txt"
 
 
 def load_template(path=None):
+    """
+    テンプレートファイルを読み込み、Jinja2 Templateオブジェクトを返す
+    """
     template_string = ""
     if path is None:
         path = DEFAULT_ONLINE_TEMPLATE_PATH
@@ -69,23 +68,28 @@ def load_template(path=None):
         logger.error(f"テンプレート '{path}' の読み込み中に予期せぬエラー: {e}", exc_info=True)
         template_string = "Error: Failed to load template '{{ template_path }}' due to an unexpected error."
 
-    # Create Jinja2 Template object
+    # Jinja2 Templateオブジェクトを生成
     template_obj = Template(template_string)
-    # Attach the custom filter to the template's environment
+    # カスタムフィルタをテンプレート環境に追加
     template_obj.environment.filters['datetimeformat'] = format_datetime_filter
     return template_obj
 
 
+# 監査用ロガー
 audit_logger = logging.getLogger("AuditLogger")
 
 
 class BlueskyPoster:
     def __init__(self, username, password):
+        # Blueskyクライアントの初期化
         self.client = Client()
         self.username = username
         self.password = password
 
     def upload_image(self, image_path):
+        """
+        画像ファイルをBlueskyにアップロードし、blob情報を返す
+        """
         try:
             with open(image_path, "rb") as img_file:
                 img_bytes = img_file.read()
@@ -116,6 +120,7 @@ class BlueskyPoster:
                 "BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH", "templates/yt_nico_online_template.txt")
         template_obj = load_template(path=template_path)
 
+        # 必須キーのチェック
         required_keys = ["title", "category_name", "stream_url",
                          "broadcaster_user_login", "broadcaster_user_name"]
         missing_keys = [
@@ -128,13 +133,15 @@ class BlueskyPoster:
         success = False
 
         try:
+            # Blueskyへログイン
             self.client.login(self.username, self.password)
 
-            # Pass template_path for context in case of error template rendering
+            # テンプレートをレンダリングして投稿本文を生成
             post_text = template_obj.render(
                 **event_context, template_path=template_path)
 
             embed = None
+            # 画像パスが指定されている場合は画像をアップロード
             if image_path and os.path.isfile(image_path):
                 blob = self.upload_image(image_path)
                 if blob:
@@ -154,6 +161,7 @@ class BlueskyPoster:
                 logger.warning(
                     f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
 
+            # Blueskyに投稿
             self.client.send_post(post_text, embed=embed)
             logger.info(
                 f"Blueskyへの自動投稿に成功しました (stream.online): {event_context.get('stream_url')}")
@@ -171,6 +179,7 @@ class BlueskyPoster:
             notify_discord_error(f"Bluesky投稿エラー: {e}")
             return False
         finally:
+            # 投稿履歴を記録
             self._write_post_history(
                 title=event_context.get("title", "N/A"),
                 category=event_context.get(
@@ -199,6 +208,7 @@ class BlueskyPoster:
                 "BLUESKY_OFFLINE_TEMPLATE_PATH", "templates/twitch_offline_template.txt")
         template_obj = load_template(path=template_path)
 
+        # 必須キーのチェック
         required_keys = ["broadcaster_user_name",
                          "broadcaster_user_login", "channel_url"]
         missing_keys = [
@@ -210,10 +220,13 @@ class BlueskyPoster:
 
         success = False
         try:
+            # Blueskyへログイン
             self.client.login(self.username, self.password)
+            # テンプレートをレンダリングして投稿本文を生成
             post_text = template_obj.render(
                 **event_context, template_path=template_path)
 
+            # 画像なしで投稿
             self.client.send_post(text=post_text)
             logger.info(
                 f"Blueskyへの自動投稿成功 (stream.offline): {event_context.get('broadcaster_user_name')}")
@@ -231,6 +244,7 @@ class BlueskyPoster:
             notify_discord_error(f"Bluesky投稿エラー: {e}")
             return False
         finally:
+            # 投稿履歴を記録
             self._write_post_history(
                 title=f"配信終了: {event_context.get('broadcaster_user_name', 'N/A')}",
                 category="Offline",
@@ -253,7 +267,7 @@ class BlueskyPoster:
             "BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH", "templates/yt_nico_new_video_template.txt")
         template_obj = load_template(path=template_path)
 
-        # 必須キーはtitle, video_id, video_url
+        # 必須キーのチェック
         required_keys = ["title", "video_id", "video_url"]
         missing_keys = [
             key for key in required_keys if key not in event_context or event_context[key] is None]
@@ -264,11 +278,14 @@ class BlueskyPoster:
 
         success = False
         try:
+            # Blueskyへログイン
             self.client.login(self.username, self.password)
+            # テンプレートをレンダリングして投稿本文を生成
             post_text = template_obj.render(
                 **event_context, template_path=template_path)
 
             embed = None
+            # 画像パスが指定されている場合は画像をアップロード
             if image_path and os.path.isfile(image_path):
                 blob = self.upload_image(image_path)
                 if blob:
@@ -288,6 +305,7 @@ class BlueskyPoster:
                 logger.warning(
                     f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
 
+            # Blueskyに投稿
             self.client.send_post(post_text, embed=embed)
             logger.info(
                 f"Blueskyへの自動投稿に成功しました (new_video): {event_context.get('video_url')}")
@@ -304,6 +322,7 @@ class BlueskyPoster:
             notify_discord_error(f"Bluesky投稿エラー: {e}")
             return False
         finally:
+            # 投稿履歴を記録
             self._write_post_history(
                 title=event_context.get("title", "N/A"),
                 category="NewVideo",
@@ -313,6 +332,9 @@ class BlueskyPoster:
             )
 
     def _write_post_history(self, title: str, category: str, url: str, success: bool, event_type: str):
+        """
+        投稿履歴をCSVファイルに記録する
+        """
         os.makedirs("logs", exist_ok=True)
         csv_path = "logs/post_history.csv"
         is_new_file = not os.path.exists(csv_path)

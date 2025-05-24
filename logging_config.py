@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Twitch Stream notify on Bluesky
+Stream notify on Bluesky
 
-このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
 from pathlib import Path
@@ -17,31 +17,28 @@ __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
 __version__ = __version__
 
-# Twitch Stream notify on Bluesky
+# Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-# USA.
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 def configure_logging(app=None):
-    # 環境設定ファイルの場所
+    # 環境設定ファイルの場所を指定し、環境変数を読み込む
     env_path = Path(__file__).parent / "settings.env"
     load_dotenv(dotenv_path=env_path)
 
-    # Ensure logs directory exists
+    # logsディレクトリがなければ作成
     os.makedirs("logs", exist_ok=True)
 
     # ログレベルや保管日数の設定
@@ -55,24 +52,28 @@ def configure_logging(app=None):
     }
     log_level = LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
 
+    # Discord通知のログレベル設定
     DISCORD_NOTIFY_LEVEL = os.getenv(
         "discord_notify_level", "CRITICAL").upper()
-    # LEVEL_MAP is already defined, no need to redefine
     discord_level = LEVEL_MAP.get(DISCORD_NOTIFY_LEVEL, logging.CRITICAL)
-    
+
+    # ログの保管日数を取得（デフォルト14日、異常値は14日にフォールバック）
     try:
         log_retention_days_str = os.getenv("LOG_RETENTION_DAYS", "14")
         log_retention_days = int(log_retention_days_str)
         if log_retention_days <= 0:
-            print(f"Warning: LOG_RETENTION_DAYS value '{log_retention_days_str}' is not positive. Defaulting to 14 days.")
+            print(
+                f"Warning: LOG_RETENTION_DAYS value '{log_retention_days_str}' is not positive. Defaulting to 14 days.")
             log_retention_days = 14
     except ValueError:
-        print(f"Warning: Invalid LOG_RETENTION_DAYS value '{os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
+        print(
+            f"Warning: Invalid LOG_RETENTION_DAYS value '{os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
         log_retention_days = 14
 
-    # 監査ログ専用ロガーとハンドラ
+    # 監査ログ専用ロガーとハンドラの設定
     audit_logger = logging.getLogger("AuditLogger")
-    audit_logger.setLevel(logging.INFO) # Audit logs are always INFO level or higher
+    # 監査ログはINFOレベル以上のみ記録
+    audit_logger.setLevel(logging.INFO)
     audit_format = logging.Formatter("%(asctime)s [AUDIT] %(message)s")
     audit_file_handler = TimedRotatingFileHandler(
         "logs/audit.log",
@@ -85,45 +86,48 @@ def configure_logging(app=None):
     audit_file_handler.setFormatter(audit_format)
     audit_logger.addHandler(audit_file_handler)
 
-    # ロガー作成
+    # アプリケーション用ロガーの作成
     logger = logging.getLogger("AppLogger")
     logger.setLevel(log_level)
-    logger.propagate = False # Prevent root logger from handling these logs as well
+    logger.propagate = False  # ルートロガーへの伝播を防止
 
-    # エラーログとコンソールハンドラ
+    # エラーログとコンソールハンドラの設定
     error_format = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
+    # 一般ログファイル（app.log）のハンドラ
     info_file_handler = TimedRotatingFileHandler(
-        "logs/app.log", # General application logs
+        "logs/app.log",  # アプリケーション全体のログ
         when="D",
         interval=1,
         backupCount=log_retention_days,
         encoding="utf-8",
     )
-    info_file_handler.setLevel(log_level) # Use the configured log level
+    info_file_handler.setLevel(log_level)  # 設定されたログレベルを使用
     info_file_handler.setFormatter(error_format)
     logger.addHandler(info_file_handler)
 
+    # エラーログファイル（error.log）のハンドラ
     error_file_handler = TimedRotatingFileHandler(
-        "logs/error.log", # Dedicated error log file
+        "logs/error.log",  # エラー専用ログファイル
         when="D",
         interval=1,
         backupCount=log_retention_days,
         encoding="utf-8",
     )
-    error_file_handler.setLevel(logging.ERROR) # Only logs ERROR and CRITICAL
+    error_file_handler.setLevel(logging.ERROR)  # ERROR以上のみ記録
     error_file_handler.setFormatter(error_format)
-    logger.addHandler(error_file_handler) # Add to the same AppLogger
+    logger.addHandler(error_file_handler)  # AppLoggerに追加
 
-    # コンソール出力機能の実装
+    # コンソール出力用ハンドラ
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level) # Use the configured log level
+    console_handler.setLevel(log_level)  # 設定されたログレベルを使用
     console_handler.setFormatter(error_format)
     logger.addHandler(console_handler)
 
-    # エラー通知用Discord_Webhookの設定
+    # Discord通知用Webhookの設定
     discord_webhook_url = os.getenv("discord_error_notifier_url")
-    app_logger_handlers = [info_file_handler, error_file_handler, console_handler] # Initial handlers
+    app_logger_handlers = [info_file_handler,
+                           error_file_handler, console_handler]  # Flask用にも使うハンドラリスト
 
     if discord_webhook_url:
         try:
@@ -131,27 +135,30 @@ def configure_logging(app=None):
 
             discord_handler = DiscordHandler(
                 "StreamApp_ErrorNotifier", discord_webhook_url)
-            discord_handler.setLevel(discord_level) # Use configured discord notification level
+            # 設定されたDiscord通知レベルを使用
+            discord_handler.setLevel(discord_level)
             discord_handler.setFormatter(
-                logging.Formatter("%(asctime)s [%(levelname)s] %(message)s") # Consistent formatting
+                # ログフォーマットを統一
+                logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
             )
             logger.addHandler(discord_handler)
-            app_logger_handlers.append(discord_handler) # Add to list for Flask
+            app_logger_handlers.append(
+                discord_handler)  # Flask用リストにも追加
         except ImportError:
-            msg = "Discord_logging library not found. Discord notifications will be disabled. Install with 'pip install discord-logging-handler'"
+            msg = "discord_loggingライブラリが見つかりません。Discord通知は無効化されます。'pip install discord-logging-handler'でインストールしてください。"
             logger.warning(msg)
-            print(msg) # Also print as logger might not be fully up
+            print(msg)  # ロガーが未初期化の場合も考慮してprint
         except Exception as e:
-            msg = f"Failed to initialize DiscordHandler: {e}. Discord notifications will be disabled."
+            msg = f"DiscordHandlerの初期化に失敗しました: {e}。Discord通知は無効化されます。"
             logger.warning(msg)
             print(msg)
     else:
-        msg = "discord_error_notifier_url not set. Discord error notifications are disabled."
-        logger.info(msg) # Use info level as this is a configuration choice
+        msg = "discord_error_notifier_urlが未設定のため、Discordエラー通知は無効です。"
+        logger.info(msg)  # 設定上の選択なのでINFOで記録
 
-    # Flaskアプリが渡された場合のみ、Flaskのロガーにもハンドラを追加
+    # Flaskアプリが渡された場合は、Flaskのロガーにも同じハンドラを追加
     if app is not None:
-        app.logger.handlers.clear() # Clear default Flask handlers
+        app.logger.handlers.clear()  # Flaskデフォルトハンドラをクリア
         for h in app_logger_handlers:
             app.logger.addHandler(h)
         app.logger.setLevel(log_level)

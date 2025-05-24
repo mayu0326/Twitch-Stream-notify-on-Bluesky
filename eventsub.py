@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Twitch Stream notify on Bluesky
+Stream notify on Bluesky
 
-このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
 from tzlocal import get_localzone
@@ -24,26 +24,22 @@ __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
 __version__ = __version__
 
-# Twitch Stream notify on Bluesky
+# Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-# USA.
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-
-# 環境設定ファイルの場所
+# 環境設定ファイルの場所を指定
 env_path = Path(__file__).parent / "settings.env"
 load_dotenv(dotenv_path=env_path)
 
@@ -53,13 +49,13 @@ audit_logger = logging.getLogger("AuditLogger")
 
 # タイムゾーンの設定
 TIMEZONE_NAME = os.getenv("TIMEZONE", "system")
-if TIMEZONE_NAME.lower() == "system":  # Make comparison case-insensitive
+if TIMEZONE_NAME.lower() == "system":  # システムのタイムゾーンを自動取得
     try:
-        TIMEZONE = get_localzone()  # システムのタイムゾーンを自動取得
+        TIMEZONE = get_localzone()
     except Exception as e:
         logger.warning(f"システムタイムゾーンの取得に失敗しました ({e})。UTCにフォールバックします。")
         TIMEZONE = pytz.utc
-elif TIMEZONE_NAME:  # Ensure TIMEZONE_NAME is not empty
+elif TIMEZONE_NAME:
     try:
         TIMEZONE = pytz.timezone(TIMEZONE_NAME)
     except pytz.UnknownTimeZoneError:
@@ -69,11 +65,11 @@ elif TIMEZONE_NAME:  # Ensure TIMEZONE_NAME is not empty
         except Exception as e:
             logger.warning(f"システムタイムゾーンの取得に失敗しました ({e})。UTCにフォールバックします。")
             TIMEZONE = pytz.utc
-    except Exception as e:  # Catch other potential errors from pytz.timezone
+    except Exception as e:
         logger.warning(
             f"タイムゾーン '{TIMEZONE_NAME}' の処理中にエラーが発生しました ({e})。UTCにフォールバックします。")
         TIMEZONE = pytz.utc
-else:  # If TIMEZONE_NAME is empty or None after os.getenv
+else:
     logger.warning("TIMEZONE環境変数が空です。システムタイムゾーンにフォールバックします。")
     try:
         TIMEZONE = get_localzone()
@@ -84,16 +80,15 @@ else:  # If TIMEZONE_NAME is empty or None after os.getenv
 # タイムゾーン付き現在時刻取得関数
 
 
-def get_current_time():  # Not currently used, but good to have if needed elsewhere
+def get_current_time():
+    # 現在時刻をタイムゾーン付きで取得
     return datetime.datetime.now(TIMEZONE)
 
 
-# 環境変数
+# 環境変数の取得
 TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
 TWITCH_CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
-# This might be updated by setup_broadcaster_id
 TWITCH_BROADCASTER_ID = os.getenv("TWITCH_BROADCASTER_ID")
-# This is updated by rotate_secret_if_needed in main.py
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 RETRY_MAX = int(os.getenv("RETRY_MAX", 3))
 RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
@@ -108,7 +103,8 @@ TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT = 0
     exceptions=(requests.RequestException,)
 )
 # アクセストークンの管理
-def get_app_access_token(logger_to_use=None):  # Allow passing logger
+def get_app_access_token(logger_to_use=None):
+    # Twitchアプリのアクセストークンを取得または更新する
     current_logger = logger_to_use if logger_to_use else logger
     url = "https://id.twitch.tv/oauth2/token"
     params = {
@@ -132,7 +128,8 @@ def get_app_access_token(logger_to_use=None):  # Allow passing logger
 # アクセストークンの検証
 
 
-def get_valid_app_access_token(logger_to_use=None):  # Allow passing logger
+def get_valid_app_access_token(logger_to_use=None):
+    # 有効なTwitchアプリのアクセストークンを返す（期限切れなら再取得）
     global TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT
     current_logger = logger_to_use if logger_to_use else logger
     if not TWITCH_APP_ACCESS_TOKEN or time.time() > TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT:
@@ -145,7 +142,8 @@ def get_valid_app_access_token(logger_to_use=None):  # Allow passing logger
 # Twitchのユーザー名からBROADCASTER_IDを取得
 
 
-def get_broadcaster_id(username, logger_to_use=None):  # Allow passing logger
+def get_broadcaster_id(username, logger_to_use=None):
+    # 指定したユーザー名からTwitchのユーザーIDを取得する
     current_logger = logger_to_use if logger_to_use else logger
     url = "https://api.twitch.tv/helix/users"
     headers = {
@@ -168,14 +166,14 @@ def get_broadcaster_id(username, logger_to_use=None):  # Allow passing logger
         current_logger.error(f"ユーザーID取得エラー (ユーザー名: {username}): {str(e)}")
         raise
 
-
 # ユーザー名が入力されていた場合に数値IDに変換
-def setup_broadcaster_id(logger_to_use=None):  # Allow passing logger
+
+
+def setup_broadcaster_id(logger_to_use=None):
+    # BROADCASTER_IDがユーザー名の場合は数値IDに変換する
     global TWITCH_BROADCASTER_ID
     current_logger = logger_to_use if logger_to_use else logger
-    # TWITCH_BROADCASTER_ID is loaded from os.getenv at the module level
-    # This function updates the global variable if it's not a digit.
-    if TWITCH_BROADCASTER_ID is None or not TWITCH_BROADCASTER_ID.strip():  # Check if None or empty
+    if TWITCH_BROADCASTER_ID is None or not TWITCH_BROADCASTER_ID.strip():
         current_logger.critical(
             "TWITCH_BROADCASTER_IDが設定されていません。アプリケーションは起動できません。")
         raise ValueError("TWITCH_BROADCASTER_ID is not set.")
@@ -196,14 +194,14 @@ def setup_broadcaster_id(logger_to_use=None):  # Allow passing logger
     else:
         current_logger.info(
             f"TWITCH_BROADCASTER_ID は既に数値形式です: {TWITCH_BROADCASTER_ID}")
-    # Update os.environ as well so other parts of the app see the numeric ID if it was converted
+    # os.environも更新して他の箇所でも数値IDを参照できるようにする
     os.environ['TWITCH_BROADCASTER_ID'] = TWITCH_BROADCASTER_ID
 
-
 # Signatureの検証
-# Assuming logger is available via app.logger in Flask context
+
+
 def verify_signature(request):
-    # Use request.app.logger if available, otherwise global logger
+    # Webhookリクエストの署名を検証する
     current_logger = request.logger if hasattr(request, 'logger') else logger
 
     required_headers = [
@@ -219,28 +217,22 @@ def verify_signature(request):
     signature = request.headers.get("Twitch-Eventsub-Message-Signature", "")
     message_id = request.headers["Twitch-Eventsub-Message-Id"]
     timestamp_str = request.headers["Twitch-Eventsub-Message-Timestamp"]
-    body = request.get_data(as_text=True)  # Get body as string
+    body = request.get_data(as_text=True)  # ボディを文字列で取得
 
     # タイムスタンプのパース（ナノ秒対応）
-    def parse_timestamp(ts: str):  # Inner function, uses TIMEZONE from outer scope
+    def parse_timestamp(ts: str):
+        # タイムスタンプ文字列をdatetimeオブジェクトに変換
         dt_obj = None
-        # Try ISO 8601 format with 'Z'
         if '.' in ts and ts.endswith('Z'):
-            # Handle nanoseconds by truncating to microseconds
             main_part, fractional = ts[:-1].split('.', 1)
-            fractional = fractional[:6]  # Keep up to 6 digits for microseconds
+            fractional = fractional[:6]  # マイクロ秒まで
             dt_obj = datetime.datetime.fromisoformat(
                 f"{main_part}.{fractional}+00:00")
-        # Try ISO 8601 format without 'Z' but with timezone offset
-        elif '+' in ts[10:] or '-' in ts[10:]:  # Check for explicit timezone offset
+        elif '+' in ts[10:] or '-' in ts[10:]:
             dt_obj = datetime.datetime.fromisoformat(ts)
-        else:  # If no 'Z' and no explicit offset, assume UTC if it's a common format without them
-            # This case might be ambiguous, Twitch usually provides 'Z' or offset.
-            # Fallback or raise error if format is unexpected.
-            # For now, attempt fromisoformat, it might raise ValueError if not compliant.
+        else:
             dt_obj = datetime.datetime.fromisoformat(ts)
-
-        return dt_obj.astimezone(TIMEZONE)  # Convert to configured TIMEZONE
+        return dt_obj.astimezone(TIMEZONE)
 
     now = datetime.datetime.now(TIMEZONE)
 
@@ -252,19 +244,17 @@ def verify_signature(request):
 
     # 時間差チェック（5分以内か）
     delta = abs((now - event_time).total_seconds())
-    if delta > 300:  # 5分（300秒）を超えていれば拒否
+    if delta > 300:
         current_logger.warning(
             f"タイムスタンプが許容範囲外: {timestamp_str} (差分: {delta:.2f}秒)")
         return False
 
     hmac_message = message_id + timestamp_str + body
 
-    # WEBHOOK_SECRET is loaded at module level and updated by main.py via os.environ
     current_webhook_secret = os.getenv("WEBHOOK_SECRET")
     if not current_webhook_secret:
         current_logger.critical("WEBHOOK_SECRETが設定されていません。署名検証は不可能です。")
-        # This is a critical setup error, should ideally prevent startup.
-        return False  # Or raise an exception
+        return False
 
     digest = hmac.new(
         current_webhook_secret.encode(
@@ -277,11 +267,12 @@ def verify_signature(request):
             f"Webhook署名不一致。受信: {signature}, 期待値(計算結果): {expected_signature}")
         return False
 
-    current_logger.debug("Webhook署名検証成功")  # Log success at debug level
+    current_logger.debug("Webhook署名検証成功")
     return True
 
+# 既存のEventSubサブスクリプション一覧を取得
 
-# Allow passing logger
+
 def get_existing_eventsub_subscriptions(logger_to_use=None):
     current_logger = logger_to_use if logger_to_use else logger
     url = "https://api.twitch.tv/helix/eventsub/subscriptions"
@@ -297,81 +288,75 @@ def get_existing_eventsub_subscriptions(logger_to_use=None):
             f"既存サブスクリプション取得エラー: {response.status_code} - {response.text}")
         return []
 
-
 # サブスクリプションの追加
-# Added event_type parameter and logger
+
+
 def create_eventsub_subscription(event_type: str, logger_to_use=None):
+    # 指定したイベントタイプのEventSubサブスクリプションを作成する
     current_logger = logger_to_use if logger_to_use else logger
-    current_audit_logger = logging.getLogger(
-        "AuditLogger")  # Get audit logger instance
+    current_audit_logger = logging.getLogger("AuditLogger")
 
     # 既存サブスクリプション一覧を取得
     existing = get_existing_eventsub_subscriptions(
         logger_to_use=current_logger)
     for sub in existing:
         if (
-            sub.get("type") == event_type  # Use event_type
+            sub.get("type") == event_type
             and sub.get("condition", {}).get("broadcaster_user_id")
-            == TWITCH_BROADCASTER_ID  # Global TWITCH_BROADCASTER_ID
+            == TWITCH_BROADCASTER_ID
             and sub.get("status") == "enabled"
         ):
             current_logger.info(
-                f"既に同じ {event_type} サブスクリプションが存在するため新規作成をスキップします"  # Updated log
+                f"既に同じ {event_type} サブスクリプションが存在するため新規作成をスキップします"
             )
             current_audit_logger.info(
-                # Updated audit log
                 f"EventSubサブスクリプション作成: {event_type} (既に存在) 成功")
-            # Return similar structure as new sub
             return {"status": "already exists", "id": sub.get("id"), "data": [sub]}
 
-    # なければ新規作成
+    # サブスクリプションがなければ新規作成
     url = "https://api.twitch.tv/helix/eventsub/subscriptions"
-    current_webhook_secret = os.getenv("WEBHOOK_SECRET")  # Get current secret
+    current_webhook_secret = os.getenv("WEBHOOK_SECRET")
     headers = {
         "Client-ID": TWITCH_CLIENT_ID,
         "Authorization": f"Bearer {get_valid_app_access_token(logger_to_use=current_logger)}",
         "Content-Type": "application/json",
     }
     payload = {
-        "type": event_type,  # Use event_type
-        "version": "1",  # Assuming version "1" is applicable for all types used
+        "type": event_type,
+        "version": "1",
         "condition": {"broadcaster_user_id": TWITCH_BROADCASTER_ID},
         "transport": {
             "method": "webhook",
             "callback": os.getenv("WEBHOOK_CALLBACK_URL"),
-            "secret": current_webhook_secret,  # Use current secret
+            "secret": current_webhook_secret,
         },
     }
 
     try:
         response = requests.post(
             url, json=payload, headers=headers, timeout=15)  # timeout追加
-        response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
         result = response.json()
         current_audit_logger.info(
-            f"EventSubサブスクリプション作成: {event_type} 成功")  # Updated audit log
+            f"EventSubサブスクリプション作成: {event_type} 成功")
         current_logger.info(
             f"EventSubサブスクリプション ({event_type}) を正常に作成しました。ID: {result.get('data', [{}])[0].get('id')}")
         return result
     except requests.exceptions.HTTPError as e:
-        # Try to get more details from response if possible
         error_details = e.response.text if e.response else "N/A"
         reason = f"HTTPError: {e.response.status_code if e.response else 'Unknown status'} - {error_details}"
         current_audit_logger.warning(
-            # Updated audit log
             f"EventSubサブスクリプション作成: {event_type} 失敗: {reason}")
         current_logger.error(
             f"EventSubサブスクリプション ({event_type}) 作成失敗: {reason}")
-        # Return a more structured error, possibly including the response JSON if available
         try:
             error_json = e.response.json() if e.response else {}
             return {"status": "error", "reason": reason, "details": error_json, "http_status": e.response.status_code if e.response else None}
-        except ValueError:  # If response is not JSON
+        except ValueError:
             return {"status": "error", "reason": reason, "details": error_details, "http_status": e.response.status_code if e.response else None}
-    except Exception as e:  # Catch other exceptions like requests.ConnectionError, etc.
+    except Exception as e:
         reason = str(e)
         current_audit_logger.warning(
-            # Updated audit log
             f"EventSubサブスクリプション作成: {event_type} 失敗: {reason}")
         current_logger.error(
             f"EventSubサブスクリプション ({event_type}) 作成中に予期せぬエラー: {reason}", exc_info=True)
@@ -380,8 +365,8 @@ def create_eventsub_subscription(event_type: str, logger_to_use=None):
 # サブスクリプションの削除
 
 
-# Allow passing logger
 def delete_eventsub_subscription(subscription_id, logger_to_use=None):
+    # 指定したIDのEventSubサブスクリプションを削除する
     current_logger = logger_to_use if logger_to_use else logger
     current_audit_logger = logging.getLogger("AuditLogger")
 
@@ -406,8 +391,8 @@ def delete_eventsub_subscription(subscription_id, logger_to_use=None):
 # サブスクリプションの確認と削除の処理
 
 
-# Allow passing logger
 def cleanup_eventsub_subscriptions(webhook_callback_url, logger_to_use=None):
+    # 指定したWebhook URLに紐づかない、または無効なEventSubサブスクリプションを削除する
     current_logger = logger_to_use if logger_to_use else logger
     current_logger.info("既存のEventSubサブスクリプションのクリーンアップを開始します...")
     subs = get_existing_eventsub_subscriptions(logger_to_use=current_logger)
