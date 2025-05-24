@@ -146,17 +146,16 @@ class NotificationCustomizationFrame(ttk.Frame):
         twitch_frame.img_path.trace_add(
             'write', lambda *a: update_img_preview())
         update_img_preview()
-        # ...existing code...
-
-        def update_tpl_offline_label():
-            path = twitch_frame.tpl_offline.get()
-            lbl_offline_tpl.config(text=os.path.basename(path))
+        # 放送終了時の投稿テンプレートラベルを追加
+        ttk.Label(twitch_frame, text="放送終了時の投稿テンプレート:", style="Big.TLabel").grid(
+            row=7, column=0, sticky=tk.W)
         lbl_offline_tpl = ttk.Label(
             twitch_frame, text=os.path.basename(twitch_frame.tpl_offline.get()), style="Big.TLabel")
         lbl_offline_tpl.grid(row=7, column=1, sticky=tk.W)
         twitch_frame.tpl_offline.trace_add(
-            'write', lambda *a: update_tpl_offline_label())
-        update_tpl_offline_label()
+            'write', lambda *a: lbl_offline_tpl.config(text=os.path.basename(twitch_frame.tpl_offline.get())))
+        lbl_offline_tpl.config(text=os.path.basename(
+            twitch_frame.tpl_offline.get()))
         # --- 保存ボタン ---
         ttk.Button(twitch_frame, text="保存", command=lambda: cls.save_twitch_settings(twitch_frame), style="Big.TButton", width=18).grid(
             row=9, column=1, sticky=tk.W, pady=(10, 0))
