@@ -199,6 +199,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   # 通知対象のTwitch配信者のユーザー名またはユーザーID(数字ID)
   # ユーザー名を指定した場合、起動時に自動的にユーザーIDに変換されます。
   TWITCH_BROADCASTER_ID=
+  TWITCH_BROADCASTER_ID_CONVERTED=（ここ自動制御です・触らないでください）
   # Twitch EventSub WebhookのコールバックURL
   # Cloudflare Tunnelなどで公開したこのアプリの /webhook エンドポイントのURL
   # 例: https://your-tunnel-domain.com/webhook
