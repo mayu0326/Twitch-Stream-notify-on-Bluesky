@@ -28,14 +28,14 @@ class NotificationCustomizationFrame(ttk.Frame):
 
         # --- Discordタブ ---
         discord_frame = ttk.Frame(notebook)
-        notebook.add(discord_frame, text="Discord")
+        notebook.add(discord_frame, text="Discord通知設定")
         load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
         discord_url = os.getenv('discord_error_notifier_url', '')
         discord_level = os.getenv('discord_notify_level', 'CRITICAL')
         discord_enabled = os.getenv(
             'DISCORD_NOTIFY_ENABLED', 'True').lower() == 'true'
         self.var_discord_enabled = tk.BooleanVar(value=discord_enabled)
-        ttk.Checkbutton(discord_frame, text="Discord通知を有効化 (DISCORD_NOTIFY_ENABLED)", variable=self.var_discord_enabled, style="Big.TCheckbutton").grid(
+        ttk.Checkbutton(discord_frame, text="Discord通知を有効化", variable=self.var_discord_enabled, style="Big.TCheckbutton").grid(
             row=0, column=0, sticky=tk.W, columnspan=2)
         ttk.Label(discord_frame, text="Discord通知レベル:", style="Big.TLabel").grid(
             row=1, column=0, sticky=tk.W)
