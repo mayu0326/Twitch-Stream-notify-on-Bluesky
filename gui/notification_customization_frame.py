@@ -25,33 +25,8 @@ class NotificationCustomizationFrame(ttk.Frame):
         from discord_notification_frame import DiscordNotificationFrame
         discord_frame = DiscordNotificationFrame(notebook)
         notebook.add(discord_frame, text="Discord通知設定")
-        load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
-        discord_url = os.getenv('discord_error_notifier_url', '')
-        discord_level = os.getenv('discord_notify_level', 'CRITICAL')
-        discord_enabled = os.getenv(
-            'DISCORD_NOTIFY_ENABLED', 'True').lower() == 'true'
-        self.var_discord_enabled = tk.BooleanVar(value=discord_enabled)
-        ttk.Checkbutton(discord_frame, text="Discord通知を有効化", variable=self.var_discord_enabled, style="Big.TCheckbutton").grid(
-            row=0, column=0, sticky=tk.W, columnspan=2)
-        ttk.Label(discord_frame, text="Discord通知レベル:", style="Big.TLabel").grid(
-            row=1, column=0, sticky=tk.W)
-        self.combo_discord_level = ttk.Combobox(discord_frame, values=[
-                                                "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], state="readonly", width=12)
-        self.combo_discord_level.set(discord_level)
-        self.combo_discord_level.grid(row=1, column=1, sticky=tk.W)
-        # フォントサイズを他のボタンと同じに
-        self.combo_discord_level.configure(font=("Meiryo", 12))
-        ttk.Label(discord_frame, text="Discord Webhook URL:", style="Big.TLabel").grid(
-            row=2, column=0, sticky=tk.W, columnspan=2)
-        self.entry_discord_url = ttk.Entry(discord_frame, width=70)
-        self.entry_discord_url.insert(0, discord_url)
-        self.entry_discord_url.grid(row=3, column=0, columnspan=2, sticky=tk.W)
-        # フォントサイズを他のボタンと同じに
-        self.entry_discord_url.configure(font=("Meiryo", 12))
-        ttk.Button(discord_frame, text="設定を反映", command=self.save_discord_settings, style="Big.TButton").grid(
-            row=4, column=1, sticky=tk.W, pady=(5, 0))
-        ttk.Button(discord_frame, text="設定を消去", command=self.clear_discord_settings, style="Big.TButton").grid(
-            row=4, column=0, sticky=tk.W, pady=(5, 0))
+        # Discord通知設定のUI・保存処理はdiscord_notification_frame.pyに完全移行済み
+        # ここでself.save_discord_settings等は不要
 
         # フォント・ボタンサイズをさらに小さく（2回りダウン）
         small_font = ("Meiryo", 12)
@@ -246,9 +221,9 @@ class NotificationCustomizationFrame(ttk.Frame):
         notify_newvideo = os.getenv(
             'NOTIFY_ON_YOUTUBE_NEW_VIDEO', 'False').lower() == 'true'
         tpl_online = os.getenv(
-            'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH', 'templates/yt_nico_online_template.txt')
+            'BLUESKY_YT_ONLINE_TEMPLATE_PATH', 'templates/yt_online_template.txt')
         tpl_newvideo = os.getenv(
-            'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_nico_new_video_template.txt')
+            'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_new_video_template.txt')
         img_path = os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png')
         yt_frame = ttk.Frame(notebook)
         yt_frame.var_yt_online = tk.BooleanVar(value=notify_online)
@@ -345,13 +320,13 @@ class NotificationCustomizationFrame(ttk.Frame):
                 new_lines.append(
                     f'NOTIFY_ON_YOUTUBE_NEW_VIDEO={str(frame.var_yt_newvideo.get())}\n')
                 found_newvideo = True
-            elif line.startswith('BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH='):
+            elif line.startswith('BLUESKY_YT_ONLINE_TEMPLATE_PATH='):
                 new_lines.append(
-                    f'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
+                    f'BLUESKY_YT_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
                 found_tpl_online = True
-            elif line.startswith('BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH='):
+            elif line.startswith('BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH='):
                 new_lines.append(
-                    f'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
+                    f'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
                 found_tpl_newvideo = True
             elif line.startswith('BLUESKY_IMAGE_PATH='):
                 new_lines.append(
@@ -367,10 +342,10 @@ class NotificationCustomizationFrame(ttk.Frame):
                 f'NOTIFY_ON_YOUTUBE_NEW_VIDEO={str(frame.var_yt_newvideo.get())}\n')
         if not found_tpl_online:
             new_lines.append(
-                f'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
+                f'BLUESKY_YT_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
         if not found_tpl_newvideo:
             new_lines.append(
-                f'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
+                f'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
         if not found_img:
             new_lines.append(f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
         with open(env_path, 'w', encoding='utf-8') as f:
@@ -382,9 +357,9 @@ class NotificationCustomizationFrame(ttk.Frame):
         frame.var_yt_newvideo.set(
             os.getenv('NOTIFY_ON_YOUTUBE_NEW_VIDEO', 'False').lower() == 'true')
         frame.tpl_online.set(os.getenv(
-            'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH', 'templates/yt_nico_online_template.txt'))
+            'BLUESKY_YT_ONLINE_TEMPLATE_PATH', 'templates/yt_online_template.txt'))
         frame.tpl_newvideo.set(os.getenv(
-            'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_nico_new_video_template.txt'))
+            'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_new_video_template.txt'))
         frame.img_path.set(
             os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
 
@@ -400,9 +375,9 @@ class NotificationCustomizationFrame(ttk.Frame):
         notify_newvideo = os.getenv(
             'NOTIFY_ON_NICONICO_NEW_VIDEO', 'False').lower() == 'true'
         tpl_online = os.getenv(
-            'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH', 'templates/yt_nico_online_template.txt')
+            'BLUESKY_NICO_ONLINE_TEMPLATE_PATH', 'templates/nico_online_template.txt')
         tpl_newvideo = os.getenv(
-            'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_nico_new_video_template.txt')
+            'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/nico_new_video_template.txt')
         img_path = os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png')
         nico_frame = ttk.Frame(notebook)
         nico_frame.var_nico_online = tk.BooleanVar(value=notify_online)
@@ -476,51 +451,69 @@ class NotificationCustomizationFrame(ttk.Frame):
         nico_frame.tpl_newvideo.trace_add(
             'write', lambda *a: update_tpl_newvideo_label())
         update_tpl_newvideo_label()
+        ttk.Button(nico_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(nico_frame.tpl_newvideo), style="Big.TButton", width=18).grid(
+            row=9, column=1, sticky=tk.W, pady=(0, 10))
         # --- 保存ボタン ---
         ttk.Button(nico_frame, text="保存", command=lambda: cls.save_nico_settings(nico_frame), style="Big.TButton", width=18).grid(
             row=10, column=1, sticky=tk.W, pady=(10, 0))
         return nico_frame
 
-    def change_online_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_online_image(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_offline_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_yt_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_yt_image(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_nico_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_nico_image(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_yt_newvideo_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def change_nico_newvideo_template(self):
-        # 削除（モジュール分割により不要）
-        pass
-
-    def save_discord_settings(self):
-        # 削除（discord_notification_frame.pyに移動済み）
-        pass
-
-    def clear_discord_settings(self):
-        # 削除（discord_notification_frame.pyに移動済み）
-        pass
+    @staticmethod
+    def save_nico_settings(frame):
+        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        new_lines = []
+        found_online = found_newvideo = found_tpl_online = found_tpl_newvideo = found_img = False
+        for line in lines:
+            if line.startswith('NOTIFY_ON_NICONICO_ONLINE='):
+                new_lines.append(
+                    f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
+                found_online = True
+            elif line.startswith('NOTIFY_ON_NICONICO_NEW_VIDEO='):
+                new_lines.append(
+                    f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
+                found_newvideo = True
+            elif line.startswith('BLUESKY_NICO_ONLINE_TEMPLATE_PATH='):
+                new_lines.append(
+                    f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
+                found_tpl_online = True
+            elif line.startswith('BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH='):
+                new_lines.append(
+                    f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
+                found_tpl_newvideo = True
+            elif line.startswith('BLUESKY_IMAGE_PATH='):
+                new_lines.append(
+                    f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
+                found_img = True
+            else:
+                new_lines.append(line)
+        if not found_online:
+            new_lines.append(
+                f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
+        if not found_newvideo:
+            new_lines.append(
+                f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
+        if not found_tpl_online:
+            new_lines.append(
+                f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
+        if not found_tpl_newvideo:
+            new_lines.append(
+                f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
+        if not found_img:
+            new_lines.append(f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        # 反映後、再読み込み
+        load_dotenv(env_path, override=True)
+        frame.var_nico_online.set(
+            os.getenv('NOTIFY_ON_NICONICO_ONLINE', 'False').lower() == 'true')
+        frame.var_nico_newvideo.set(
+            os.getenv('NOTIFY_ON_NICONICO_NEW_VIDEO', 'False').lower() == 'true')
+        frame.tpl_online.set(os.getenv(
+            'BLUESKY_NICO_ONLINE_TEMPLATE_PATH', 'templates/nico_online_template.txt'))
+        frame.tpl_newvideo.set(os.getenv(
+            'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/nico_new_video_template.txt'))
+        frame.img_path.set(
+            os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
+    # --- YouTube/ニコニコ個別テンプレート処理は各notice_frame.pyへ移植済み ---
