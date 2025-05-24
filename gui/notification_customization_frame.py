@@ -26,8 +26,17 @@ class NotificationCustomizationFrame(ttk.Frame):
         # --- ニコニコタブ ---
         nico_frame = self.create_nico_tab(notebook)
 
-        # --- Discordタブ ---
-        discord_frame = ttk.Frame(notebook)
+        # --- ログ/コンソール設定タブ ---
+        class LogConsoleSettingsFrame(ttk.Frame):
+            def __init__(self, master=None):
+                super().__init__(master)
+                ttk.Label(self, text="ここにログ/コンソール設定UIを実装",
+                          style="Big.TLabel").pack(padx=20, pady=20)
+        log_console_frame = LogConsoleSettingsFrame(notebook)
+        notebook.add(log_console_frame, text="ログ/コンソール設定")
+        # --- Discordタブ（分割後） ---
+        from discord_notification_frame import DiscordNotificationFrame
+        discord_frame = DiscordNotificationFrame(notebook)
         notebook.add(discord_frame, text="Discord通知設定")
         load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
         discord_url = os.getenv('discord_error_notifier_url', '')
