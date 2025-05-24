@@ -184,11 +184,9 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   BLUESKY_OFFLINE_TEMPLATE_PATH=templates/twitch_offline_template.txt
   # YouTube用テンプレート
   BLUESKY_YT_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
-  BLUESKY_YT_OFFLINE_TEMPLATE_PATH=
   BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
   # ニコニコ用テンプレート
   BLUESKY_NICO_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
-  BLUESKY_NICO_OFFLINE_TEMPLATE_PATH=
   BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
 
   # --- Twitch関連設定 ---
