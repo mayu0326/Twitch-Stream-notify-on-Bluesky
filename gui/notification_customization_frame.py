@@ -481,150 +481,46 @@ class NotificationCustomizationFrame(ttk.Frame):
             row=10, column=1, sticky=tk.W, pady=(10, 0))
         return nico_frame
 
-    @staticmethod
-    def save_nico_settings(frame):
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        new_lines = []
-        found_online = found_newvideo = found_tpl_online = found_tpl_newvideo = found_img = False
-        for line in lines:
-            if line.startswith('NOTIFY_ON_NICONICO_ONLINE='):
-                new_lines.append(
-                    f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
-                found_online = True
-            elif line.startswith('NOTIFY_ON_NICONICO_NEW_VIDEO='):
-                new_lines.append(
-                    f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
-                found_newvideo = True
-            elif line.startswith('BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-                found_tpl_online = True
-            elif line.startswith('BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-                found_tpl_newvideo = True
-            elif line.startswith('BLUESKY_IMAGE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-                found_img = True
-            else:
-                new_lines.append(line)
-        if not found_online:
-            new_lines.append(
-                f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
-        if not found_newvideo:
-            new_lines.append(
-                f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
-        if not found_tpl_online:
-            new_lines.append(
-                f'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-        if not found_tpl_newvideo:
-            new_lines.append(
-                f'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-        if not found_img:
-            new_lines.append(f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        # 反映後、再読み込み
-        load_dotenv(env_path, override=True)
-        frame.var_nico_online.set(
-            os.getenv('NOTIFY_ON_NICONICO_ONLINE', 'False').lower() == 'true')
-        frame.var_nico_newvideo.set(
-            os.getenv('NOTIFY_ON_NICONICO_NEW_VIDEO', 'False').lower() == 'true')
-        frame.tpl_online.set(os.getenv(
-            'BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH', 'templates/yt_nico_online_template.txt'))
-        frame.tpl_newvideo.set(os.getenv(
-            'BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_nico_new_video_template.txt'))
-        frame.img_path.set(
-            os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
-
     def change_online_template(self):
-        filedialog.askopenfilename(title="オンライン通知テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_online_image(self):
-        filedialog.askopenfilename(title="オンライン通知画像を選択", filetypes=[
-                                   ("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_offline_template(self):
-        filedialog.askopenfilename(title="オフライン通知テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_yt_template(self):
-        filedialog.askopenfilename(title="YouTube通知テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_yt_image(self):
-        filedialog.askopenfilename(title="YouTube通知画像を選択", filetypes=[
-                                   ("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_nico_template(self):
-        filedialog.askopenfilename(title="ニコニコ通知テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_nico_image(self):
-        filedialog.askopenfilename(title="ニコニコ通知画像を選択", filetypes=[
-                                   ("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_yt_newvideo_template(self):
-        filedialog.askopenfilename(title="YouTube新着動画テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def change_nico_newvideo_template(self):
-        filedialog.askopenfilename(title="ニコニコ新着動画テンプレートを選択", filetypes=[
-                                   ("Text files", "*.txt")])
-        # TODO: ファイルコピー・設定反映
+        # 削除（モジュール分割により不要）
+        pass
 
     def save_discord_settings(self):
-        """Webhook URL・通知レベル・DISCORD_NOTIFY_ENABLEDをsettings.envに保存"""
-        url = self.entry_discord_url.get().strip()
-        level = self.combo_discord_level.get().strip()
-        enabled = self.var_discord_enabled.get()
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        new_lines = []
-        found_url = found_level = found_enabled = False
-        for line in lines:
-            if line.startswith('discord_error_notifier_url='):
-                new_lines.append(f'discord_error_notifier_url={url}\n')
-                found_url = True
-            elif line.startswith('discord_notify_level='):
-                new_lines.append(f'discord_notify_level={level}\n')
-                found_level = True
-            elif line.startswith('DISCORD_NOTIFY_ENABLED='):
-                new_lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
-                found_enabled = True
-            else:
-                new_lines.append(line)
-        if not found_url:
-            new_lines.append(f'discord_error_notifier_url={url}\n')
-        if not found_level:
-            new_lines.append(f'discord_notify_level={level}\n')
-        if not found_enabled:
-            new_lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        # 反映後、再読み込み
-        load_dotenv(env_path, override=True)
-        self.entry_discord_url.delete(0, tk.END)
-        self.entry_discord_url.insert(0, url)
-        self.combo_discord_level.set(level)
-        self.var_discord_enabled.set(enabled)
+        # 削除（discord_notification_frame.pyに移動済み）
+        pass
 
     def clear_discord_settings(self):
-        """Webhook URL・通知レベル・DISCORD_NOTIFY_ENABLEDを初期化してsettings.envに保存"""
-        self.entry_discord_url.delete(0, tk.END)
-        self.combo_discord_level.set('CRITICAL')
-        self.var_discord_enabled.set(False)
-        self.save_discord_settings()
+        # 削除（discord_notification_frame.pyに移動済み）
+        pass
