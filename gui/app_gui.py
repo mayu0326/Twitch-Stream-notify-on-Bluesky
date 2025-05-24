@@ -33,12 +33,15 @@ class MainWindow(tk.Tk):
         self.config(menu=menubar)
 
     def create_tabs(self):
+        # タブのフォントサイズを10ptに設定
+        style = tk.ttk.Style()
+        style.configure("TNotebook.Tab", font=("Meiryo", 10))
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        # ボット制御
+        # アプリ管理（旧:ボット制御）
         self.tab_control = MainControlFrame(
             notebook, bot_manager=self.bot_manager)
-        notebook.add(self.tab_control, text="ボット制御")
+        notebook.add(self.tab_control, text="アプリ管理")
         # Bluesky投稿設定（Twitch/YouTube/ニコニコ）
         self.tab_bluesky_post = BlueskyPostSettingsFrame(notebook)
         notebook.add(self.tab_bluesky_post, text="Bluesky投稿設定")
