@@ -182,9 +182,14 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   BLUESKY_TEMPLATE_PATH=templates/twitch_online_template.txt
   # Blueskyへの配信終了通知用テンプレートファイルのパス
   BLUESKY_OFFLINE_TEMPLATE_PATH=templates/twitch_offline_template.txt
-  # YouTube・ニコニコ用テンプレート
-  BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
-  BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
+  # YouTube用テンプレート
+  BLUESKY_YT_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
+  BLUESKY_YT_OFFLINE_TEMPLATE_PATH=
+  BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
+  # ニコニコ用テンプレート
+  BLUESKY_NICO_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
+  BLUESKY_NICO_OFFLINE_TEMPLATE_PATH=
+  BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
 
   # --- Twitch関連設定 ---
   # TwitchアプリケーションのクライアントID (Twitch Developer Consoleで取得)
@@ -316,14 +321,28 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   URL: {url} 
   #Twitch配信通知
   ```
-## YouTubeLive/ニコニコ生放送の場合 
+## YouTubeLiveの場合 
   ```
   配信が開始されました！
   タイトル：{{ title }}
   配信URL： {{ stream_url }}
   #Bluesky通知 #配信開始
   ```
-## YouTube動画/ニコニコ動画の場合
+## ニコニコ生放送の場合 
+  ```
+  配信が開始されました！
+  タイトル：{{ title }}
+  配信URL： {{ stream_url }}
+  #Bluesky通知 #配信開始
+  ```
+## YouTube動画の場合
+  ```
+  新しい動画が投稿されました！
+  動画タイトル：{{ title }}
+  動画URL: {{ video_url }}
+  #Bluesky通知 #新着動画
+  ```
+## ニコニコ動画の場合
   ```
   新しい動画が投稿されました！
   動画タイトル：{{ title }}
@@ -444,7 +463,7 @@ A. templates/ ディレクトリにテンプレートを追加し、\
 
 ### Q. 配信終了時にも Bluesky に投稿したい
 
-A. 現状は配信開始のみ対応ですが、今後のアップデートで追加予定です。
+A. 現状はTwitchのみ対応ですが、YouTube/ニコニコの配信終了通知テンプレート（BLUESKY_YT_OFFLINE_TEMPLATE_PATH, BLUESKY_NICO_OFFLINE_TEMPLATE_PATH）を追加し、今後のアップデートで対応予定です。
 
 ### Q. Blueskyに投稿する時に画像を添付したい
 
