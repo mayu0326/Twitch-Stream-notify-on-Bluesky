@@ -1,4 +1,4 @@
-# Contributing to Twitch Stream Notify on Bluesky
+# Contributing to Stream notify on Bluesky
 
 First off, thank you for considering contributing! We welcome any help to improve this project. Whether it's reporting a bug, proposing a new feature, or writing code, your contributions are valuable.
 

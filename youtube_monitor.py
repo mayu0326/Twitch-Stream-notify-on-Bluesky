@@ -1,6 +1,34 @@
+# -*- coding: utf-8 -*-
+"""
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
+"""
+
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
 import time
 import requests
 from threading import Thread
+from version import __version__
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
 
 
 class YouTubeMonitor(Thread):
@@ -9,6 +37,7 @@ class YouTubeMonitor(Thread):
     """
 
     def __init__(self, api_key, channel_id, poll_interval, on_live, on_new_video):
+        # APIキー、チャンネルID、ポーリング間隔、コールバック関数を初期化
         super().__init__(daemon=True)
         self.api_key = api_key
         self.channel_id = channel_id
@@ -19,6 +48,7 @@ class YouTubeMonitor(Thread):
         self.last_video_id = None
 
     def run(self):
+        # スレッドのメインループ。定期的にライブ配信・新着動画をチェック
         while True:
             try:
                 # ライブ配信の有無を確認
@@ -34,7 +64,7 @@ class YouTubeMonitor(Thread):
                     self.last_video_id = video_id
 
             except Exception as e:
-                print(f"[YouTubeMonitor] Error: {e}")
+                print(f"[YouTubeMonitor] エラー発生: {e}")
             time.sleep(self.poll_interval)
 
     def check_live(self):

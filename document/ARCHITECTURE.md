@@ -1,4 +1,4 @@
-Project Review: Twitch Stream notify on Bluesky
+Project Review: Stream notify on Bluesky
 
 1\. Core Application Logic
 
@@ -187,7 +187,7 @@ README.md, linking to CONTRIBUTING.md. LICENSE:
 Role: Specifies the legal terms under which the software is distributed.
 License: GNU General Public License v2 (GPL-2.0). Overall Summary
 
-This project, "Twitch Stream notify on Bluesky," is a well-structured
+This project, "Stream notify on Bluesky," is a well-structured
 Python bot designed to automatically notify Bluesky when a specified
 Twitch channel goes live or offline. It leverages Twitch's EventSub
 system for real-time event detection and Cloudflare Tunnel to receive

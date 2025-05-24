@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Twitch Stream notify on Bluesky
+Stream notify on Bluesky
 
-このモジュールはTwitch配信の通知をBlueskyに送信するBotの一部です。
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
-# Twitch Stream notify on Bluesky
+# Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-# USA.
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 from eventsub import setup_broadcaster_id
 from utils import rotate_secret_if_needed
@@ -34,7 +31,7 @@ from eventsub import (
 from logging_config import configure_logging
 from eventsub import cleanup_eventsub_subscriptions
 from tunnel import start_tunnel, stop_tunnel
-from bluesky import BlueskyPoster  # Ensure BlueskyPoster is imported
+from bluesky import BlueskyPoster  # BlueskyPosterクラスのインポート
 from flask import Flask, request
 from youtube_monitor import YouTubeMonitor
 from niconico_monitor import NiconicoMonitor
@@ -48,11 +45,12 @@ __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
 __version__ = __version__
 
-# Flaskアプリの生成
+# Flaskアプリケーションの生成
 app = Flask(__name__)
 
 
 def validate_settings():
+    # 必須設定値がすべて存在するか検証する
     required_keys = [
         "BLUESKY_USERNAME",
         "BLUESKY_PASSWORD",
@@ -65,6 +63,7 @@ def validate_settings():
     if missing_keys:
         raise ValueError(f"settings.envの必須設定が未設定です: {', '.join(missing_keys)}")
 
+    # 数値設定値が正しいか検証する
     numeric_keys_defaults = {
         "RETRY_MAX": "3",
         "RETRY_WAIT": "2",
@@ -81,6 +80,7 @@ def validate_settings():
 
 @app.errorhandler(404)
 def handle_404(e):
+    # 404エラー発生時の処理
     try:
         safe_url = escape(request.url)
         safe_ua = escape(request.user_agent.string)
@@ -93,10 +93,12 @@ def handle_404(e):
 
 @app.route("/webhook", methods=["POST", "GET"])
 def handle_webhook():
+    # Webhookエンドポイントの処理
     if request.method == "GET":
         app.logger.info("Webhookエンドポイントは正常に稼働しています。")
         return "Webhook endpoint is working! POST requests only.", 200
 
+    # 署名検証
     if not verify_signature(request):
         return jsonify({"status": "signature mismatch"}), 403
 
@@ -114,12 +116,14 @@ def handle_webhook():
         "subscription", {}) if isinstance(data, dict) else {}
     subscription_type = subscription_payload.get("type")
 
+    # Webhook検証チャレンジ
     if message_type == "webhook_callback_verification":
         challenge = data.get("challenge", "") if isinstance(data, dict) else ""
         app.logger.info(
             f"Webhook検証チャレンジ受信 ({subscription_type if subscription_type else 'タイプ不明'}): {challenge[:50]}...")
         return challenge, 200, {"Content-Type": "text/plain"}
 
+    # 通知イベントの処理
     if message_type == "notification":
         event_data = data.get("event", {}) if isinstance(data, dict) else {}
         broadcaster_user_login_from_event = event_data.get(
@@ -141,9 +145,10 @@ def handle_webhook():
         notify_on_offline_str = os.getenv("NOTIFY_ON_OFFLINE", "False").lower()
         NOTIFY_ON_OFFLINE = notify_on_offline_str == "true"
 
+        # 配信開始イベント
         if subscription_type == "stream.online":
             if NOTIFY_ON_ONLINE:
-                # Specific checks for stream.online
+                # stream.online用の必須項目チェック
                 if event_data.get("title") is None or event_data.get("category_name") is None:
                     app.logger.warning(
                         f"Webhook通知 (stream.online): 'title' または 'category_name' が不足しています. イベントデータ: {event_data}")
@@ -161,7 +166,7 @@ def handle_webhook():
                     "game_name": event_data.get("game_name", event_data.get("category_name")),
                     "language": event_data.get("language"),
                     "started_at": event_data.get("started_at"),
-                    "type": event_data.get("type"),  # e.g., "live"
+                    "type": event_data.get("type"),  # 例: "live"
                     "is_mature": event_data.get("is_mature"),
                     "tags": event_data.get("tags", []),
                     "stream_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
@@ -193,6 +198,7 @@ def handle_webhook():
                     f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
                 return jsonify({"status": "skipped, online notifications disabled"}), 200
 
+        # 配信終了イベント
         elif subscription_type == "stream.offline":
             if NOTIFY_ON_OFFLINE:
                 event_context = {
@@ -224,17 +230,20 @@ def handle_webhook():
                     f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
                 return jsonify({"status": "skipped, offline notifications disabled"}), 200
 
+        # 未対応イベントタイプ
         else:
             app.logger.warning(
                 f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login_from_event}")
             return jsonify({"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
 
+    # サブスクリプション失効通知
     if message_type == 'revocation':
         revocation_status = subscription_payload.get("status", "不明なステータス")
         app.logger.warning(
             f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {data.get('event', {}).get('broadcaster_user_login', 'N/A')}")
         return jsonify({"status": "revocation notification received"}), 200
 
+    # 未処理のメッセージタイプ
     app.logger.info(
         f"受信した未処理のTwitch EventSubメッセージタイプ: {message_type if message_type else '不明'}. データ: {data}")
     return jsonify({"status": "unhandled message type or event"}), 200
@@ -244,16 +253,22 @@ logger = None
 audit_logger = None
 
 if __name__ == "__main__":
+    # メイン処理（初期化・監視・サーバ起動）
     tunnel_proc = None
     try:
+        # ロギング設定
         logger, app_logger_handlers, audit_logger = configure_logging(app)
+        # シークレットのローテーション
         WEBHOOK_SECRET = rotate_secret_if_needed(logger)
         os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
 
+        # BROADCASTER_IDのセットアップ
         setup_broadcaster_id(logger_to_use=logger)
+        # 設定ファイルの検証
         validate_settings()
         logger.info("設定ファイルの検証が完了しました。")
 
+        # Twitchアクセストークンの取得
         TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token(
             logger_to_use=logger)
         if not TWITCH_APP_ACCESS_TOKEN:
@@ -261,15 +276,18 @@ if __name__ == "__main__":
             sys.exit(1)
         logger.info("Twitchアプリのアクセストークンを正常に取得しました。")
 
+        # EventSubサブスクリプションのクリーンアップ
         WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
         cleanup_eventsub_subscriptions(
             WEBHOOK_CALLBACK_URL, logger_to_use=logger)
 
+        # トンネルの起動
         tunnel_proc = start_tunnel(logger)
         if not tunnel_proc:
             logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
 
+        # 必須EventSubサブスクリプションの作成
         event_types_to_subscribe = ["stream.online", "stream.offline"]
         all_subscriptions_successful = True
         for event_type in event_types_to_subscribe:
@@ -306,6 +324,7 @@ if __name__ == "__main__":
 
         # --- YouTube・ニコニコ監視スレッド起動 ---
         def on_youtube_live(live_info):
+            # YouTubeライブ配信開始時のコールバック
             if os.getenv("NOTIFY_ON_YOUTUBE_ONLINE", "False") == "True":
                 logger.info("[YouTube] 配信開始検出！")
                 try:
@@ -332,6 +351,7 @@ if __name__ == "__main__":
                     logger.error(f"[YouTube] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_youtube_new_video(video_id):
+            # YouTube新着動画検出時のコールバック
             if os.getenv("NOTIFY_ON_YOUTUBE_NEW_VIDEO", "False") == "True":
                 logger.info(f"[YouTube] 新着動画検出: {video_id}")
                 try:
@@ -356,6 +376,7 @@ if __name__ == "__main__":
                     logger.error(f"[YouTube] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_niconico_live(live_id):
+            # ニコニコ生放送配信開始時のコールバック
             if os.getenv("NOTIFY_ON_NICONICO_ONLINE", "False") == "True":
                 logger.info(f"[ニコ生] 配信開始検出: {live_id}")
                 try:
@@ -381,6 +402,7 @@ if __name__ == "__main__":
                     logger.error(f"[ニコ生] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_niconico_new_video(video_id):
+            # ニコニコ動画新着投稿検出時のコールバック
             if os.getenv("NOTIFY_ON_NICONICO_NEW_VIDEO", "False") == "True":
                 logger.info(f"[ニコ動] 新着動画検出: {video_id}")
                 try:
@@ -404,6 +426,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     logger.error(f"[ニコ動] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
+        # YouTube監視設定の取得
         youtube_api_key = os.getenv("YOUTUBE_API_KEY")
         youtube_channel_id = os.getenv("YOUTUBE_CHANNEL_ID")
         youtube_poll_interval = int(os.getenv("YOUTUBE_POLL_INTERVAL", 60))
@@ -411,6 +434,7 @@ if __name__ == "__main__":
         niconico_poll_interval = int(
             os.getenv("NICONICO_LIVE_POLL_INTERVAL", 60))
 
+        # YouTube監視スレッドの起動
         if youtube_api_key and youtube_channel_id:
             yt_monitor = YouTubeMonitor(
                 youtube_api_key, youtube_channel_id, youtube_poll_interval,
@@ -418,6 +442,7 @@ if __name__ == "__main__":
             )
             yt_monitor.start()
 
+        # ニコニコ監視スレッドの起動
         if niconico_user_id:
             nn_monitor = NiconicoMonitor(
                 niconico_user_id, niconico_poll_interval,
@@ -425,11 +450,13 @@ if __name__ == "__main__":
             )
             nn_monitor.start()
 
+        # Flask (waitress) サーバーの起動
         logger.info("Flask (waitress) サーバーを起動します。ポート: 3000")
         from waitress import serve
         serve(app, host="0.0.0.0", port=3000)
 
     except ValueError as ve:
+        # 設定値エラー時の処理
         log_msg = f"設定エラー: {ve}. アプリケーションは起動できません。"
         if logger:
             logger.critical(log_msg)
@@ -437,6 +464,7 @@ if __name__ == "__main__":
             print(f"CRITICAL: {log_msg}")
         sys.exit(1)
     except Exception as e:
+        # その他の初期化エラー時の処理
         log_msg_critical = "初期化中の未処理例外によりアプリケーションの起動に失敗しました。"
         if logger:
             logger.critical(log_msg_critical, exc_info=e)
@@ -444,6 +472,7 @@ if __name__ == "__main__":
             print(f"CRITICAL: {log_msg_critical} {e}")
         sys.exit(1)
     finally:
+        # 終了時にトンネルを停止
         if tunnel_proc:
             if logger:
                 logger.info("アプリケーション終了前にトンネルを停止します。")
@@ -454,6 +483,7 @@ if __name__ == "__main__":
 
 @app.errorhandler(Exception)
 def handle_exception(e):
+    # 未処理例外発生時のエラーハンドラ
     app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
     return (
         jsonify(
