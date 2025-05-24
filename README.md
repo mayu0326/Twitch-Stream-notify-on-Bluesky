@@ -7,8 +7,10 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 ## 主な特徴
 ### 基本機能
-- **Twitch EventSub Webhook**で配信開始を自動検知
+- **Twitch EventSub Webhook**で配信開始/終了を自動検知
 - 不要な**Twitch EventSub サブスクリプション**の自動クリーンアップ
+- **YouTubeLive/ニコニコ生放送**の放送開始の検知に対応(終了は非対応)
+- **Youtube動画/ニコニコ動画**のアップロード検知(App起動後の新着のみ)に対応
 - **Cloudflare Tunnel**でローカル環境でも Webhook 受信
 - **設定ファイル**で設定を細かくカスタマイズ可能
 - **Discord へのエラー通知**・通知レベルの管理や機能オフも可能
@@ -16,8 +18,8 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 - **APIエラー時**の自動リトライ機能(回数や間隔も調整可能)
 
 ### 投稿関連
-- **Bluesky**へ自動で配信開始/終了通知を投稿(個別On/Off可能)
-- **Bluesky**へ投稿する内容はテンプレートで切り替え可能
+- **Bluesky**へ自動で配信開始/終了通知を投稿(各サービスごとに個別On/Off可能)
+- **Bluesky**へ投稿する内容は各サービスごとにテンプレートで切り替え可能
 - **Bluesky**へ投稿するとき特定の画像を添付することも可能
 - **Bluesky**投稿した内容をCSVで投稿履歴として記録
 
@@ -58,9 +60,11 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 ├── eventsub.py
 ├── logging_config.py
 ├── main.py
+├── niconico_monitor.py
 ├── tunnel.py
 ├── utils.py
 ├── version.py
+├── youtube_monitor.py
 ├── requirements.txt
 ├── development-requirements.txt
 ├── settings.env.example
@@ -81,8 +85,10 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 │   ├── CONTRIBUTING.md
 │   └── contributing_readme_section.md
 ├── templates/
-│   ├── default_template.txt
-│   └── offline_template.txt
+│   ├── twitch_online_template.txt
+│   ├── twitch_offline_template.txt
+│   ├── yt_nico_online_template.txt
+│   └── yt_nico_new_video_template.txt
 ├── tests/
 │   ├── test_bluesky.py
 │   ├── test_eventsub.py
@@ -90,6 +96,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 │   ├── test_main.py
 │   ├── test_tunnel.py
 │   └── test_utils.py
+│   └── test_youtube_niconico_monitor.py
 ├── Docker/
 │   ├── docker_readme_section.md
 │   ├── docker-compose.yml
@@ -164,63 +171,76 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   # --- Bluesky関連設定 ---
   # Blueskyのユーザー名 (例: your-handle.bsky.social or 独自ドメイン等ご利用中のID)
   BLUESKY_USERNAME=
-
   # Blueskyのアプリパスワード (Blueskyの設定画面で発行してください)
   BLUESKY_PASSWORD=
-  
   # Bluesky投稿時に使用する画像ファイルのパス (例: images/stream_image.png)
   # 設定しない場合は画像なしで投稿されます。
   BLUESKY_IMAGE_PATH=images/noimage.png
-
   # Blueskyへの配信開始通知用テンプレートファイルのパス
-  BLUESKY_TEMPLATE_PATH=templates/default_template.txt
-
+  BLUESKY_TEMPLATE_PATH=templates/twitch_online_template.txt
   # Blueskyへの配信終了通知用テンプレートファイルのパス
-  BLUESKY_OFFLINE_TEMPLATE_PATH=templates/offline_template.txt
+  BLUESKY_OFFLINE_TEMPLATE_PATH=templates/twitch_offline_template.txt
+  # YouTube・ニコニコ用テンプレート
+  BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH=templates/yt_nico_online_template.txt
+  BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH=templates/yt_nico_new_video_template.txt
 
   # --- Twitch関連設定 ---
   # TwitchアプリケーションのクライアントID (Twitch Developer Consoleで取得)
   TWITCH_CLIENT_ID=
-
   # Twitchアプリケーションのクライアントシークレット (Twitch Developer Consoleで取得)
   TWITCH_CLIENT_SECRET=
   # 通知対象のTwitch配信者のユーザー名またはユーザーID(数字ID)
   # ユーザー名を指定した場合、起動時に自動的にユーザーIDに変換されます。
   TWITCH_BROADCASTER_ID=
-
   # Twitch EventSub WebhookのコールバックURL
   # Cloudflare Tunnelなどで公開したこのアプリの /webhook エンドポイントのURL
   # 例: https://your-tunnel-domain.com/webhook
   WEBHOOK_CALLBACK_URL=
-
   # Webhook署名検証用のシークレットキー・前回更新日時
   # アプリケーション起動時に自動生成・ローテーションされますので空欄にしてください。
   WEBHOOK_SECRET=
   SECRET_LAST_ROTATED=
-
   # Twitch EventSubの各APIリクエストが失敗した場合のリトライ回数
   RETRY_MAX=3
   # リトライ時の待機秒数
   RETRY_WAIT=2
 
-  # --- 通知設定 ---
-  # 配信開始時にBlueskyへ通知するか (True/False)
-  NOTIFY_ON_ONLINE=True
+  # --- YouTube関連設定 ---
+  # YouTube Data API v3のAPIキー
+  YOUTUBE_API_KEY=
+  # 監視対象のYouTubeチャンネルID
+  YOUTUBE_CHANNEL_ID=
+  # YouTubeのポーリング間隔（秒、デフォルト: 60）
+  YOUTUBE_POLL_INTERVAL=60
 
-  # 配信終了時にBlueskyへ通知するか (True/False)
+  # --- ニコニコ関連設定 ---
+  # 監視対象のニコニコユーザーID（数字のみ）
+  NICONICO_USER_ID=
+  # ニコニコのポーリング間隔（秒、デフォルト: 60）
+  NICONICO_LIVE_POLL_INTERVAL=60
+
+  # --- 通知設定 ---
+  # Twitch配信開始時にBlueskyへ通知するか (True/False)
+  NOTIFY_ON_ONLINE=True
+  # Twitch配信終了時にBlueskyへ通知するか (True/False)
   NOTIFY_ON_OFFLINE=False
+  # YouTube配信開始時にBlueskyへ通知するか(True/False)
+  NOTIFY_ON_YOUTUBE_ONLINE=False
+  # YouTube新着動画投稿時にBlueskyへ通知するか(True/False)
+  NOTIFY_ON_YOUTUBE_NEW_VIDEO=False
+  # ニコニコ生放送配信開始時にBlueskyへ通知するか(True/False)
+  NOTIFY_ON_NICONICO_ONLINE=False
+  # ニコニコ動画新着投稿時にBlueskyへ通知するか(True/False)
+  NOTIFY_ON_NICONICO_NEW_VIDEO=False
 
   # --- ロギング関連設定 ---
   # アプリケーションのログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   LOG_LEVEL=INFO
-
   # ログファイルのローテーション保持日数 (日単位の整数)
   LOG_RETENTION_DAYS=14
-
   # Discordエラー通知用のWebhook URL (設定しない場合は通知無効)
   # エラー発生時にこのURLに通知が飛びます。
   discord_error_notifier_url=
-
   # Discordへ通知するログの最低レベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   # discord_error_notifier_url が設定されている場合のみ有効。
   discord_notify_level=CRITICAL
@@ -240,11 +260,11 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 
 ### 6. **Blueskyへ投稿する際の投稿テンプレートの作成・編集(オプション)**
 
-- templates/ ディレクトリにある**default_template.txt**をコピーして、\
+- templates/ ディレクトリにある各サービス用のテンプレートをコピーして、\
 内容を書き換えてください。
-- テンプレートを編集しない場合はデフォルトを使用して投稿します。
-- **settings.env** の **BLUESKY_TEMPLATE_PATH** を、\
-使用するテンプレートのファイル名に書き替えるとテンプレートの切り替えができます。
+- テンプレートを編集しない場合は各サービス用の初期テンプレートを使用して投稿します。
+- **settings.env** の各サービス用の設定項目から、使用するテンプレートのファイル名を、\
+指定（書き替える）とテンプレートの切り替えができます。
 
 ### 7. **Bot を起動**
 
@@ -276,8 +296,16 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   {username}：ユーザー名です
   {display_name}：ユーザー名(表示名)です
   ```
+  - Youtubeとニコニコは下記の対応となります。
+  ```
+  {{ title }}：配信/動画/アーカイブのタイトルです
+  {url}：動画のURLです
+  {{ stream_url }}：放送URLです。
+
+  ```
 
 - テンプレートを編集しない場合は以下の内容が投稿されます。
+## Twitchの場合
   ```
   🔴 放送を開始しました！
   {display_name} has started streaming on Twitch now! 
@@ -286,10 +314,24 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   URL: {url} 
   #Twitch配信通知
   ```
+## YouTubeLive/ニコニコ生放送の場合 
+  ```
+  配信が開始されました！
+  タイトル：{{ title }}
+  配信URL： {{ stream_url }}
+  #Bluesky通知 #配信開始
+  ```
+## YouTube動画/ニコニコ動画の場合
+  ```
+  新しい動画が投稿されました！
+  動画タイトル：{{ title }}
+  動画URL: {{ video_url }}
+  #Bluesky通知 #新着動画
+  ```
 
 - テンプレートを切り替える場合、\
-**settings.env** の **BLUESKY_TEMPLATE_PATH** を使用するテンプレートの\
-ファイル名に書き換えてください。
+**settings.env** の各サービス用の設定項目から、使用するテンプレートのファイル名を、\
+指定（書き替える）とテンプレートの切り替えができます。
 - **テンプレートファイルが見つからない場合**は、エラーログが記録され、\
 デフォルトテンプレートが利用されます。
 ---
@@ -447,6 +489,8 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 
 - この Bot は個人運用・検証を想定しています。商用利用や大規模運用時は自己責任でお願いします。
 - セキュリティのため、API キーやパスワードは絶対に公開リポジトリに含めないでください。
+- 依存パッケージの脆弱性は `pip-audit` や `safety` で定期的にチェックしてください。
+- シークレットやAPIキーはログやprintで絶対に出力しないでください。
 - **APIエラー発生時**は自動でリトライ処理を行います。\
 また、Webhook署名のタイムスタンプを検証するようになっているため、\
 リプレイ攻撃の防止にも効果があります。
