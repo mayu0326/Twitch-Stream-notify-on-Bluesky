@@ -42,6 +42,15 @@ class MainWindow(tk.Tk):
         self.tab_control = MainControlFrame(
             notebook, bot_manager=self.bot_manager)
         notebook.add(self.tab_control, text="アプリ管理")
+        # 一般設定（ダミーFrame）
+
+        class GeneralSettingsFrame(tk.Frame):
+            def __init__(self, master=None):
+                super().__init__(master)
+                tk.Label(self, text="ここに一般設定UIを実装", font=(
+                    "Meiryo", 14)).pack(padx=20, pady=20)
+        self.tab_general = GeneralSettingsFrame(notebook)
+        notebook.add(self.tab_general, text="一般設定")
         # Bluesky投稿設定
         self.tab_bluesky_post = BlueskyPostSettingsFrame(notebook)
         notebook.add(self.tab_bluesky_post, text="Bluesky投稿設定")

@@ -17,15 +17,6 @@ class NotificationCustomizationFrame(ttk.Frame):
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
 
-        # --- Twitchタブ ---
-        twitch_frame = self.create_twitch_tab(notebook)
-
-        # --- YouTubeタブ ---
-        yt_frame = self.create_youtube_tab(notebook)
-
-        # --- ニコニコタブ ---
-        nico_frame = self.create_nico_tab(notebook)
-
         # --- ログ/コンソール設定タブ ---
         from logging_console_frame import LoggingConsoleFrame
         log_console_frame = LoggingConsoleFrame(notebook)
