@@ -174,7 +174,7 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   # Blueskyのユーザー名 (例: your-handle.bsky.social or 独自ドメイン等ご利用中のID)
   BLUESKY_USERNAME=
   # Blueskyのアプリパスワード (Blueskyの設定画面で発行してください)
-  BLUESKY_PASSWORD=
+  BLUESKY_APP_PASSWORD=
   # Bluesky投稿時に使用する画像ファイルのパス (例: images/stream_image.png)
   # 設定しない場合は画像なしで投稿されます。
   BLUESKY_IMAGE_PATH=images/noimage.png

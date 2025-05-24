@@ -53,7 +53,7 @@ def validate_settings():
     # 必須設定値がすべて存在するか検証する
     required_keys = [
         "BLUESKY_USERNAME",
-        "BLUESKY_PASSWORD",
+        "BLUESKY_APP_PASSWORD",
         "TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
         "TWITCH_BROADCASTER_ID",
@@ -175,7 +175,7 @@ def handle_webhook():
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     success = bluesky_poster.post_stream_online(
                         event_context=event_context,
@@ -212,7 +212,7 @@ def handle_webhook():
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     success = bluesky_poster.post_stream_offline(
                         event_context=event_context)
@@ -330,7 +330,7 @@ if __name__ == "__main__":
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     # 投稿内容を組み立て
                     event_context = {
@@ -357,7 +357,7 @@ if __name__ == "__main__":
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     event_context = {
                         "title": "YouTube新着動画投稿",
@@ -382,7 +382,7 @@ if __name__ == "__main__":
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     event_context = {
                         "title": "ニコニコ生放送配信開始",
@@ -408,7 +408,7 @@ if __name__ == "__main__":
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_PASSWORD")
+                        os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     event_context = {
                         "title": "ニコニコ動画新着投稿",

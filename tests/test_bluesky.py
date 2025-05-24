@@ -38,7 +38,7 @@ __version__ = __version__
 def mock_env(monkeypatch):
     # テスト用の環境変数を設定
     monkeypatch.setenv("BLUESKY_USERNAME", "test_user")
-    monkeypatch.setenv("BLUESKY_PASSWORD", "test_pass")
+    monkeypatch.setenv("BLUESKY_APP_PASSWORD", "test_pass")
     monkeypatch.setenv("BLUESKY_TEMPLATE_PATH",
                        "templates/default_template.txt")
     monkeypatch.setenv("BLUESKY_OFFLINE_TEMPLATE_PATH",

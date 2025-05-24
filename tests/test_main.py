@@ -37,7 +37,7 @@ __version__ = __version__
 @pytest.fixture(autouse=True)
 def default_env_vars(monkeypatch):
     monkeypatch.setenv("BLUESKY_USERNAME", "test_bsky_user")
-    monkeypatch.setenv("BLUESKY_PASSWORD", "test_bsky_pass")
+    monkeypatch.setenv("BLUESKY_APP_PASSWORD", "test_bsky_pass")
     monkeypatch.setenv("TWITCH_CLIENT_ID", "test_twitch_id")
     monkeypatch.setenv("TWITCH_CLIENT_SECRET", "test_twitch_secret")
     monkeypatch.setenv("TWITCH_BROADCASTER_ID", "12345678")  # 数値ID
@@ -194,7 +194,7 @@ class TestWebhookHandler:
         assert response.status_code == 200
         assert response.get_json() == {"status": "success"}
         mock_bluesky_poster_class.assert_called_once_with(
-            os.getenv("BLUESKY_USERNAME"), os.getenv("BLUESKY_PASSWORD"))
+            os.getenv("BLUESKY_USERNAME"), os.getenv("BLUESKY_APP_PASSWORD"))
 
         payload_event_data = self.STREAM_ONLINE_PAYLOAD["event"]
 
@@ -279,7 +279,7 @@ class TestWebhookHandler:
         json_data = response.get_json()
         assert json_data == {"status": "success, offline notification posted"}
         mock_bluesky_poster_class.assert_called_once_with(
-            os.getenv("BLUESKY_USERNAME"), os.getenv("BLUESKY_PASSWORD"))
+            os.getenv("BLUESKY_USERNAME"), os.getenv("BLUESKY_APP_PASSWORD"))
 
         payload_event_data = self.STREAM_OFFLINE_PAYLOAD["event"]
 
