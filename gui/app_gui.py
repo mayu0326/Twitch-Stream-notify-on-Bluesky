@@ -38,16 +38,16 @@ class MainWindow(tk.Tk):
         style.configure("TNotebook.Tab", font=("Meiryo", 10))
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        # アプリ管理（旧:ボット制御）
+        # アプリ管理
         self.tab_control = MainControlFrame(
             notebook, bot_manager=self.bot_manager)
         notebook.add(self.tab_control, text="アプリ管理")
-        # Bluesky投稿設定（Twitch/YouTube/ニコニコ）
+        # Bluesky投稿設定
         self.tab_bluesky_post = BlueskyPostSettingsFrame(notebook)
         notebook.add(self.tab_bluesky_post, text="Bluesky投稿設定")
-        # Discord通知設定
+        # ログ・通知設定（旧:Discord通知設定）
         self.tab_notify = NotificationCustomizationFrame(notebook)
-        notebook.add(self.tab_notify, text="Discord通知設定")
+        notebook.add(self.tab_notify, text="ログ・通知設定")
 
     def open_settings_editor(self):
         SettingsEditorDialog(self)
