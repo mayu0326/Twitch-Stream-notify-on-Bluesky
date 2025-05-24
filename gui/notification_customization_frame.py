@@ -121,16 +121,20 @@ class NotificationCustomizationFrame(ttk.Frame):
         twitch_frame.img_path.trace_add(
             'write', lambda *a: update_img_preview())
         update_img_preview()
-        # 放送終了時の投稿テンプレートラベルを追加
-        ttk.Label(twitch_frame, text="放送終了時の投稿テンプレート:", style="Big.TLabel").grid(
-            row=7, column=0, sticky=tk.W)
-        lbl_offline_tpl = ttk.Label(
-            twitch_frame, text=os.path.basename(twitch_frame.tpl_offline.get()), style="Big.TLabel")
-        lbl_offline_tpl.grid(row=7, column=1, sticky=tk.W)
-        twitch_frame.tpl_offline.trace_add(
-            'write', lambda *a: lbl_offline_tpl.config(text=os.path.basename(twitch_frame.tpl_offline.get())))
-        lbl_offline_tpl.config(text=os.path.basename(
-            twitch_frame.tpl_offline.get()))
+        # 放送終了時の投稿テンプレートラベル
+        # --- ここから下（Twitchの放送終了時テンプレートUI）はtwitch_notice_frame.pyへ移行済みのため削除 ---
+        # ttk.Label(twitch_frame, text="放送終了時の投稿テンプレート:", style="Big.TLabel").grid(
+        #     row=7, column=0, sticky=tk.W)
+        # lbl_offline_tpl = ttk.Label(
+        #     twitch_frame, text=os.path.basename(twitch_frame.tpl_offline.get()), style="Big.TLabel")
+        # lbl_offline_tpl.grid(row=7, column=1, sticky=tk.W)
+        # twitch_frame.tpl_offline.trace_add(
+        #     'write', lambda *a: lbl_offline_tpl.config(text=os.path.basename(twitch_frame.tpl_offline.get())))
+        # lbl_offline_tpl.config(text=os.path.basename(
+        #     twitch_frame.tpl_offline.get()))
+        # 放送終了時テンプレート変更ボタン
+        # ttk.Button(twitch_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(twitch_frame.tpl_offline), style="Big.TButton", width=18).grid(
+        #     row=8, column=1, sticky=tk.W, pady=(0, 10))
         # --- 保存ボタン ---
         ttk.Button(twitch_frame, text="保存", command=lambda: cls.save_twitch_settings(twitch_frame), style="Big.TButton", width=18).grid(
             row=9, column=1, sticky=tk.W, pady=(10, 0))
@@ -211,309 +215,21 @@ class NotificationCustomizationFrame(ttk.Frame):
 
     @classmethod
     def create_youtube_tab(cls, notebook):
-        import os
-        from dotenv import load_dotenv
-        from PIL import Image, ImageTk
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        load_dotenv(env_path)
-        notify_online = os.getenv(
-            'NOTIFY_ON_YOUTUBE_ONLINE', 'False').lower() == 'true'
-        notify_newvideo = os.getenv(
-            'NOTIFY_ON_YOUTUBE_NEW_VIDEO', 'False').lower() == 'true'
-        tpl_online = os.getenv(
-            'BLUESKY_YT_ONLINE_TEMPLATE_PATH', 'templates/yt_online_template.txt')
-        tpl_newvideo = os.getenv(
-            'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_new_video_template.txt')
-        img_path = os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png')
-        yt_frame = ttk.Frame(notebook)
-        yt_frame.var_yt_online = tk.BooleanVar(value=notify_online)
-        yt_frame.var_yt_newvideo = tk.BooleanVar(value=notify_newvideo)
-        yt_frame.tpl_online = tk.StringVar(value=tpl_online)
-        yt_frame.tpl_newvideo = tk.StringVar(value=tpl_newvideo)
-        yt_frame.img_path = tk.StringVar(value=img_path)
-        ttk.Checkbutton(yt_frame, text="放送開始時に投稿", variable=yt_frame.var_yt_online, style="Big.TCheckbutton").grid(
-            row=0, column=0, sticky=tk.W)
-        ttk.Checkbutton(yt_frame, text="新着動画投稿時に投稿", variable=yt_frame.var_yt_newvideo, style="Big.TCheckbutton").grid(
-            row=1, column=0, sticky=tk.W)
-        ttk.Label(yt_frame, text="配信開始時の投稿テンプレート:", style="Big.TLabel").grid(
-            row=2, column=0, sticky=tk.W)
-        # テンプレートファイル名（ファイル名のみ表示）
-
-        def update_tpl_yt_online_label():
-            path = yt_frame.tpl_online.get()
-            lbl_yt_tpl.config(text=os.path.basename(path))
-        lbl_yt_tpl = ttk.Label(
-            yt_frame, text=os.path.basename(yt_frame.tpl_online.get()), style="Big.TLabel")
-        lbl_yt_tpl.grid(row=2, column=1, sticky=tk.W)
-        yt_frame.tpl_online.trace_add(
-            'write', lambda *a: update_tpl_yt_online_label())
-        update_tpl_yt_online_label()
-        ttk.Button(yt_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(yt_frame.tpl_online), style="Big.TButton", width=18).grid(
-            row=3, column=1, sticky=tk.W, pady=(0, 10))
-        # 画像ファイルラベル（上部に2列分）
-        ttk.Label(yt_frame, text="配信開始投稿時に使用する画像ファイル:", style="Big.TLabel").grid(
-            row=4, column=0, columnspan=2, sticky=tk.W)
-        # プレビュー用ラベル（左側2行分）
-        yt_frame.img_preview = tk.Label(
-            yt_frame, width=120, height=90, relief=tk.SOLID, bg='white')
-        yt_frame.img_preview.grid(
-            row=5, column=0, rowspan=2, sticky=tk.W+tk.N+tk.S, padx=(0, 10), pady=(0, 10))
-        # 画像ファイル名（右側）
-        import os
-
-        def update_img_label():
-            path = yt_frame.img_path.get()
-            lbl_yt_img.config(text=os.path.basename(path))
-        lbl_yt_img = ttk.Label(
-            yt_frame, text=os.path.basename(yt_frame.img_path.get()), style="Big.TLabel")
-        lbl_yt_img.grid(row=5, column=1, sticky=tk.W, pady=(0, 5))
-        yt_frame.img_path.trace_add('write', lambda *a: update_img_label())
-        update_img_label()
-        # 画像変更ボタン（右側）
-        ttk.Button(yt_frame, text="画像変更...", command=lambda: cls.change_image_file(yt_frame.img_path), style="Big.TButton", width=18).grid(
-            row=6, column=1, sticky=tk.W, pady=(0, 10))
-
-        def update_img_preview(*args):
-            path = yt_frame.img_path.get()
-            try:
-                img = Image.open(path)
-                img.thumbnail((120, 90))
-                yt_frame._imgtk = ImageTk.PhotoImage(img)
-                yt_frame.img_preview.configure(image=yt_frame._imgtk)
-            except Exception:
-                yt_frame.img_preview.configure(image='')
-        yt_frame.img_path.trace_add('write', lambda *a: update_img_preview())
-        update_img_preview()
-        ttk.Label(yt_frame, text="新着動画投稿時の投稿テンプレート:", style="Big.TLabel").grid(
-            row=8, column=0, sticky=tk.W)
-        # テンプレートファイル名（ファイル名のみ表示）
-
-        def update_tpl_newvideo_label():
-            path = yt_frame.tpl_newvideo.get()
-            lbl_yt_newvideo_tpl.config(text=os.path.basename(path))
-        lbl_yt_newvideo_tpl = ttk.Label(
-            yt_frame, text=os.path.basename(yt_frame.tpl_newvideo.get()), style="Big.TLabel")
-        lbl_yt_newvideo_tpl.grid(row=8, column=1, sticky=tk.W)
-        yt_frame.tpl_newvideo.trace_add(
-            'write', lambda *a: update_tpl_newvideo_label())
-        update_tpl_newvideo_label()
-        ttk.Button(yt_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(yt_frame.tpl_newvideo), style="Big.TButton", width=18).grid(
-            row=9, column=1, sticky=tk.W, pady=(0, 10))
-        # --- 保存ボタン ---
-        ttk.Button(yt_frame, text="保存", command=lambda: cls.save_youtube_settings(yt_frame), style="Big.TButton", width=18).grid(
-            row=10, column=1, sticky=tk.W, pady=(10, 0))
-        return yt_frame
+        # --- この関数はYouTubeNoticeFrameへ完全移行のため削除 ---
+        pass
 
     @staticmethod
     def save_youtube_settings(frame):
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        new_lines = []
-        found_online = found_newvideo = found_tpl_online = found_tpl_newvideo = found_img = False
-        for line in lines:
-            if line.startswith('NOTIFY_ON_YOUTUBE_ONLINE='):
-                new_lines.append(
-                    f'NOTIFY_ON_YOUTUBE_ONLINE={str(frame.var_yt_online.get())}\n')
-                found_online = True
-            elif line.startswith('NOTIFY_ON_YOUTUBE_NEW_VIDEO='):
-                new_lines.append(
-                    f'NOTIFY_ON_YOUTUBE_NEW_VIDEO={str(frame.var_yt_newvideo.get())}\n')
-                found_newvideo = True
-            elif line.startswith('BLUESKY_YT_ONLINE_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_YT_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-                found_tpl_online = True
-            elif line.startswith('BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-                found_tpl_newvideo = True
-            elif line.startswith('BLUESKY_IMAGE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-                found_img = True
-            else:
-                new_lines.append(line)
-        if not found_online:
-            new_lines.append(
-                f'NOTIFY_ON_YOUTUBE_ONLINE={str(frame.var_yt_online.get())}\n')
-        if not found_newvideo:
-            new_lines.append(
-                f'NOTIFY_ON_YOUTUBE_NEW_VIDEO={str(frame.var_yt_newvideo.get())}\n')
-        if not found_tpl_online:
-            new_lines.append(
-                f'BLUESKY_YT_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-        if not found_tpl_newvideo:
-            new_lines.append(
-                f'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-        if not found_img:
-            new_lines.append(f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        # 反映後、再読み込み
-        load_dotenv(env_path, override=True)
-        frame.var_yt_online.set(
-            os.getenv('NOTIFY_ON_YOUTUBE_ONLINE', 'False').lower() == 'true')
-        frame.var_yt_newvideo.set(
-            os.getenv('NOTIFY_ON_YOUTUBE_NEW_VIDEO', 'False').lower() == 'true')
-        frame.tpl_online.set(os.getenv(
-            'BLUESKY_YT_ONLINE_TEMPLATE_PATH', 'templates/yt_online_template.txt'))
-        frame.tpl_newvideo.set(os.getenv(
-            'BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH', 'templates/yt_new_video_template.txt'))
-        frame.img_path.set(
-            os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
+        # --- この関数はYouTubeNoticeFrameへ完全移行のため削除 ---
+        pass
 
     @classmethod
     def create_nico_tab(cls, notebook):
-        import os
-        from dotenv import load_dotenv
-        from PIL import Image, ImageTk
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        load_dotenv(env_path)
-        notify_online = os.getenv(
-            'NOTIFY_ON_NICONICO_ONLINE', 'False').lower() == 'true'
-        notify_newvideo = os.getenv(
-            'NOTIFY_ON_NICONICO_NEW_VIDEO', 'False').lower() == 'true'
-        tpl_online = os.getenv(
-            'BLUESKY_NICO_ONLINE_TEMPLATE_PATH', 'templates/nico_online_template.txt')
-        tpl_newvideo = os.getenv(
-            'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/nico_new_video_template.txt')
-        img_path = os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png')
-        nico_frame = ttk.Frame(notebook)
-        nico_frame.var_nico_online = tk.BooleanVar(value=notify_online)
-        nico_frame.var_nico_newvideo = tk.BooleanVar(value=notify_newvideo)
-        nico_frame.tpl_online = tk.StringVar(value=tpl_online)
-        nico_frame.tpl_newvideo = tk.StringVar(value=tpl_newvideo)
-        nico_frame.img_path = tk.StringVar(value=img_path)
-        ttk.Checkbutton(nico_frame, text="放送開始時に投稿", variable=nico_frame.var_nico_online, style="Big.TCheckbutton").grid(
-            row=0, column=0, sticky=tk.W)
-        ttk.Checkbutton(nico_frame, text="新着動画投稿時に投稿", variable=nico_frame.var_nico_newvideo, style="Big.TCheckbutton").grid(
-            row=1, column=0, sticky=tk.W)
-        ttk.Label(nico_frame, text="配信開始時の投稿テンプレート:", style="Big.TLabel").grid(
-            row=2, column=0, sticky=tk.W)
-        # テンプレートファイル名（ファイル名のみ表示）
-
-        def update_tpl_nico_online_label():
-            path = nico_frame.tpl_online.get()
-            lbl_nico_tpl.config(text=os.path.basename(path))
-        lbl_nico_tpl = ttk.Label(
-            nico_frame, text=os.path.basename(nico_frame.tpl_online.get()), style="Big.TLabel")
-        lbl_nico_tpl.grid(row=2, column=1, sticky=tk.W)
-        nico_frame.tpl_online.trace_add(
-            'write', lambda *a: update_tpl_nico_online_label())
-        update_tpl_nico_online_label()
-        ttk.Button(nico_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(nico_frame.tpl_online), style="Big.TButton", width=18).grid(
-            row=3, column=1, sticky=tk.W, pady=(0, 10))
-        # 画像ファイルラベル（上部に2列分）
-        ttk.Label(nico_frame, text="配信開始投稿時に使用する画像ファイル:", style="Big.TLabel").grid(
-            row=4, column=0, columnspan=2, sticky=tk.W)
-        # プレビュー用ラベル（左側2行分）
-        nico_frame.img_preview = tk.Label(
-            nico_frame, width=120, height=90, relief=tk.SOLID, bg='white')
-        nico_frame.img_preview.grid(
-            row=5, column=0, rowspan=2, sticky=tk.W+tk.N+tk.S, padx=(0, 10), pady=(0, 10))
-        # 画像ファイル名（右側）
-        import os
-
-        def update_img_label():
-            path = nico_frame.img_path.get()
-            lbl_nico_img.config(text=os.path.basename(path))
-        lbl_nico_img = ttk.Label(
-            nico_frame, text=os.path.basename(nico_frame.img_path.get()), style="Big.TLabel")
-        lbl_nico_img.grid(row=5, column=1, sticky=tk.W, pady=(0, 5))
-        nico_frame.img_path.trace_add('write', lambda *a: update_img_label())
-        update_img_label()
-        # 画像変更ボタン（右側）
-        ttk.Button(nico_frame, text="画像変更...", command=lambda: cls.change_image_file(nico_frame.img_path), style="Big.TButton", width=18).grid(
-            row=6, column=1, sticky=tk.W, pady=(0, 10))
-
-        def update_img_preview(*args):
-            path = nico_frame.img_path.get()
-            try:
-                img = Image.open(path)
-                img.thumbnail((120, 90))
-                nico_frame._imgtk = ImageTk.PhotoImage(img)
-                nico_frame.img_preview.configure(image=nico_frame._imgtk)
-            except Exception:
-                nico_frame.img_preview.configure(image='')
-        nico_frame.img_path.trace_add('write', lambda *a: update_img_preview())
-        update_img_preview()
-        ttk.Label(nico_frame, text="新着動画投稿時の投稿テンプレート:", style="Big.TLabel").grid(
-            row=8, column=0, sticky=tk.W)
-        # テンプレートファイル名（ファイル名のみ表示）
-
-        def update_tpl_newvideo_label():
-            path = nico_frame.tpl_newvideo.get()
-            lbl_nico_newvideo_tpl.config(text=os.path.basename(path))
-        lbl_nico_newvideo_tpl = ttk.Label(
-            nico_frame, text=os.path.basename(nico_frame.tpl_newvideo.get()), style="Big.TLabel")
-        lbl_nico_newvideo_tpl.grid(row=8, column=1, sticky=tk.W)
-        nico_frame.tpl_newvideo.trace_add(
-            'write', lambda *a: update_tpl_newvideo_label())
-        update_tpl_newvideo_label()
-        ttk.Button(nico_frame, text="テンプレート変更...", command=lambda: cls.change_template_file(nico_frame.tpl_newvideo), style="Big.TButton", width=18).grid(
-            row=9, column=1, sticky=tk.W, pady=(0, 10))
-        # --- 保存ボタン ---
-        ttk.Button(nico_frame, text="保存", command=lambda: cls.save_nico_settings(nico_frame), style="Big.TButton", width=18).grid(
-            row=10, column=1, sticky=tk.W, pady=(10, 0))
-        return nico_frame
+        # --- この関数はNiconicoNoticeFrameへ完全移行のため削除 ---
+        pass
 
     @staticmethod
     def save_nico_settings(frame):
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        new_lines = []
-        found_online = found_newvideo = found_tpl_online = found_tpl_newvideo = found_img = False
-        for line in lines:
-            if line.startswith('NOTIFY_ON_NICONICO_ONLINE='):
-                new_lines.append(
-                    f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
-                found_online = True
-            elif line.startswith('NOTIFY_ON_NICONICO_NEW_VIDEO='):
-                new_lines.append(
-                    f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
-                found_newvideo = True
-            elif line.startswith('BLUESKY_NICO_ONLINE_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-                found_tpl_online = True
-            elif line.startswith('BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-                found_tpl_newvideo = True
-            elif line.startswith('BLUESKY_IMAGE_PATH='):
-                new_lines.append(
-                    f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-                found_img = True
-            else:
-                new_lines.append(line)
-        if not found_online:
-            new_lines.append(
-                f'NOTIFY_ON_NICONICO_ONLINE={str(frame.var_nico_online.get())}\n')
-        if not found_newvideo:
-            new_lines.append(
-                f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(frame.var_nico_newvideo.get())}\n')
-        if not found_tpl_online:
-            new_lines.append(
-                f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={frame.tpl_online.get()}\n')
-        if not found_tpl_newvideo:
-            new_lines.append(
-                f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={frame.tpl_newvideo.get()}\n')
-        if not found_img:
-            new_lines.append(f'BLUESKY_IMAGE_PATH={frame.img_path.get()}\n')
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        # 反映後、再読み込み
-        load_dotenv(env_path, override=True)
-        frame.var_nico_online.set(
-            os.getenv('NOTIFY_ON_NICONICO_ONLINE', 'False').lower() == 'true')
-        frame.var_nico_newvideo.set(
-            os.getenv('NOTIFY_ON_NICONICO_NEW_VIDEO', 'False').lower() == 'true')
-        frame.tpl_online.set(os.getenv(
-            'BLUESKY_NICO_ONLINE_TEMPLATE_PATH', 'templates/nico_online_template.txt'))
-        frame.tpl_newvideo.set(os.getenv(
-            'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/nico_new_video_template.txt'))
-        frame.img_path.set(
-            os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
+        # --- この関数はNiconicoNoticeFrameへ完全移行のため削除 ---
+        pass
     # --- YouTube/ニコニコ個別テンプレート処理は各notice_frame.pyへ移植済み ---
