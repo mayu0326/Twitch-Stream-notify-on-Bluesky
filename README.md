@@ -1,7 +1,8 @@
 # Stream notify on Bluesky
 
-Twitch/YouTube/ニコニコ生放送の配信開始を自動検知し、Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です。\
-Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。    
+Twitch/YouTube/ニコニコ生放送の配信開始を自動検知し、\
+Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です。\
+Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。 \   
 Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録など運用に便利な機能を多数備えています。
 
 ---
