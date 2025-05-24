@@ -43,11 +43,15 @@ class NotificationCustomizationFrame(ttk.Frame):
                                                 "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], state="readonly", width=12)
         self.combo_discord_level.set(discord_level)
         self.combo_discord_level.grid(row=1, column=1, sticky=tk.W)
+        # フォントサイズを他のボタンと同じに
+        self.combo_discord_level.configure(font=("Meiryo", 12))
         ttk.Label(discord_frame, text="Discord Webhook URL:", style="Big.TLabel").grid(
             row=2, column=0, sticky=tk.W, columnspan=2)
         self.entry_discord_url = ttk.Entry(discord_frame, width=70)
         self.entry_discord_url.insert(0, discord_url)
         self.entry_discord_url.grid(row=3, column=0, columnspan=2, sticky=tk.W)
+        # フォントサイズを他のボタンと同じに
+        self.entry_discord_url.configure(font=("Meiryo", 12))
         ttk.Button(discord_frame, text="設定を反映", command=self.save_discord_settings, style="Big.TButton").grid(
             row=4, column=1, sticky=tk.W, pady=(5, 0))
         ttk.Button(discord_frame, text="設定を消去", command=self.clear_discord_settings, style="Big.TButton").grid(
