@@ -6,12 +6,13 @@ Twitch Stream notify on Bluesky
 """
 
 from datetime import datetime
-from utils import retry_on_exception, is_valid_url, format_datetime_filter # Added format_datetime_filter
+# Added format_datetime_filter
+from utils import retry_on_exception, is_valid_url, format_datetime_filter, notify_discord_error
 import os
 import csv
 import logging
 from atproto import Client, exceptions
-from jinja2 import Template # Jinja2 Template import
+from jinja2 import Template  # Jinja2 Template import
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -45,14 +46,16 @@ RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 logger = logging.getLogger("AppLogger")
 
 # Default template paths, specific paths are fetched within methods
-DEFAULT_ONLINE_TEMPLATE_PATH = "templates/default_template.txt"
-DEFAULT_OFFLINE_TEMPLATE_PATH = "templates/offline_template.txt"
+DEFAULT_ONLINE_TEMPLATE_PATH = "templates/default_online_template.txt"
+DEFAULT_OFFLINE_TEMPLATE_PATH = "templates/default_offline_template.txt"
 
-def load_template(path=None): 
+
+def load_template(path=None):
     template_string = ""
-    if path is None: 
+    if path is None:
         path = DEFAULT_ONLINE_TEMPLATE_PATH
-        logger.warning(f"load_templateにパスが指定されませんでした。デフォルトのオンラインテンプレートパス '{path}' を使用します。")
+        logger.warning(
+            f"load_templateにパスが指定されませんでした。デフォルトのオンラインテンプレートパス '{path}' を使用します。")
 
     try:
         with open(path, encoding="utf-8") as f:
@@ -65,7 +68,7 @@ def load_template(path=None):
     except Exception as e:
         logger.error(f"テンプレート '{path}' の読み込み中に予期せぬエラー: {e}", exc_info=True)
         template_string = "Error: Failed to load template '{{ template_path }}' due to an unexpected error."
-    
+
     # Create Jinja2 Template object
     template_obj = Template(template_string)
     # Attach the custom filter to the template's environment
@@ -91,67 +94,89 @@ class BlueskyPoster:
         except FileNotFoundError:
             logger.error(f"Bluesky画像アップロードエラー: ファイルが見つかりません - {image_path}")
             return None
-        except Exception as e: 
-            logger.error(f"Bluesky画像アップロード中に予期せぬエラーが発生しました: {image_path}, エラー: {e}", exc_info=e)
+        except Exception as e:
+            logger.error(
+                f"Bluesky画像アップロード中に予期せぬエラーが発生しました: {image_path}, エラー: {e}", exc_info=e)
             return None
-
 
     @retry_on_exception(
         max_retries=RETRY_MAX,
         wait_seconds=RETRY_WAIT,
-        exceptions=(exceptions.AtProtocolError,) 
+        exceptions=(exceptions.AtProtocolError,)
     )
-    def post_stream_online(self, event_context: dict, image_path=None):
-        required_keys = ["title", "category_name", "stream_url", "broadcaster_user_login", "broadcaster_user_name"]
-        missing_keys = [key for key in required_keys if key not in event_context or event_context[key] is None]
-        if missing_keys:
-            logger.warning(f"Blueskyオンライン投稿の入力event_contextが不正です。不足キー: {', '.join(missing_keys)}")
-            return False
-        
-        success = False
-        template_path = os.getenv("BLUESKY_TEMPLATE_PATH", DEFAULT_ONLINE_TEMPLATE_PATH)
+    def post_stream_online(self, event_context: dict, image_path=None, platform="twitch"):
+        """
+        配信開始通知をBlueskyに投稿する（Twitch/YouTube/ニコニコ対応）
+        """
+        if platform == "twitch":
+            template_path = os.getenv(
+                "BLUESKY_TEMPLATE_PATH", "templates/twitch_online_template.txt")
+        else:
+            template_path = os.getenv(
+                "BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH", "templates/yt_nico_online_template.txt")
         template_obj = load_template(path=template_path)
 
+        required_keys = ["title", "category_name", "stream_url",
+                         "broadcaster_user_login", "broadcaster_user_name"]
+        missing_keys = [
+            key for key in required_keys if key not in event_context or event_context[key] is None]
+        if missing_keys:
+            logger.warning(
+                f"Blueskyオンライン投稿の入力event_contextが不正です。不足キー: {', '.join(missing_keys)}")
+            return False
+
+        success = False
+
         try:
-            self.client.login(self.username, self.password) 
-            
+            self.client.login(self.username, self.password)
+
             # Pass template_path for context in case of error template rendering
-            post_text = template_obj.render(**event_context, template_path=template_path) 
-            
+            post_text = template_obj.render(
+                **event_context, template_path=template_path)
+
             embed = None
-            if image_path and os.path.isfile(image_path): 
-                blob = self.upload_image(image_path) 
-                if blob: 
+            if image_path and os.path.isfile(image_path):
+                blob = self.upload_image(image_path)
+                if blob:
                     embed = {
                         "$type": "app.bsky.embed.images",
                         "images": [
-                            { 
-                                "alt": f"{event_context.get('title', event_context.get('broadcaster_user_name', 'Stream Image'))[:250]}", 
+                            {
+                                "alt": f"{event_context.get('title', event_context.get('broadcaster_user_name', 'Stream Image'))[:250]}",
                                 "image": blob
                             }
                         ]
                     }
                 else:
-                    logger.warning(f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
-            elif image_path and not os.path.isfile(image_path): 
-                 logger.warning(f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
+                    logger.warning(
+                        f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
+            elif image_path and not os.path.isfile(image_path):
+                logger.warning(
+                    f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
 
             self.client.send_post(post_text, embed=embed)
-            logger.info(f"Blueskyへの自動投稿に成功しました (stream.online): {event_context.get('stream_url')}")
-            audit_logger.info(f"Bluesky投稿成功 (stream.online): URL - {event_context.get('stream_url')}, Title - {event_context.get('title')}")
+            logger.info(
+                f"Blueskyへの自動投稿に成功しました (stream.online): {event_context.get('stream_url')}")
+            audit_logger.info(
+                f"Bluesky投稿成功 (stream.online): URL - {event_context.get('stream_url')}, Title - {event_context.get('title')}")
             success = True
             return True
         except exceptions.AtProtocolError as e:
-            logger.error(f"Bluesky APIエラー (stream.online投稿): {e}", exc_info=True) 
+            logger.error(
+                f"Bluesky APIエラー (stream.online投稿): {e}", exc_info=True)
             return False
-        except Exception as e: 
-            logger.error(f"Bluesky投稿中 (stream.online)に予期せぬエラーが発生しました: {e}", exc_info=e)
+        except Exception as e:
+            logger.error(
+                f"Bluesky投稿中 (stream.online)に予期せぬエラーが発生しました: {e}", exc_info=e)
+            notify_discord_error(f"Bluesky投稿エラー: {e}")
             return False
         finally:
             self._write_post_history(
-                title=event_context.get("title", "N/A"), 
-                category=event_context.get("category_name", event_context.get("game_name", "N/A")), 
-                url=event_context.get("stream_url", f"https://twitch.tv/{event_context.get('broadcaster_user_login', '')}"), 
+                title=event_context.get("title", "N/A"),
+                category=event_context.get(
+                    "category_name", event_context.get("game_name", "N/A")),
+                url=event_context.get(
+                    "stream_url", f"https://twitch.tv/{event_context.get('broadcaster_user_login', '')}"),
                 success=success,
                 event_type="online"
             )
@@ -161,65 +186,159 @@ class BlueskyPoster:
         wait_seconds=RETRY_WAIT,
         exceptions=(exceptions.AtProtocolError,)
     )
-    def post_stream_offline(self, event_context: dict):
-        required_keys = ["broadcaster_user_name", "broadcaster_user_login", "channel_url"]
-        missing_keys = [key for key in required_keys if key not in event_context or event_context[key] is None]
+    def post_stream_offline(self, event_context: dict, image_path=None, platform="twitch"):
+        """
+        配信終了通知をBlueskyに投稿する（Twitch/YouTube/ニコニコ対応）
+        """
+        if platform == "twitch":
+            template_path = os.getenv(
+                "BLUESKY_OFFLINE_TEMPLATE_PATH", "templates/twitch_offline_template.txt")
+        else:
+            # オフライン通知はTwitchのみ想定ならelse側は不要
+            template_path = os.getenv(
+                "BLUESKY_OFFLINE_TEMPLATE_PATH", "templates/twitch_offline_template.txt")
+        template_obj = load_template(path=template_path)
+
+        required_keys = ["broadcaster_user_name",
+                         "broadcaster_user_login", "channel_url"]
+        missing_keys = [
+            key for key in required_keys if key not in event_context or event_context[key] is None]
         if missing_keys:
-            logger.warning(f"Blueskyオフライン投稿の入力event_contextが不正です。不足キー: {', '.join(missing_keys)}")
+            logger.warning(
+                f"Blueskyオフライン投稿の入力event_contextが不正です。不足キー: {', '.join(missing_keys)}")
             return False
 
-        offline_template_path = os.getenv("BLUESKY_OFFLINE_TEMPLATE_PATH", DEFAULT_OFFLINE_TEMPLATE_PATH)
-        template_obj = load_template(path=offline_template_path) 
-        
         success = False
         try:
-            self.client.login(self.username, self.password) 
-            post_text = template_obj.render(**event_context, template_path=offline_template_path)
-            
-            self.client.send_post(text=post_text) 
-            logger.info(f"Blueskyへの自動投稿成功 (stream.offline): {event_context.get('broadcaster_user_name')}")
-            audit_logger.info(f"Bluesky投稿成功 (stream.offline): User - {event_context.get('broadcaster_user_name')}")
+            self.client.login(self.username, self.password)
+            post_text = template_obj.render(
+                **event_context, template_path=template_path)
+
+            self.client.send_post(text=post_text)
+            logger.info(
+                f"Blueskyへの自動投稿成功 (stream.offline): {event_context.get('broadcaster_user_name')}")
+            audit_logger.info(
+                f"Bluesky投稿成功 (stream.offline): User - {event_context.get('broadcaster_user_name')}")
             success = True
             return True
         except exceptions.AtProtocolError as e:
-            logger.error(f"Bluesky APIエラー (stream.offline投稿): {e}", exc_info=True)
+            logger.error(
+                f"Bluesky APIエラー (stream.offline投稿): {e}", exc_info=True)
             return False
         except Exception as e:
-            logger.error(f"Bluesky投稿中 (stream.offline)に予期せぬエラーが発生しました: {e}", exc_info=e)
+            logger.error(
+                f"Bluesky投稿中 (stream.offline)に予期せぬエラーが発生しました: {e}", exc_info=e)
+            notify_discord_error(f"Bluesky投稿エラー: {e}")
             return False
         finally:
             self._write_post_history(
-                title=f"配信終了: {event_context.get('broadcaster_user_name', 'N/A')}", 
-                category="Offline", 
-                url=event_context.get("channel_url", f"https://twitch.tv/{event_context.get('broadcaster_user_login', '')}"), 
+                title=f"配信終了: {event_context.get('broadcaster_user_name', 'N/A')}",
+                category="Offline",
+                url=event_context.get(
+                    "channel_url", f"https://twitch.tv/{event_context.get('broadcaster_user_login', '')}"),
                 success=success,
                 event_type="offline"
             )
 
+    @retry_on_exception(
+        max_retries=RETRY_MAX,
+        wait_seconds=RETRY_WAIT,
+        exceptions=(exceptions.AtProtocolError,)
+    )
+    def post_new_video(self, event_context: dict, image_path=None):
+        """
+        新着動画投稿をBlueskyに投稿する（YouTube/ニコニコ用）
+        """
+        template_path = os.getenv(
+            "BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH", "templates/yt_nico_new_video_template.txt")
+        template_obj = load_template(path=template_path)
+
+        # 必須キーはtitle, video_id, video_url
+        required_keys = ["title", "video_id", "video_url"]
+        missing_keys = [
+            key for key in required_keys if key not in event_context or event_context[key] is None]
+        if missing_keys:
+            logger.warning(
+                f"Bluesky新着動画投稿の入力event_contextが不正です。不足キー: {', '.join(missing_keys)}")
+            return False
+
+        success = False
+        try:
+            self.client.login(self.username, self.password)
+            post_text = template_obj.render(
+                **event_context, template_path=template_path)
+
+            embed = None
+            if image_path and os.path.isfile(image_path):
+                blob = self.upload_image(image_path)
+                if blob:
+                    embed = {
+                        "$type": "app.bsky.embed.images",
+                        "images": [
+                            {
+                                "alt": f"{event_context.get('title', 'New Video')[:250]}",
+                                "image": blob
+                            }
+                        ]
+                    }
+                else:
+                    logger.warning(
+                        f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
+            elif image_path and not os.path.isfile(image_path):
+                logger.warning(
+                    f"指定された画像ファイルが見つかりません: {image_path}。画像なしで投稿します。")
+
+            self.client.send_post(post_text, embed=embed)
+            logger.info(
+                f"Blueskyへの自動投稿に成功しました (new_video): {event_context.get('video_url')}")
+            audit_logger.info(
+                f"Bluesky投稿成功 (new_video): URL - {event_context.get('video_url')}, Title - {event_context.get('title')}")
+            success = True
+            return True
+        except exceptions.AtProtocolError as e:
+            logger.error(f"Bluesky APIエラー (new_video投稿): {e}", exc_info=True)
+            return False
+        except Exception as e:
+            logger.error(
+                f"Bluesky投稿中 (new_video)に予期せぬエラーが発生しました: {e}", exc_info=e)
+            notify_discord_error(f"Bluesky投稿エラー: {e}")
+            return False
+        finally:
+            self._write_post_history(
+                title=event_context.get("title", "N/A"),
+                category="NewVideo",
+                url=event_context.get("video_url", "N/A"),
+                success=success,
+                event_type="new_video"
+            )
+
     def _write_post_history(self, title: str, category: str, url: str, success: bool, event_type: str):
-        os.makedirs("logs", exist_ok=True) 
+        os.makedirs("logs", exist_ok=True)
         csv_path = "logs/post_history.csv"
         is_new_file = not os.path.exists(csv_path)
-        
+
         try:
             with open(csv_path, "a", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
                 if is_new_file:
-                    writer.writerow(["日時", "イベントタイプ", "タイトル", "カテゴリ", "URL", "成功"])
-                
+                    writer.writerow(
+                        ["日時", "イベントタイプ", "タイトル", "カテゴリ", "URL", "成功"])
+
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
+
                 writer.writerow(
                     [
                         current_time,
-                        event_type, 
-                        title, 
-                        category, 
+                        event_type,
+                        title,
+                        category,
                         url,
                         "○" if success else "×",
                     ]
                 )
-        except IOError as e: 
-            logger.error(f"投稿履歴CSVへの書き込みに失敗しました: {csv_path}, エラー: {e}", exc_info=e)
-        except Exception as e: 
-            logger.error(f"投稿履歴CSVへの書き込み中に予期せぬエラーが発生しました: {csv_path}, エラー: {e}", exc_info=e)
+        except IOError as e:
+            logger.error(
+                f"投稿履歴CSVへの書き込みに失敗しました: {csv_path}, エラー: {e}", exc_info=e)
+        except Exception as e:
+            logger.error(
+                f"投稿履歴CSVへの書き込み中に予期せぬエラーが発生しました: {csv_path}, エラー: {e}", exc_info=e)
