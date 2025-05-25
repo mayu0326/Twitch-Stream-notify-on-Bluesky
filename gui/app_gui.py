@@ -7,7 +7,6 @@ from main_control_frame import MainControlFrame
 from notification_customization_frame import NotificationCustomizationFrame
 from settings_editor_dialog import SettingsEditorDialog
 from log_viewer import LogViewer
-from bot_process_manager import BotProcessManager
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 import os
 from account_settings_frame import AccountSettingsFrame
@@ -21,8 +20,6 @@ class MainWindow(tk.Tk):
         self.title("Stream notify on Bluesky - GUI版")
         self.geometry("596x535")
         self.resizable(False, False)
-        self.bot_manager = BotProcessManager(
-            on_status_change=self.on_bot_status_change)
         self.create_menu()
         self.create_tabs()
         self._main_control_frame = None
@@ -50,7 +47,7 @@ class MainWindow(tk.Tk):
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         # アプリ管理
         self._main_control_frame = MainControlFrame(
-            notebook, bot_manager=self.bot_manager)
+            notebook)
         notebook.add(self._main_control_frame, text="アプリ管理")
         # 一般設定（サブタブ構成）
 
