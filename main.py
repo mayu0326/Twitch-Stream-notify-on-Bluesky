@@ -40,6 +40,15 @@ import sys
 from version import __version__
 from markupsafe import escape
 import signal  # 追加
+from dotenv import load_dotenv
+
+# 設定ファイルの存在チェック
+if not os.path.exists('settings.env'):
+    print('設定ファイルが見つかりません。起動を中止します。')
+    sys.exit(1)
+
+# 存在すれば読み込む
+load_dotenv('settings.env')
 
 if os.name == "nt":
     sys.stdout = open(sys.stdout.fileno(), mode='w',
