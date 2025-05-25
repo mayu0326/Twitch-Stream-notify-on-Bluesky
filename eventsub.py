@@ -190,7 +190,7 @@ def setup_broadcaster_id(logger_to_use=None):
                 f"ユーザーID変換完了: {original_username} -> {TWITCH_BROADCASTER_ID}")
         except Exception as e:
             current_logger.critical(
-                f"ユーザー名 '{original_username}' からAPIアクセス用IDへの変換に失敗しました: {e}", exc_info=True)
+                f"TWITCHユーザーIDからAPIアクセス用IDへの変換に失敗しました: {e}", exc_info=True)
             raise
     else:
         current_logger.info(
