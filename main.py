@@ -527,13 +527,8 @@ if __name__ == "__main__":
             nn_monitor.start()
 
         # Flask (waitress) サーバーの起動
-        logger.info("Flask (waitress) サーバーを起動します。ポート: 3000")
+        logger.info("アプリケーションの起動を完了しました。")
         from waitress import serve
-        # serve(app, host="0.0.0.0", port=3000) # 直接実行するのではなく、スレッドで実行する場合
-        # 例: flask_server_thread = threading.Thread(target=serve, args=(app,), kwargs={'host':'0.0.0.0', 'port':3000}, daemon=True)
-        # flask_server_thread.start()
-        # while True: # メインスレッドを維持するために何らかのループが必要になる場合がある
-        #     time.sleep(1)
         serve(app, host="0.0.0.0", port=3000)  # 現状のまま直接実行
 
     except ValueError as ve:
@@ -557,13 +552,6 @@ if __name__ == "__main__":
         # cleanup_application() # エラー発生時もクリーンアップを試みる
         sys.exit(1)
     finally:
-        # 終了時にトンネルを停止
-        # if tunnel_proc: # cleanup_application に移動
-        #     if logger:
-        #         logger.info("アプリケーション終了前にトンネルを停止します。")
-        #     else:
-        #         print("アプリケーション終了前にトンネルを停止します。")
-        #     stop_tunnel(tunnel_proc, logger)
         cleanup_application()  # finallyブロックでも呼び出す
 
 
