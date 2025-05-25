@@ -22,7 +22,7 @@ Stream notify on Bluesky
 
 import time
 import feedparser
-from threading import Thread
+from threading import Thread, Event
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -36,7 +36,7 @@ class NiconicoMonitor(Thread):
     ニコニコ生放送およびニコニコ動画の新着を監視するスレッド。
     """
 
-    def __init__(self, user_id, poll_interval, on_new_live, on_new_video):
+    def __init__(self, user_id, poll_interval, on_new_live, on_new_video, shutdown_event=None):
         # 監視対象ユーザーID、ポーリング間隔、コールバック関数を初期化
         super().__init__(daemon=True)
         self.user_id = user_id
@@ -45,10 +45,11 @@ class NiconicoMonitor(Thread):
         self.on_new_video = on_new_video
         self.last_live_id = None
         self.last_video_id = None
+        self.shutdown_event = shutdown_event if shutdown_event is not None else Event()
 
     def run(self):
-        # スレッドのメインループ。定期的に新着生放送・動画をチェック
-        while True:
+        # スレッドのメインループ。shutdown_eventがセットされたら安全に終了
+        while not self.shutdown_event.is_set():
             try:
                 # 生放送RSSから最新IDを取得し、前回と異なればコールバック実行
                 live_id = self.get_latest_live_id()
@@ -64,7 +65,7 @@ class NiconicoMonitor(Thread):
 
             except Exception as e:
                 print(f"[NiconicoMonitor] エラー発生: {e}")
-            time.sleep(self.poll_interval)
+            self.shutdown_event.wait(self.poll_interval)
 
     def get_latest_live_id(self):
         """

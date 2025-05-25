@@ -21,9 +21,16 @@ class MainWindow(tk.Tk):
         self.title("Stream notify on Bluesky - GUI版")
         self.geometry("596x535")
         self.resizable(False, False)
-        self.bot_manager = BotProcessManager()
+        self.bot_manager = BotProcessManager(
+            on_status_change=self.on_bot_status_change)
         self.create_menu()
         self.create_tabs()
+        self._main_control_frame = None
+
+    def on_bot_status_change(self, status):
+        # MainControlFrameのステータス欄を更新
+        if self._main_control_frame:
+            self._main_control_frame.update_status_from_bot(status)
 
     def create_menu(self):
         menubar = tk.Menu(self)
@@ -42,9 +49,9 @@ class MainWindow(tk.Tk):
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         # アプリ管理
-        self.tab_control = MainControlFrame(
+        self._main_control_frame = MainControlFrame(
             notebook, bot_manager=self.bot_manager)
-        notebook.add(self.tab_control, text="アプリ管理")
+        notebook.add(self._main_control_frame, text="アプリ管理")
         # 一般設定（サブタブ構成）
 
         class GeneralSettingsFrame(tk.Frame):

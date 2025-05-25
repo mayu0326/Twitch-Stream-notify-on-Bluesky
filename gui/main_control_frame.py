@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from dotenv import load_dotenv
+from console_output_viewer import ConsoleOutputViewer
 
 
 class MainControlFrame(ttk.Frame):
@@ -43,18 +44,27 @@ class MainControlFrame(ttk.Frame):
         big_chk_style = ttk.Style()
         big_chk_style.configure("Big.TCheckbutton", font=big_font)
 
-        # ボタン用のサブフレームを作成し中央揃え
+        # ボタン用のサブフレームを2行構成で作成
         button_frame = ttk.Frame(self)
         button_frame.grid(row=0, column=0, columnspan=5, pady=10)
+        # 1行目: 起動・停止
         self.btn_start = ttk.Button(
             button_frame, text="アプリ起動", command=self.start_app, style="Big.TButton")
         self.btn_stop = ttk.Button(
             button_frame, text="アプリ停止", command=self.stop_app, state=tk.DISABLED, style="Big.TButton")
+        self.btn_start.grid(row=0, column=0, padx=10,
+                            ipadx=20, ipady=10, sticky=tk.EW)
+        self.btn_stop.grid(row=0, column=1, padx=10,
+                           ipadx=20, ipady=10, sticky=tk.EW)
+        # 2行目: 再起動・コンソール出力
         self.btn_restart = ttk.Button(
             button_frame, text="アプリ再起動", command=self.restart_app, state=tk.DISABLED, style="Big.TButton")
-        self.btn_start.pack(side=tk.LEFT, padx=10, ipadx=20, ipady=10)
-        self.btn_stop.pack(side=tk.LEFT, padx=10, ipadx=20, ipady=10)
-        self.btn_restart.pack(side=tk.LEFT, padx=10, ipadx=20, ipady=10)
+        self.btn_console = ttk.Button(
+            button_frame, text="コンソール出力表示", command=self.open_console_output, style="Big.TButton")
+        self.btn_restart.grid(row=1, column=0, padx=10,
+                              ipadx=20, ipady=10, sticky=tk.EW)
+        self.btn_console.grid(row=1, column=1, padx=10,
+                              ipadx=20, ipady=10, sticky=tk.EW)
 
         status_font = ("Meiryo", 16)
         self.lbl_status = ttk.Label(
@@ -107,3 +117,25 @@ class MainControlFrame(ttk.Frame):
         if self.bot_manager:
             self.bot_manager.restart()
         self.lbl_status.config(text="アプリステータス: 再起動中", foreground="orange")
+
+    def open_console_output(self):
+        if self.bot_manager:
+            ConsoleOutputViewer(self, bot_manager=self.bot_manager)
+
+    def update_status_from_bot(self, status):
+        # Botプロセスの状態変化に応じてステータス欄を更新
+        if status == "starting":
+            self.lbl_status.config(
+                text="アプリステータス: 起動中...", foreground="orange")
+        elif status == "running":
+            self.lbl_status.config(text="アプリステータス: 実行中", foreground="green")
+        elif status == "stopping":
+            self.lbl_status.config(
+                text="アプリステータス: 停止中...", foreground="orange")
+        elif status == "stopped":
+            self.lbl_status.config(text="アプリステータス: 停止", foreground="red")
+        elif status == "restarting":
+            self.lbl_status.config(
+                text="アプリステータス: 再起動中...", foreground="orange")
+        elif status == "error":
+            self.lbl_status.config(text="アプリステータス: 異常終了", foreground="red")

@@ -40,6 +40,7 @@ __version__ = __version__
 # 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 # 環境設定ファイルの場所を指定
+# settings.envのパスを「eventsub.pyと同じディレクトリ」に修正
 env_path = Path(__file__).parent / "settings.env"
 load_dotenv(dotenv_path=env_path)
 
