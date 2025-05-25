@@ -37,8 +37,6 @@ from youtube_monitor import YouTubeMonitor
 from niconico_monitor import NiconicoMonitor
 import os
 import sys
-import threading
-import signal
 from version import __version__
 from markupsafe import escape
 
@@ -255,15 +253,7 @@ logger = None
 audit_logger = None
 
 if __name__ == "__main__":
-    shutdown_event = threading.Event()
-
-    def handle_sigint(signum, frame):
-        print("SIGINT/SIGBREAK受信、shutdown_eventをセットします")
-        shutdown_event.set()
-    signal.signal(signal.SIGINT, handle_sigint)
-    if os.name == 'nt':
-        signal.signal(signal.SIGBREAK, handle_sigint)
-
+    # メイン処理（初期化・監視・サーバ起動）
     tunnel_proc = None
     try:
         # ロギング設定
@@ -448,8 +438,7 @@ if __name__ == "__main__":
         if youtube_api_key and youtube_channel_id:
             yt_monitor = YouTubeMonitor(
                 youtube_api_key, youtube_channel_id, youtube_poll_interval,
-                on_youtube_live, on_youtube_new_video,
-                shutdown_event=shutdown_event  # 追加
+                on_youtube_live, on_youtube_new_video
             )
             yt_monitor.start()
 
@@ -457,8 +446,7 @@ if __name__ == "__main__":
         if niconico_user_id:
             nn_monitor = NiconicoMonitor(
                 niconico_user_id, niconico_poll_interval,
-                on_niconico_live, on_niconico_new_video,
-                shutdown_event=shutdown_event  # 追加
+                on_niconico_live, on_niconico_new_video
             )
             nn_monitor.start()
 
@@ -467,24 +455,6 @@ if __name__ == "__main__":
         from waitress import serve
         serve(app, host="0.0.0.0", port=3000)
 
-    except KeyboardInterrupt:
-        print("\n[INFO] シャットダウン要求を受信しました。安全に終了処理を行います...")
-        if logger:
-            logger.info("シャットダウン要求を受信。サブスレッドとサーバーを安全に停止します。")
-        shutdown_event.set()
-        if yt_monitor:
-            logger.info("YouTube監視スレッドの終了を待機します...")
-            yt_monitor.join(timeout=10)
-            logger.info("YouTube監視スレッドの終了を確認しました。")
-        if nn_monitor:
-            logger.info("ニコニコ監視スレッドの終了を待機します...")
-            nn_monitor.join(timeout=10)
-            logger.info("ニコニコ監視スレッドの終了を確認しました。")
-        if logger:
-            logger.info("全サブスレッドの終了を確認しました。アプリケーションを終了します。")
-        else:
-            print("全サブスレッドの終了を確認しました。アプリケーションを終了します。")
-        sys.exit(0)
     except ValueError as ve:
         # 設定値エラー時の処理
         log_msg = f"設定エラー: {ve}. アプリケーションは起動できません。"
@@ -509,11 +479,6 @@ if __name__ == "__main__":
             else:
                 print("アプリケーション終了前にトンネルを停止します。")
             stop_tunnel(tunnel_proc, logger)
-        if logger:
-            logger.info("main.pyの終了処理が完了しました。")
-        print("main.pyの終了処理が完了しました。")
-        import logging
-        logging.shutdown()
 
 
 @app.errorhandler(Exception)
