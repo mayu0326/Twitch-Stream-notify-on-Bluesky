@@ -38,6 +38,11 @@ class NotificationCustomizationFrame(ttk.Frame):
         # Discord通知設定のUI・保存処理はdiscord_notification_frame.pyに完全移行済み
         # ここでself.save_discord_settings等は不要
 
+        # Add Log Viewer Tab
+        from log_viewer import LogViewer
+        log_viewer_frame = LogViewer(notebook)
+        notebook.add(log_viewer_frame, text="ログビューア")
+
         # フォント・ボタンサイズをさらに小さく（2回りダウン）
         small_font = ("Meiryo", 12)
         small_btn_style = ttk.Style()

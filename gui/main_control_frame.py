@@ -35,28 +35,93 @@ class MainControlFrame(ttk.Frame):
 
     def create_widgets(self):
         status_font = ("Meiryo", 16)
-        # サービスごとの状態表示（1行ずつ、ID欄付き）
+
+        # Add heading for account settings
+        heading_font = ("Meiryo", 18, "bold")
+        self.lbl_heading = ttk.Label(
+            self, text="現在のアカウント設定状況", font=heading_font)
+        self.lbl_heading.grid(row=0, column=0, sticky=tk.W,
+                              pady=(10, 5), columnspan=3)
+
+        # Update Twitch status
+        if self.twitch_id != '未設定':
+            twitch_text = f"Twitch連携：設定済み　(ID: {self.twitch_id})"
+        else:
+            twitch_text = "Twitch連携：設定されていません"
         self.lbl_twitch_status = ttk.Label(
-            self, text=f"Twitch連携：切断　(ID: {self.twitch_id})", font=status_font)
+            self, text=twitch_text, font=status_font)
         self.lbl_twitch_status.grid(
-            row=2, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=1, column=0, sticky=tk.W, pady=2, columnspan=3)
+
+        # Update YouTube status
+        if self.yt_id != '未設定':
+            yt_text = f"YouTube連携：設定済み　(ID: {self.yt_id})"
+        else:
+            yt_text = "YouTube連携：設定されていません"
         self.lbl_yt_status = ttk.Label(
-            self, text=f"YouTube連携：切断　(ID: {self.yt_id})", font=status_font)
+            self, text=yt_text, font=status_font)
         self.lbl_yt_status.grid(
-            row=3, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=2, column=0, sticky=tk.W, pady=2, columnspan=3)
+
+        # Update NicoNico status
+        if self.nico_id != '未設定':
+            nico_text = f"ニコニコ連携：設定済み　(ID: {self.nico_id})"
+        else:
+            nico_text = "ニコニコ連携：設定されていません"
         self.lbl_nico_status = ttk.Label(
-            self, text=f"ニコニコ連携：切断　(ID: {self.nico_id})", font=status_font)
+            self, text=nico_text, font=status_font)
         self.lbl_nico_status.grid(
-            row=4, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=3, column=0, sticky=tk.W, pady=2, columnspan=3)
+
+        # Update Bluesky status
+        if self.bsky_id != '未設定':
+            bsky_text = f"Bluesky連携：設定済み　(ID: {self.bsky_id})"
+        else:
+            bsky_text = "Bluesky連携：設定されていません"
         self.lbl_bluesky_status = ttk.Label(
-            self, text=f"Bluesky連携：未接続　(ID: {self.bsky_id})", font=status_font)
+            self, text=bsky_text, font=status_font)
         self.lbl_bluesky_status.grid(
-            row=5, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=4, column=0, sticky=tk.W, pady=2, columnspan=3)
+
+        # Update Discord status with URL validation and always display URL status
+        discord_url = os.getenv('discord_error_notifier_url')
+        discord_enabled = os.getenv(
+            'DISCORD_NOTIFICATION_ENABLED', 'false').lower() == 'true'
+
+        if discord_enabled:
+            discord_text = "Discord連携：有効"
+        else:
+            discord_text = "Discord連携：無効"
+
+        if discord_url:
+            if discord_url.startswith('https://discord.com/api/webhooks/'):
+                discord_url_status = "URL形式OK"
+            else:
+                discord_url_status = "URL形式NG"
+        else:
+            discord_url_status = "URL未設定"
+
         self.lbl_discord_status = ttk.Label(
-            self, text=f"Discord連携：{self.discord_status}　(URL: {self.discord_id})", font=status_font)
+            self, text=f"{discord_text} (URL: {discord_url_status})", font=status_font)
         self.lbl_discord_status.grid(
-            row=6, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=5, column=0, sticky=tk.W, pady=2, columnspan=3)
+
+        # Update Tunnel Communication status
+        tunnel_cmd = os.getenv('TUNNEL_CMD')
+
+        if tunnel_cmd:
+            tunnel_status = "有効"
+            if "cloudflared" in tunnel_cmd:
+                tunnel_service = "Cloudflare Tunnel"
+            elif "ngrok" in tunnel_cmd:
+                tunnel_service = "ngrok"
+            else:
+                tunnel_service = "カスタム"
+        else:
+            tunnel_status = "無効"
+            tunnel_service = "設定されていません"
+
         self.lbl_tunnel_status = ttk.Label(
-            self, text=f"トンネル通信機能：{self.tunnel_status}　(ID: {self.tunnel_id})", font=status_font)
+            self, text=f"トンネル通信機能：{tunnel_status} (サービス: {tunnel_service})", font=status_font)
         self.lbl_tunnel_status.grid(
-            row=7, column=0, sticky=tk.W, pady=2, columnspan=3)
+            row=6, column=0, sticky=tk.W, pady=2, columnspan=3)

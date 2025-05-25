@@ -17,26 +17,16 @@ from tunnel_connection import TunnelConnection
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Stream notify on Bluesky - GUI版")
+        self.title("Stream notify on Bluesky - 設定用GUI")
         self.geometry("596x535")
         self.resizable(False, False)
         self.create_menu()
         self.create_tabs()
         self._main_control_frame = None
 
-    def on_bot_status_change(self, status):
-        # MainControlFrameのステータス欄を更新
-        if self._main_control_frame:
-            self._main_control_frame.update_status_from_bot(status)
-
     def create_menu(self):
         menubar = tk.Menu(self)
-        filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="設定の編集", command=self.open_settings_editor)
-        filemenu.add_command(label="ログ閲覧", command=self.open_log_viewer)
-        filemenu.add_separator()
-        filemenu.add_command(label="終了", command=self.quit)
-        menubar.add_cascade(label="ファイル", menu=filemenu)
+        pass
         self.config(menu=menubar)
 
     def create_tabs(self):
@@ -45,10 +35,10 @@ class MainWindow(tk.Tk):
         style.configure("TNotebook.Tab", font=("Meiryo", 10))
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        # アプリ管理
+        # アカウント設定状況
         self._main_control_frame = MainControlFrame(
             notebook)
-        notebook.add(self._main_control_frame, text="アプリ管理")
+        notebook.add(self._main_control_frame, text="設定状況")
         # 一般設定（サブタブ構成）
 
         class GeneralSettingsFrame(tk.Frame):
