@@ -41,6 +41,12 @@ from version import __version__
 from markupsafe import escape
 import signal  # 追加
 
+if os.name == "nt":
+    sys.stdout = open(sys.stdout.fileno(), mode='w',
+                      encoding='cp932', buffering=1)
+    sys.stderr = open(sys.stderr.fileno(), mode='w',
+                      encoding='cp932', buffering=1)
+
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
@@ -342,9 +348,9 @@ if __name__ == "__main__":
         TWITCH_APP_ACCESS_TOKEN = get_valid_app_access_token(
             logger_to_use=logger)
         if not TWITCH_APP_ACCESS_TOKEN:
-            logger.critical("Twitchアプリのアクセストークン取得に失敗しました。アプリケーションは起動できません。")
+            logger.critical("TwitchAPIアクセストークンの取得に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
-        logger.info("Twitchアプリのアクセストークンを正常に取得しました。")
+        logger.info("TwitchAPIアクセストークン取得を確認しました。")
 
         # EventSubサブスクリプションのクリーンアップ
         WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")

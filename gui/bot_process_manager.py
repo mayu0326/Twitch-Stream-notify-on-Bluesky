@@ -90,20 +90,16 @@ class BotProcessManager:
         # running状態はstartで通知
 
     def _read_stdout(self):
-        # stdoutをバイナリとして読み込み、デコードする
         for line_bytes in self.process.stdout:
             try:
-                # または 'replace'
-                self.stdout += line_bytes.decode(errors='ignore')
+                self.stdout += line_bytes.decode('cp932', errors='replace')
             except Exception as e:
                 print(f"Error decoding stdout: {e}")
 
     def _read_stderr(self):
-        # stderrをバイナリとして読み込み、デコードする
         for line_bytes in self.process.stderr:
             try:
-                # または 'replace'
-                self.stderr += line_bytes.decode(errors='ignore')
+                self.stderr += line_bytes.decode('cp932', errors='replace')
             except Exception as e:
                 print(f"Error decoding stderr: {e}")
 
