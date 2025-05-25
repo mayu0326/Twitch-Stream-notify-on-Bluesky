@@ -39,6 +39,7 @@ import os
 import sys
 from version import __version__
 from markupsafe import escape
+import signal  # 追加
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -252,9 +253,78 @@ def handle_webhook():
 logger = None
 audit_logger = None
 
+# グローバル変数としてプロセスやスレッドを保持
+tunnel_proc = None
+yt_monitor_thread = None
+nn_monitor_thread = None
+flask_server_thread = None  # Flaskサーバーを別スレッドで動かす場合
+
+
+def cleanup_application():
+    global tunnel_proc, yt_monitor_thread, nn_monitor_thread, flask_server_thread
+    if logger:
+        logger.info("アプリケーションのクリーンアップ処理を開始します。")
+
+    # トンネルを停止
+    if tunnel_proc:
+        if logger:
+            logger.info("トンネルを停止します。")
+        else:
+            print("トンネルを停止します。")
+        stop_tunnel(tunnel_proc, logger)
+        tunnel_proc = None
+
+    # YouTube監視スレッドの停止 (is_aliveを確認し、必要であればjoin)
+    if yt_monitor_thread and yt_monitor_thread.is_alive():
+        if logger:
+            logger.info("YouTube監視スレッドを停止します。")
+        # スレッドに停止を通知する仕組みがあればここで呼び出す
+        # yt_monitor_thread.stop() # 例: もしstopメソッドがあれば
+        yt_monitor_thread.join(timeout=5)  # タイムアウト付きで待機
+
+    # ニコニコ監視スレッドの停止 (同様に)
+    if nn_monitor_thread and nn_monitor_thread.is_alive():
+        if logger:
+            logger.info("ニコニコ監視スレッドを停止します。")
+        # nn_monitor_thread.stop() # 例
+        nn_monitor_thread.join(timeout=5)
+
+    # EventSubサブスクリプションのクリーンアップ (必要に応じて)
+    # WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
+    # if WEBHOOK_CALLBACK_URL:
+    #     cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger_to_use=logger)
+
+    # Flaskサーバーのスレッドを停止 (もし別スレッドで動かしている場合)
+    # if flask_server_thread and flask_server_thread.is_alive():
+    #     if logger:
+    #         logger.info("Flaskサーバーを停止します。")
+        # ここでFlaskサーバーを安全に停止する処理 (例: waitressのshutdown)
+        # flask_server_thread.join(timeout=5)
+
+    if logger:
+        logger.info("アプリケーションのクリーンアップ処理が完了しました。")
+    else:
+        print("アプリケーションのクリーンアップ処理が完了しました。")
+
+
+def signal_handler(sig, frame):
+    if logger:
+        logger.info(f"シグナル {sig} を受信しました。アプリケーションを終了します。")
+    else:
+        print(f"シグナル {sig} を受信しました。アプリケーションを終了します。")
+    cleanup_application()
+    sys.exit(0)
+
+
 if __name__ == "__main__":
+    # シグナルハンドラの設定
+    signal.signal(signal.SIGINT, signal_handler)
+    # Windowsの場合、CTRL_BREAK_EVENTも同様に処理することが考えられる
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, signal_handler)
+
     # メイン処理（初期化・監視・サーバ起動）
-    tunnel_proc = None
+    # tunnel_proc = None # グローバル変数として定義したのでここでは不要
     try:
         # ロギング設定
         logger, app_logger_handlers, audit_logger = configure_logging(app)
@@ -453,7 +523,12 @@ if __name__ == "__main__":
         # Flask (waitress) サーバーの起動
         logger.info("Flask (waitress) サーバーを起動します。ポート: 3000")
         from waitress import serve
-        serve(app, host="0.0.0.0", port=3000)
+        # serve(app, host="0.0.0.0", port=3000) # 直接実行するのではなく、スレッドで実行する場合
+        # 例: flask_server_thread = threading.Thread(target=serve, args=(app,), kwargs={'host':'0.0.0.0', 'port':3000}, daemon=True)
+        # flask_server_thread.start()
+        # while True: # メインスレッドを維持するために何らかのループが必要になる場合がある
+        #     time.sleep(1)
+        serve(app, host="0.0.0.0", port=3000)  # 現状のまま直接実行
 
     except ValueError as ve:
         # 設定値エラー時の処理
@@ -468,17 +543,22 @@ if __name__ == "__main__":
         log_msg_critical = "初期化中の未処理例外によりアプリケーションの起動に失敗しました。"
         if logger:
             logger.critical(log_msg_critical, exc_info=e)
+            # ログローテーションハンドラを閉じる
+            for handler in app_logger_handlers:
+                handler.close()
         else:
             print(f"CRITICAL: {log_msg_critical} {e}")
+        # cleanup_application() # エラー発生時もクリーンアップを試みる
         sys.exit(1)
     finally:
         # 終了時にトンネルを停止
-        if tunnel_proc:
-            if logger:
-                logger.info("アプリケーション終了前にトンネルを停止します。")
-            else:
-                print("アプリケーション終了前にトンネルを停止します。")
-            stop_tunnel(tunnel_proc, logger)
+        # if tunnel_proc: # cleanup_application に移動
+        #     if logger:
+        #         logger.info("アプリケーション終了前にトンネルを停止します。")
+        #     else:
+        #         print("アプリケーション終了前にトンネルを停止します。")
+        #     stop_tunnel(tunnel_proc, logger)
+        cleanup_application()  # finallyブロックでも呼び出す
 
 
 @app.errorhandler(Exception)
