@@ -35,6 +35,8 @@ class BotProcessManager:
             [sys.executable, self.main_py_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
             bufsize=1,
             cwd=self.project_root,
             creationflags=creationflags
@@ -90,18 +92,12 @@ class BotProcessManager:
         # running状態はstartで通知
 
     def _read_stdout(self):
-        for line_bytes in self.process.stdout:
-            try:
-                self.stdout += line_bytes.decode('cp932', errors='replace')
-            except Exception as e:
-                print(f"Error decoding stdout: {e}")
+        for line in self.process.stdout:
+            self.stdout += line
 
     def _read_stderr(self):
-        for line_bytes in self.process.stderr:
-            try:
-                self.stderr += line_bytes.decode('cp932', errors='replace')
-            except Exception as e:
-                print(f"Error decoding stderr: {e}")
+        for line in self.process.stderr:
+            self.stderr += line
 
     def get_stdout(self):
         return self.stdout

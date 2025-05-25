@@ -119,7 +119,7 @@ def get_app_access_token(logger_to_use=None):
         token = data["access_token"]
         expires_in = data["expires_in"]
         expires_at = time.time() + expires_in - 60  # 1分前に失効扱い
-        current_logger.info("TwitchAPIのアクセストークンを取得・更新しました。")
+        current_logger.info("Twitchアプリのアクセストークンを正常に取得または更新しました。")
         return token, expires_at
     else:
         current_logger.error(
@@ -134,7 +134,7 @@ def get_valid_app_access_token(logger_to_use=None):
     global TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT
     current_logger = logger_to_use if logger_to_use else logger
     if not TWITCH_APP_ACCESS_TOKEN or time.time() > TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT:
-        current_logger.info("TwitchAPIのアクセストークン取得処理を開始します。")
+        current_logger.info("Twitchアプリのアクセストークンが無効または期限切れです。新しいトークンを取得します。")
         TWITCH_APP_ACCESS_TOKEN, TWITCH_APP_ACCESS_TOKEN_EXPIRES_AT = (
             get_app_access_token(logger_to_use=current_logger)
         )
@@ -182,7 +182,7 @@ def setup_broadcaster_id(logger_to_use=None):
     if not TWITCH_BROADCASTER_ID.isdigit():
         original_username = TWITCH_BROADCASTER_ID
         current_logger.info(
-            "設定されたTwitchユーザーIDからAPIアクセス用のTWITCH_BROADCASTER_IDに変換します。")
+            f"TWITCH_BROADCASTER_ID '{original_username}' は数値ではありません。ユーザーIDの取得を試みます。")
         try:
             TWITCH_BROADCASTER_ID = get_broadcaster_id(
                 original_username, logger_to_use=current_logger)
