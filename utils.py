@@ -16,6 +16,7 @@ import pytz
 from tzlocal import get_localzone
 from version import __version__
 import requests
+from tkinter import filedialog
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -304,6 +305,26 @@ def notify_discord_error(message: str):
         requests.post(webhook_url, json={"content": message})
     except Exception as e:
         util_logger.error(f"Discord通知に失敗: {e}")
+
+
+def change_template_file(var):
+    """
+    テンプレートファイル選択ダイアログを開き、選択したパスをStringVar等にセットする共通関数
+    """
+    path = filedialog.askopenfilename(
+        title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")])
+    if path:
+        var.set(path)
+
+
+def change_image_file(var):
+    """
+    画像ファイル選択ダイアログを開き、選択したパスをStringVar等にセットする共通関数
+    """
+    path = filedialog.askopenfilename(
+        title="画像ファイルを選択", filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
+    if path:
+        var.set(path)
 
 
 # このファイルを直接実行した場合のテストコード例

@@ -112,12 +112,25 @@ class BlueskyPoster:
         """
         配信開始通知をBlueskyに投稿する（Twitch/YouTube/ニコニコ対応）
         """
+        # テンプレートパスの決定
         if platform == "twitch":
             template_path = os.getenv(
                 "BLUESKY_TEMPLATE_PATH", "templates/twitch_online_template.txt")
+        elif platform == "youtube":
+            template_path = os.getenv(
+                "BLUESKY_YT_ONLINE_TEMPLATE_PATH", "templates/yt_online_template.txt")
+        elif platform == "niconico":
+            template_path = os.getenv(
+                "BLUESKY_NICO_ONLINE_TEMPLATE_PATH", "templates/nico_online_template.txt")
         else:
             template_path = os.getenv(
-                "BLUESKY_YT_NICO_ONLINE_TEMPLATE_PATH", "templates/yt_nico_online_template.txt")
+                "BLUESKY_TEMPLATE_PATH", "templates/twitch_online_template.txt")
+
+        if not template_path or not os.path.isfile(template_path):
+            logger.error(f"配信開始テンプレートファイルが見つかりません: {template_path}. 投稿を中止します。")
+            notify_discord_error(f"Bluesky配信開始テンプレートが見つかりません: {template_path}")
+            return False
+
         template_obj = load_template(path=template_path)
 
         # 必須キーのチェック
@@ -259,12 +272,25 @@ class BlueskyPoster:
         wait_seconds=RETRY_WAIT,
         exceptions=(exceptions.AtProtocolError,)
     )
-    def post_new_video(self, event_context: dict, image_path=None):
+    def post_new_video(self, event_context: dict, image_path=None, platform=None):
         """
         新着動画投稿をBlueskyに投稿する（YouTube/ニコニコ用）
         """
-        template_path = os.getenv(
-            "BLUESKY_YT_NICO_NEW_VIDEO_TEMPLATE_PATH", "templates/yt_nico_new_video_template.txt")
+        if platform == "youtube":
+            template_path = os.getenv(
+                "BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH", "templates/yt_new_video_template.txt")
+        elif platform == "niconico":
+            template_path = os.getenv(
+                "BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH", "templates/nico_new_video_template.txt")
+        else:
+            template_path = os.getenv(
+                "BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH", "templates/yt_new_video_template.txt")
+
+        if not template_path or not os.path.isfile(template_path):
+            logger.error(f"新着動画テンプレートファイルが見つかりません: {template_path}. 投稿を中止します。")
+            notify_discord_error(f"Bluesky新着動画テンプレートが見つかりません: {template_path}")
+            return False
+
         template_obj = load_template(path=template_path)
 
         # 必須キーのチェック

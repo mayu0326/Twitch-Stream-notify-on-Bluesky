@@ -22,7 +22,7 @@ Stream notify on Bluesky
 
 import time
 import requests
-from threading import Thread
+from threading import Thread, Event
 from version import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -36,7 +36,7 @@ class YouTubeMonitor(Thread):
     YouTubeライブ配信および動画投稿の新着を監視するスレッド。
     """
 
-    def __init__(self, api_key, channel_id, poll_interval, on_live, on_new_video):
+    def __init__(self, api_key, channel_id, poll_interval, on_live, on_new_video, shutdown_event=None):
         # APIキー、チャンネルID、ポーリング間隔、コールバック関数を初期化
         super().__init__(daemon=True)
         self.api_key = api_key
@@ -46,10 +46,11 @@ class YouTubeMonitor(Thread):
         self.on_new_video = on_new_video
         self.last_live_status = False
         self.last_video_id = None
+        self.shutdown_event = shutdown_event if shutdown_event is not None else Event()
 
     def run(self):
-        # スレッドのメインループ。定期的にライブ配信・新着動画をチェック
-        while True:
+        # スレッドのメインループ。shutdown_eventがセットされたら安全に終了
+        while not self.shutdown_event.is_set():
             try:
                 # ライブ配信の有無を確認
                 live = self.check_live()
@@ -65,7 +66,7 @@ class YouTubeMonitor(Thread):
 
             except Exception as e:
                 print(f"[YouTubeMonitor] エラー発生: {e}")
-            time.sleep(self.poll_interval)
+            self.shutdown_event.wait(self.poll_interval)
 
     def check_live(self):
         """
