@@ -97,7 +97,8 @@ class BotProcessManager:
 
     def _read_stderr(self):
         for line in self.process.stderr:
-            self.stderr += line
+            # Decode with error handling to avoid UnicodeDecodeError
+            self.stderr += line.decode("utf-8", errors="replace")
 
     def get_stdout(self):
         return self.stdout

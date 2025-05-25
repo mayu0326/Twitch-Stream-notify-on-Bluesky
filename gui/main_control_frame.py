@@ -128,7 +128,7 @@ class MainControlFrame(ttk.Frame):
             self.lbl_status.config(
                 text="アプリステータス: 起動中...", foreground="orange")
         elif status == "running":
-            self.lbl_status.config(text="アプリステータス: 実行中", foreground="green")
+            self.lbl_status.config(text="アプリステータス: 実行中", foreground="blue")
         elif status == "stopping":
             self.lbl_status.config(
                 text="アプリステータス: 停止中...", foreground="orange")
@@ -139,3 +139,5 @@ class MainControlFrame(ttk.Frame):
                 text="アプリステータス: 再起動中...", foreground="orange")
         elif status == "error":
             self.lbl_status.config(text="アプリステータス: 異常終了", foreground="red")
+        else:
+            self.lbl_status.config(text="アプリステータス: 不明", foreground="gray")
