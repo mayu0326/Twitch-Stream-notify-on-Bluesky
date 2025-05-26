@@ -125,6 +125,7 @@ if __name__ == "__main__":
         if result:
             def on_finish():
                 root.destroy()
+                MainWindow().mainloop()
             SetupWizard(master=root, on_finish=on_finish)
             root.mainloop()
         else:
