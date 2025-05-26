@@ -1,0 +1,111 @@
+# Stream notify on Bluesky GUI設定エディタ 仕様書・設計書
+
+---
+
+## 1. 仕様書
+
+### 1.1 概要
+Stream notify on Bluesky GUI設定エディタは、
+コマンドラインやテキストエディタを使わずに配信通知Botの設定・管理・運用を
+直感的なグラフィカルユーザーインターフェースで行うためのアプリケーションです。
+
+### 1.2. 対象ユーザー
+- 設定ファイル編集やコマンド操作に不慣れな一般ユーザー
+- CLI／テキスト編集が苦手な動画クリエイター、配信者、ストリーマー
+- 複数サービス(Twitch/YouTube/ニコニコ/Bluesky)をまとめて管理したい方
+
+### 1.3 主な機能
+- ステップバイステップの初期設定ウィザード
+   - Twitch/YouTube/ニコニコ/Bluesky認証情報入力  
+   - 通知ON/OFF＆テンプレート・画像選択  
+   - 入力内容確認→settings.env生成  
+2. メインウィンドウ（タブ構成）  
+   - 設定状況 … 各サービス連携ステータス表示  
+   - 一般設定 … タイムゾーン・トンネル起動コマンド  
+   - アカウント設定 … Twitch/Webhook/Bluesky/YouTube/ニコニコの認証情報編集  
+   - Bluesky投稿設定 … Twitch/YouTube/ニコニコイベント→Bluesky投稿ルール・テンプレート・画像  
+   - ログ・通知設定 … アプリログレベル・保持日数、Discord通知、ログファイルビューア  
+3. 各サービス毎の接続テスト・入力バリデーション  
+4. テンプレート／画像のファイルダイアログ選択・プレビュー  
+5. settings.env読み書き（python-dotenv＋ファイルI/O）  
+6. ログ閲覧 (app.log/audit.log/post_history.csv)／フィルタ機能  
+
+### 1.4 前提条件
+- Python ≥3.10  
+- 依存パッケージ: tkinter, python-dotenv, pillow, requests など  
+- Cloudflare Tunnel/ngrok等の外部トンネルツール（任意）  
+
+---
+
+## 2. 設計書
+
+### 2.1 システム構成
+- GUI本体 (gui/ 以下)  
+  - app_gui.py … エントリポイント・MainWindow生成  
+  - setup_wizard.py … 初期設定ウィザード  
+  - main_control_frame.py … 設定状況表示・BotManager連携  
+  - 各種 Frame:  
+    - account_settings_frame.py（認証情報タブ群）  
+    - bluesky_post_settings_frame.py + *NoticeFrame.py（通知テンプレート管理）  
+    - notification_customization_frame.py（ログ/Discord/LogViewer）  
+    - logging_console_frame.py, discord_notification_frame.py, log_viewer.py  
+    - console_output_viewer.py（リアルタイム出力ビュー）  
+    - timezone_settings.py, tunnel_connection.py（一般設定サブタブ）  
+    - settings_editor_dialog.py（.env直接編集ダイアログ）  
+- 環境変数管理: settings.env + python-dotenv  
+- 画像・テンプレート：外部ファイルパス指定＋preview via Pillow  
+ 
+### 2.2 ファイル構成例
+```
+Stream-notify-on-Bluesky(VSCord)/
+ ├── gui/
+ │    ├── app_gui.py
+ │    ├── setup_wizard.py
+ │    ├── main_control_frame.py
+ │    ├── account_settings_frame.py
+ │    ├── bluesky_post_settings_frame.py
+ │    ├── twitch_notice_frame.py
+ │    ├── youtube_notice_frame.py
+ │    ├── niconico_notice_frame.py
+ │    ├── notification_customization_frame.py
+ │    ├── logging_console_frame.py
+ │    ├── discord_notification_frame.py
+ │    ├── log_viewer.py
+ │    ├── console_output_viewer.py
+ │    ├── timezone_settings.py
+ │    ├── tunnel_connection.py
+ │    └── settings_editor_dialog.py
+ ├── utils.py
+ ├── main.py
+ └── settings.env
+```
+
+### 2.3 画面遷移
+[初回起動] → SetupWizard(step1～3) → [MainWindow]  
+MainWindow タブ→「設定状況」「一般設定」「アカウント設定」「Bluesky投稿設定」「ログ・通知設定」
+
+### 2.4 クラス設計
+- SetupWizard (tk.Toplevel)：初期設定フロー  
+- MainWindow (tk.Tk)：メニュー／Notebook 管理  
+- MainControlFrame：現状ステータス／Bot操作  
+- AccountSettingsFrame：Twitch/Webhook/Bluesky/YouTube/ニコニコ認証  
+- *NoticeFrame (Twitch/YT/Nico) : 通知ON/OFF・テンプレート・画像  
+- BlueskyPostSettingsFrame：複数NoticeFrameをNotebookでまとめ  
+- NotificationCustomizationFrame：ログレベル/保持日数／Discord通知／LogViewer  
+- ConsoleOutputViewer：Bot標準出力リアルタイム表示  
+- TimeZoneSettings, TunnelConnection：一般設定サブタブ  
+- SettingsEditorDialog：.envファイル直接編集  
+
+### 2.5 主要機能設計
+- 環境変数読み込み(load_dotenv)→Entry初期表示  
+- Entry値変更時バリデーション＋接続テスト(HTTP/API呼び出し)  
+- 保存ボタン→settings.env上書き or 追記→load_dotenv再読込  
+- Notebookタブ切替で最新env再読み込み  
+- 画像テンプレート選択→Pillowでサムネイルプレビュー  
+- LogViewer: logs/配下の.log/.csv一覧→ファイル表示／簡易フォーマット  
+
+### 2.6 拡張性／注意点
+- 新サービス追加時は NoticeFrame を実装して bluesky_post_settings_frame.py へ追加  
+- BotProcessManager 実装で「起動／停止／再起動」連携を強化  
+- settings.envのセキュリティ：機密情報はマスク表示・ログ平文出力抑制  
+- GUIレスポンシブ対応：画面リサイズや多言語化への拡張可能  
