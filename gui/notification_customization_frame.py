@@ -1,6 +1,7 @@
 """
 テンプレート・画像カスタマイズUI
 """
+from timezone_settings import TimeZoneSettings
 import sys
 import os
 import tkinter as tk
@@ -23,22 +24,24 @@ class NotificationCustomizationFrame(ttk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
-        # サービスごとにタブ分割
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
+
+        # --- タイムゾーン設定タブ（最左） ---
+        tz_frame = TimeZoneSettings(notebook)
+        notebook.add(tz_frame, text="タイムゾーン設定")
 
         # --- ログ/コンソール設定タブ ---
         from logging_console_frame import LoggingConsoleFrame
         log_console_frame = LoggingConsoleFrame(notebook)
         notebook.add(log_console_frame, text="ログ/コンソール設定")
-        # --- Discordタブ（分割後） ---
+
+        # --- Discordタブ ---
         from discord_notification_frame import DiscordNotificationFrame
         discord_frame = DiscordNotificationFrame(notebook)
         notebook.add(discord_frame, text="Discord通知設定")
-        # Discord通知設定のUI・保存処理はdiscord_notification_frame.pyに完全移行済み
-        # ここでself.save_discord_settings等は不要
 
-        # Add Log Viewer Tab
+        # --- ログビューアタブ ---
         from log_viewer import LogViewer
         log_viewer_frame = LogViewer(notebook)
         notebook.add(log_viewer_frame, text="ログビューア")

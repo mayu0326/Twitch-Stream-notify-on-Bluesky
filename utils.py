@@ -14,7 +14,7 @@ import logging
 import time
 import pytz
 from tzlocal import get_localzone
-from version import __version__
+from version_info import __version__
 import requests
 from tkinter import filedialog
 

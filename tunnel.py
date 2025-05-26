@@ -8,7 +8,7 @@ Stream notify on Bluesky
 import subprocess
 import os
 import shlex  # コマンドライン引数の安全な分割用
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"

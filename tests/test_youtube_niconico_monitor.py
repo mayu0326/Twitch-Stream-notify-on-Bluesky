@@ -20,7 +20,7 @@ Stream notify on Bluesky
 # もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
 # 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-from version import __version__
+from version_info import __version__
 import os
 import time
 import types

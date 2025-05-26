@@ -5,7 +5,7 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
