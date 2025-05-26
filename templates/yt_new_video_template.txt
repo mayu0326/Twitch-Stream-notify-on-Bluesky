@@ -1,0 +1,7 @@
+🎬 YouTube に新着動画投稿！
+
+タイトル: {{ title }}
+動画ID: {{ video_id }}
+視聴URL: {{ video_url }}
+
+チェックお願いします！👍

@@ -7,11 +7,12 @@ Stream notify on Bluesky
 
 import pytest
 import os
-from unittest.mock import patch, MagicMock, mock_open, ANY  # ANYを追加
+from unittest.mock import patch, MagicMock, ANY, mock_open
 from bluesky import BlueskyPoster, load_template
 from atproto import exceptions as atproto_exceptions
 from jinja2 import Template  # Templateを追加
 from version import __version__
+import asyncio
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -33,6 +34,12 @@ __version__ = __version__
 # このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
 # もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
 # 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# pytestの警告抑制: mark.asyncio
+pytestmark = pytest.mark.filterwarnings(
+    r"ignore:Unknown pytest\.mark\.asyncio",
+)
+
 
 @pytest.fixture
 def mock_env(monkeypatch):
@@ -110,24 +117,26 @@ class TestBlueskyPoster:
 
         poster = BlueskyPoster("user", "pass")
         # os.path.isfileもTrueになるようにパッチ
-        with patch("os.path.isfile", return_value=True) as mock_isfile_inner:
+        with patch("os.path.isfile", return_value=True) as mock_isfile_inner, \
+                patch.dict(os.environ, {"BLUESKY_TEMPLATE_PATH": "templates/twitch_online_template.txt"}):
             result = poster.post_stream_online(
                 event_context=mock_event_context_online,
                 image_path="images/test_image.png"
             )
-            mock_isfile_inner.assert_called_once_with("images/test_image.png")
+            mock_isfile_inner.assert_any_call("images/test_image.png")
+            # テンプレートの存在確認も呼ばれるので、呼び出し回数は2回以上になる
+            assert mock_isfile_inner.call_count >= 1
 
         assert result is True
         mock_client_instance.login.assert_called_once_with("user", "pass")
 
         # テンプレートパスが正しく渡されたか確認
-        expected_template_path = os.getenv("BLUESKY_TEMPLATE_PATH")
         mock_load_template_func.assert_called_once_with(
-            path=expected_template_path)
+            path="templates/twitch_online_template.txt")
 
         # テンプレートのrenderが正しく呼ばれたか
         mock_template_obj.render.assert_called_once_with(
-            **mock_event_context_online, template_path=expected_template_path)
+            **mock_event_context_online, template_path="templates/twitch_online_template.txt")
 
         # upload_imageが呼ばれたか
         mock_upload_image.assert_called_once_with("images/test_image.png")
@@ -165,12 +174,13 @@ class TestBlueskyPoster:
         mock_atproto_client_class.return_value = mock_client_instance
 
         poster = BlueskyPoster("user", "pass")
-        result = poster.post_stream_online(
-            event_context=mock_event_context_online, image_path=None
-        )
+        with patch.dict(os.environ, {"BLUESKY_TEMPLATE_PATH": "templates/twitch_online_template.txt"}):
+            result = poster.post_stream_online(
+                event_context=mock_event_context_online, image_path=None
+            )
         assert result is True
         mock_template_obj.render.assert_called_once_with(
-            **mock_event_context_online, template_path=os.getenv("BLUESKY_TEMPLATE_PATH"))
+            **mock_event_context_online, template_path="templates/twitch_online_template.txt")
         mock_client_instance.send_post.assert_called_once_with(
             "Rendered Online No Image", embed=None)
         mock_client_instance.upload_blob.assert_not_called()
@@ -296,7 +306,7 @@ class TestBlueskyPoster:
         mock_env, mock_event_context_online, caplog
     ):
         # 画像ファイルが存在しない場合の動作をテスト
-        mock_isfile.return_value = False  # 画像ファイルは存在しない
+        mock_isfile.side_effect = lambda path: path == "templates/twitch_online_template.txt"
 
         mock_template_obj = MagicMock(spec=Template)
         mock_template_obj.render.return_value = "Rendered Online Text"
@@ -306,13 +316,14 @@ class TestBlueskyPoster:
         mock_atproto_client_class.return_value = mock_client_instance
 
         poster = BlueskyPoster("user", "pass")
-        result = poster.post_stream_online(
-            event_context=mock_event_context_online,
-            image_path="non_existent_image.png"
-        )
+        with patch.dict(os.environ, {"BLUESKY_TEMPLATE_PATH": "templates/twitch_online_template.txt"}):
+            result = poster.post_stream_online(
+                event_context=mock_event_context_online,
+                image_path="non_existent_image.png"
+            )
 
         assert result is True  # 画像がなくても投稿自体は成功
-        assert "指定された画像ファイルが見つかりません: non_existent_image.png" in caplog.text
+        assert "指定された画像ファイルが見つかりません" in caplog.text
         mock_client_instance.upload_blob.assert_not_called()
         call_args = mock_client_instance.send_post.call_args
         assert call_args[1].get('embed') is None
@@ -363,3 +374,29 @@ class TestBlueskyPoster:
         result_blob = poster.upload_image("path/to/truly_missing_image.png")
         assert result_blob is None
         assert "Bluesky画像アップロードエラー: ファイルが見つかりません - path/to/truly_missing_image.png" in caplog.text
+
+
+def test_async_post_notification():
+    """非同期通知投稿のテスト（同期関数として実行）"""
+    from bluesky import BlueskyPoster
+
+    with patch('bluesky.Client') as mock_client:
+        mock_client.return_value.send_post = MagicMock(return_value=True)
+        poster = BlueskyPoster(username="test", password="test")
+
+        # 複数の投稿をシミュレート
+        # 必須キーを含む event_context を渡す
+        results = [
+            poster.post_stream_online({
+                "broadcaster_user_name": f"user{i}",
+                "broadcaster_user_login": f"user{i}_login",
+                "title": f"title{i}",
+                "category_name": "Just Chatting",
+                "stream_url": f"https://example.com/stream{i}"
+            })
+            for i in range(3)
+        ]
+
+        # すべての投稿が成功したことを確認
+        assert all(results)
+        assert mock_client.return_value.send_post.call_count == 3

@@ -1,6 +1,0 @@
-
-配信が開始されました！
-タイトル：{{ title }}
-配信URL： {{ stream_url }}
-
-#Bluesky通知 #配信開始
