@@ -241,7 +241,7 @@ class TestFormatDateTimeFilter:
         iso_str = "2023-10-27T10:00:00Z"
         # UTCにフォールバックすることを期待
         result = format_datetime_filter(iso_str)
-        assert "Unknown timezone 'Mars/OlympusMons'" in caplog.text
+        assert "設定のタイムゾーン 'Mars/OlympusMons' が不明です。UTCにフォールバックします。" in caplog.text
         assert "2023-10-27 10:00" in result
         if "UTC" in result:
             assert result.endswith("UTC")
@@ -251,17 +251,48 @@ class TestFormatDateTimeFilter:
         with patch('utils.get_localzone', return_value=None):
             iso_str = "2023-10-27T10:00:00Z"
             result = format_datetime_filter(iso_str)
-            assert "tzlocal.get_localzone() returned None" in caplog.text
-            assert "2023-10-27 10:00" in result
-            if "UTC" in result:
-                assert result.endswith("UTC")
+        assert "tzlocal.get_localzone()がNoneを返しました。UTCにフォールバックします。" in caplog.text
+        assert "2023-10-27 10:00" in result
+        if "UTC" in result:
+            assert result.endswith("UTC")
 
     def test_get_localzone_raises_exception(self, monkeypatch, caplog):
         monkeypatch.setenv("TIMEZONE", "system")
         with patch('utils.get_localzone', side_effect=Exception("tzlocal failed")):
             iso_str = "2023-10-27T10:00:00Z"
             result = format_datetime_filter(iso_str)
-            assert "Error getting system timezone with tzlocal: tzlocal failed" in caplog.text
-            assert "2023-10-27 10:00" in result
-            if "UTC" in result:
-                assert result.endswith("UTC")
+        assert "tzlocalでシステムタイムゾーン取得エラー: tzlocal failed。UTCにフォールバックします。" in caplog.text
+        assert "2023-10-27 10:00" in result
+        if "UTC" in result:
+            assert result.endswith("UTC")
+
+
+# pytestの警告抑制: mark.asyncio
+pytestmark = pytest.mark.filterwarnings(
+    r"ignore:Unknown pytest\.mark\.asyncio",
+)
+
+
+@pytest.mark.parametrize("retry_count,expected_calls", [
+    (1, 1),  # 初回成功
+    (2, 2),  # 1回失敗後成功
+    (3, 3),  # 2回失敗後成功
+])
+def test_retry_mechanism(retry_count, expected_calls):
+    """リトライメカニズムのテスト"""
+    from utils import retry_on_exception as retry_decorator
+
+    # テスト用の失敗カウンター
+    failure_count = 0
+
+    @retry_decorator(max_retries=3, wait_seconds=0.1)
+    def test_function():
+        nonlocal failure_count
+        if failure_count < retry_count - 1:
+            failure_count += 1
+            raise Exception("Temporary failure")
+        return "Success"
+
+    result = test_function()
+    assert result == "Success"
+    assert failure_count == retry_count - 1

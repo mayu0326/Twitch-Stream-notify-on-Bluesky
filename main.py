@@ -37,24 +37,19 @@ from youtube_monitor import YouTubeMonitor
 from niconico_monitor import NiconicoMonitor
 import os
 import sys
+import signal
 from version import __version__
 from markupsafe import escape
-import signal  # 追加
 from dotenv import load_dotenv
 
 # 設定ファイルの存在チェック
 if not os.path.exists('settings.env'):
     print('設定ファイルが見つかりません。起動を中止します。')
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)
 
 # 存在すれば読み込む
 load_dotenv('settings.env')
-
-if os.name == "nt":
-    sys.stdout = open(sys.stdout.fileno(), mode='w',
-                      encoding='cp932', buffering=1)
-    sys.stderr = open(sys.stderr.fileno(), mode='w',
-                      encoding='cp932', buffering=1)
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -176,13 +171,11 @@ def handle_webhook():
                     "broadcaster_user_name": broadcaster_user_name_from_event,
                     "title": event_data.get("title"),
                     "category_name": event_data.get("category_name"),
-                    # Twitch uses game_id for category ID
                     "game_id": event_data.get("game_id"),
-                    # game_name is often preferred
                     "game_name": event_data.get("game_name", event_data.get("category_name")),
                     "language": event_data.get("language"),
                     "started_at": event_data.get("started_at"),
-                    "type": event_data.get("type"),  # 例: "live"
+                    "type": event_data.get("type"),
                     "is_mature": event_data.get("is_mature"),
                     "tags": event_data.get("tags", []),
                     "stream_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
@@ -231,7 +224,8 @@ def handle_webhook():
                         os.getenv("BLUESKY_APP_PASSWORD")
                     )
                     success = bluesky_poster.post_stream_offline(
-                        event_context=event_context)
+                        event_context=event_context
+                    )
                     app.logger.info(
                         f"Bluesky投稿試行 (stream.offline): {event_context.get('broadcaster_user_login')}, 成功: {success}")
                     return jsonify(
@@ -332,6 +326,11 @@ def signal_handler(sig, frame):
 
 
 if __name__ == "__main__":
+    if os.name == "nt":
+        sys.stdout = open(sys.stdout.fileno(), mode='w',
+                          encoding='cp932', buffering=1)
+        sys.stderr = open(sys.stderr.fileno(), mode='w',
+                          encoding='cp932', buffering=1)
     # シグナルハンドラの設定
     signal.signal(signal.SIGINT, signal_handler)
     # Windowsの場合、CTRL_BREAK_EVENTも同様に処理することが考えられる
@@ -388,9 +387,9 @@ if __name__ == "__main__":
                     "message") if isinstance(sub_response, dict) else None
                 log_message = f"{event_type} EventSubサブスクリプションの作成に失敗しました。"
                 if twitch_error_status:
-                    log_message += f" ステータス: {twitch_error_status}."
+                    pass
                 if twitch_error_message:
-                    log_message += f" メッセージ: {twitch_error_message}."
+                    pass
                 logger.critical(log_message + f" 詳細: {sub_response}")
                 all_subscriptions_successful = False
                 break
