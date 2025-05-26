@@ -8,7 +8,7 @@ from tkinter import ttk, messagebox
 class SetupWizard(tk.Toplevel):
     def __init__(self, master=None, on_finish=None):
         super().__init__(master)
-        self.title("初期設定ウィザード")
+        self.title("StreamNotify on Bluesky 初期設定ウィザード")
         self.geometry("500x350")
         self.resizable(False, False)
         self.on_finish = on_finish
@@ -33,8 +33,9 @@ class SetupWizard(tk.Toplevel):
 
     def _on_cancel(self):
         self.destroy()
-        if self.on_finish:
-            self.on_finish()
+        # 終了時はメイン画面を開かず、アプリ全体を終了
+        import sys
+        sys.exit(0)
 
     def create_widgets(self):
         self.frame = ttk.Frame(self)
@@ -139,10 +140,14 @@ class SetupWizard(tk.Toplevel):
             # self.destroy() や self.on_finish() はsave_settings内でポップアップのOK/バツで呼ぶ
 
     def step_intro(self):
-        ttk.Label(self.frame, text="StreamNotify on Bluesky 設定ウィザード",
+        ttk.Label(self.frame, text="StreamNotify on Bluesky 初期設定ウィザード",
                   font=("Meiryo", 14, "bold")).pack(anchor=tk.W, pady=10)
-        ttk.Label(self.frame, text="（後で説明文を実装）", font=(
-            "Meiryo", 10)).pack(anchor=tk.W, pady=10)
+        ttk.Label(
+            self.frame,
+            text="このセットアップウィザードでは、\n各種サービスのアカウント、サービスごとの通知可否、\nトンネル通信機能のみを設定します。\nそれ以外の設定は、\nファイル作成後に開くメイン画面から設定してください。",
+            font=("Meiryo", 10),
+            justify="left"
+        ).pack(anchor=tk.W, pady=10)
 
     def step_twitch_account(self):
         ttk.Label(self.frame, text="Twitchアカウント設定", font=(
