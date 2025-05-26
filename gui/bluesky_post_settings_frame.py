@@ -7,6 +7,10 @@ Stream notify on Bluesky
 import tkinter as tk
 from tkinter import ttk, filedialog
 from version import __version__
+import sys
+import os
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
