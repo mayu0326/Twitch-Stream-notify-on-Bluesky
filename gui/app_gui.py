@@ -1,17 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
+"""
+
+from tunnel_connection import TunnelConnection
+from timezone_settings import TimeZoneSettings
+from account_settings_frame import AccountSettingsFrame
+import os
+from bluesky_post_settings_frame import BlueskyPostSettingsFrame
+from log_viewer import LogViewer
+from settings_editor_dialog import SettingsEditorDialog
+from notification_customization_frame import NotificationCustomizationFrame
+from main_control_frame import MainControlFrame
+from setup_wizard import SetupWizard
+import tkinter as tk
+from version import __version__
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
+
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
 """
 エントリポイント: 初回起動時はSetupWizard、設定済みならMainWindowを表示
 """
-import tkinter as tk
-from setup_wizard import SetupWizard
-from main_control_frame import MainControlFrame
-from notification_customization_frame import NotificationCustomizationFrame
-from settings_editor_dialog import SettingsEditorDialog
-from log_viewer import LogViewer
-from bluesky_post_settings_frame import BlueskyPostSettingsFrame
-import os
-from account_settings_frame import AccountSettingsFrame
-from timezone_settings import TimeZoneSettings
-from tunnel_connection import TunnelConnection
 
 
 class MainWindow(tk.Tk):
