@@ -17,6 +17,13 @@ class SetupWizard(tk.Toplevel):
         self.vars = {}
         self.create_widgets()
         self.show_step(0)
+        # ウィンドウの×ボタン押下時にも on_finish を呼ぶ
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+
+    def _on_cancel(self):
+        self.destroy()
+        if self.on_finish:
+            self.on_finish()
 
     def create_widgets(self):
         self.frame = ttk.Frame(self)
@@ -25,6 +32,10 @@ class SetupWizard(tk.Toplevel):
         self.btn_next = ttk.Button(self, text="次へ", command=self.next_step)
         self.btn_prev.pack(side=tk.LEFT, padx=20, pady=10)
         self.btn_next.pack(side=tk.RIGHT, padx=20, pady=10)
+        # キャンセルボタン追加
+        self.btn_cancel = ttk.Button(
+            self, text="キャンセル", command=self._on_cancel)
+        self.btn_cancel.pack(side=tk.BOTTOM, pady=10)
 
     def show_step(self, idx):
         for widget in self.frame.winfo_children():
@@ -48,9 +59,9 @@ class SetupWizard(tk.Toplevel):
             self.show_step(self.current_step + 1)
         else:
             self.save_settings()
+            self.destroy()
             if self.on_finish:
                 self.on_finish()
-            self.destroy()
 
     def step1(self):
         ttk.Label(

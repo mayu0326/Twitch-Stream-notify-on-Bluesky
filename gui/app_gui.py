@@ -52,6 +52,7 @@ class MainWindow(tk.Tk):
         self.create_menu()
         self.create_tabs()
         self._main_control_frame = None
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def create_menu(self):
         menubar = tk.Menu(self)
@@ -102,6 +103,9 @@ class MainWindow(tk.Tk):
     def open_log_viewer(self):
         LogViewer(self)
 
+    def on_close(self):
+        self.destroy()
+
 
 def is_first_setup():
     return not os.path.exists("settings.env")
@@ -109,14 +113,21 @@ def is_first_setup():
 
 if __name__ == "__main__":
     if is_first_setup():
+        import tkinter.messagebox as messagebox
         root = tk.Tk()
         root.withdraw()
 
-        def on_finish():
+        # ポップアップ表示
+        result = messagebox.askokcancel(
+            "初期セットアップ",
+            "設定ファイルが見つかりません。\n初期セットアップを実行します。"
+        )
+        if result:
+            def on_finish():
+                root.destroy()
+            SetupWizard(master=root, on_finish=on_finish)
+            root.mainloop()
+        else:
             root.destroy()
-            MainWindow().mainloop()
-
-        SetupWizard(master=root, on_finish=on_finish)
-        root.mainloop()
     else:
         MainWindow().mainloop()
