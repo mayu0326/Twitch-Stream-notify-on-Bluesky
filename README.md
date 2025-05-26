@@ -1,9 +1,10 @@
 # Stream notify on Bluesky
 
-Twitch/YouTube/ニコニコ生放送の配信開始を自動検知し、\
+- Twitch/YouTube/ニコニコ生放送の配信開始を自動検知し、\
 Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です。\
-Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。 \   
-Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録など運用に便利な機能を多数備えています。
+- Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。    
+- Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録など\
+運用に便利な機能を多数備えています。
 
 ---
 
@@ -151,36 +152,36 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
   - 開発者の方はdevelopment-requirements.txtのほうをお使いください。
 
 ### 3. **Cloudflare Tunnel をインストール**  
-   [公式手順](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)に従い、 cloudflared（cloudflared.exe 等）をインストールしてください。
-   ※簡単なのは**公式のwingetコマンド**でインストールすることです。
+   [公式手順](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)に従い、 cloudflared（cloudflared.exe 等）をインストールしてください。\
+   ※簡単なのは**公式のwingetコマンド**でインストールすることです。\
    ※場合によっては**Pathの設定**が必要な場合があります。
 
 ### 4. **Cloudflare Tunnel をセットアップ**
 
-- Cloudflare Zero Trust でトンネルを作成し、設定ファイル(config.yml)を準備してください。
+- Cloudflare Zero Trust でトンネルを作成し、設定ファイル(config.yml)を準備してください。\
 ※詳細は[Cloudflare Tunnel 公式ドキュメント](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)を参照。
-- **Cloudflaredの設定ファイル config.yml のサンプル**は、
+- **Cloudflaredの設定ファイル config.yml のサンプル**は、\
 本アプリケーションの「Cloudflared」フォルダ内にあります。
 - 必要に応じてコピーを作成して、ファイル名を以下のように変更してください。
   ```
   config.yml.example → config.yml に変更する
   ``` 
-- 上の手順で作成したcloudflaredの設定ファイル(config.yml)は以下の場所に置いてください。
+- 上の手順で作成したcloudflaredの設定ファイル(config.yml)は以下の場所に置いてください。\
 ※すでにトンネルuuidのjsonとcert.pemがあるフォルダです。
   ```
   C:\Users\[お使いのパソコンのuser名]\.cloudflared\config.yml
   ``` 
 #### Cloudflare Tunnelを使わない運用について
-- [TUNNEL_CMD]を書き換えればngrokなど他のトンネルアプリでも動作可能だと考えられます。
+- [TUNNEL_CMD]を書き換えればngrokなど他のトンネルアプリでも動作可能だと考えられます。\
 ただし、検証を行っているわけではないためサポート対象外とさせていただいています。
 
 ### 5. **セットアップウィザードで初期設定を行う**
 
-- 初回起動時、`settings.env` が存在しない場合は「StreamNotify on Bluesky 初期設定ウィザード」が自動的に起動します。
-- ウィザードはGUIで、Twitch/YouTube/ニコニコ/Blueskyアカウント・Webhook・通知・トンネル設定などをステップごとに分かりやすく案内します。
+- 初回起動時、`settings.env` が存在しない場合は「初期設定ウィザード」が自動的に起動します。
+- ウィザードはGUIで、Twitch/YouTube/ニコニコ/Blueskyアカウント・Webhook設定\
+各種サイトへの通知可否・トンネル設定などをステップごとに分かりやすく案内します。
 - 各ステップは「スキップ」も可能で、未入力やスキップした項目は後からGUIの設定画面で編集できます。
-- 通知設定は「Twitch/YouTube/ニコニコ：放送開始/終了/動画投稿」の6項目を2列3行のグリッドで選択できます。
-- 入力内容の確認・保存後、`settings.env` が自動生成されます（テンプレートのコメントや未設定項目も保持）。
+- 入力内容の確認・保存後、`settings.env` が自動生成されます。
 - ウィザード完了後はメイン画面が自動で開きます。
 - 途中でキャンセルやバツで閉じた場合はアプリが終了します。
 
@@ -192,84 +193,118 @@ Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録な�
 - 通知ON/OFF（6項目：Twitch/YouTube/ニコニコの放送開始/終了/動画投稿）
 - トンネルコマンド
 
-> 詳細なウィザードの流れや画面イメージは `gui/ユーザーマニュアル_StreamNotifyonBluesky_GUI設定エディタ.txt` も参照してください。
+> 詳細なウィザードの流れは\
+`gui/ユーザーマニュアル_StreamNotifyonBluesky_GUI設定エディタ.txt` も参照してください。
 
 ---
 
 ## 使い方・カスタマイズ
 
 ### **通知レベルの変更**
-  settings.env で`discord_notify_level`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。
+**settings.env**または**設定GUI** で\
+`discord_notify_level`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。
 ### **ログレベルの一括変更**
-  settings.env で`LOG_LEVEL`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。\
+**settings.env**または**設定GUI** で\
+`LOG_LEVEL`（例：DEBUG, INFO, WARNING, ERROR, CRITICAL）を変更できます。\
   ※コンソール表示とログ保存の２つをまとめて変更します。
 ### **Bluesky 投稿履歴**
-  すべての投稿履歴は`logs/post_history.csv`に自動記録されます。
+すべての投稿履歴は`logs/post_history.csv`に自動記録されます。\
+※投稿履歴はGUIからはご確認いただけません。
 ### **トンネルコマンドのカスタマイズ**
   ngrok 等、他のトンネルサービスにも\
   `TUNNEL_CMD`を書き換えることで対応可能です(ただしサポート対象外)。
 ### **投稿テンプレートの切り替え**
+- テンプレートを切り替える場合、\
+  **settings.env**または**設定GUI**の各サービス用の設定項目から、\
+使用するテンプレートのファイル名を指定（書き替える）とテンプレートの切り替えができます。
 
-- **テンプレートに使用できる変数は以下のとおりです。**
-  ```
-  {title} ：配信タイトルです
-  {category}：配信カテゴリです
-  {url}：配信場所のURLです
-  {username}：ユーザー名です
-  {display_name}：ユーザー名(表示名)です
-  ```
-  - Youtubeとニコニコは下記の対応となります。
-  ```
-  {{ title }}：配信/動画/アーカイブのタイトルです
-  {url}：動画のURLです
-  {{ stream_url }}：放送URLです。
 
+- **テンプレートファイルが見つからない場合**は、エラーログが記録され、\
+  下記のデフォルトテンプレートが利用されます。
+- **default_から始まるテンプレートは削除・ファイル名の変更をしないでください。**
+```
+ 【放送開始または動画投稿告知】
+以下の放送が開始されたか動画が投稿されました。
+※放送プラットフォームが特定できなかったため、
+最小限の内容で投稿しております。
+タイトル: {{ title }}
+配信者: {{ broadcaster_user_name }} ({{ broadcaster_user_login }})
+カテゴリ: {{ category_name }}
+開始日時: {{ start_time | datetimeformat }}
+視聴URL: {{ stream_url }}
   ```
-
+  ```
+  【放送終了】
+以下の放送は終了しました。
+※放送プラットフォームが特定できなかったため、
+最小限の内容で投稿しております。
+配信者: {{ broadcaster_user_name }} ({{ broadcaster_user_login }})
+チャンネルURL: {{ channel_url }}
+  ```
 - テンプレートを編集しない場合は以下の内容が投稿されます。
 ## Twitchの場合
   ```
-  🔴 放送を開始しました！
-  {display_name} has started streaming on Twitch now! 
-  タイトル: {title}
-  カテゴリ: {category}
-  URL: {url} 
-  #Twitch配信通知
+Twitch 放送開始 🎉
+
+配信者: {{ broadcaster_user_name }} ({{ broadcaster_user_login }})
+タイトル: {{ title }}
+カテゴリ: {{ category_name }}
+開始日時: {{ start_time | datetimeformat }}
+視聴URL: {{ stream_url }}
+
+ぜひ遊びに来てください！
+#Twitch配信通知📺
+  ```
+  ```
+🛑 Twitch 配信終了
+
+{{ broadcaster_user_name | default('配信者名不明') }} さんのTwitch配信が終わりました。
+チャンネル: {{ channel_url | default('チャンネルURL不明') }}
+
+またの配信をお楽しみに！
+#Twitch #配信終了 
   ```
 ## YouTubeLiveの場合 
   ```
-  配信が開始されました！
-  タイトル：{{ title }}
-  配信URL： {{ stream_url }}
-  #Bluesky通知 #配信開始
+▶️ YouTube Live 配信開始 🚀
+
+チャンネル: {{ broadcaster_user_name }}
+タイトル: {{ title }}
+開始日時: {{ start_time | datetimeformat }}
+視聴URL: {{ stream_url }}
+
+みなさんの視聴をお待ちしています！
   ```
 ## ニコニコ生放送の場合 
   ```
-  配信が開始されました！
-  タイトル：{{ title }}
-  配信URL： {{ stream_url }}
-  #Bluesky通知 #配信開始
+📡 ニコニコ生放送 開始 🎉
+
+放送者: {{ broadcaster_user_name }}
+タイトル: {{ title }}
+開始日時: {{ start_time | datetimeformat }}
+視聴URL: {{ stream_url }}
+
+コメントお待ちしています！
   ```
 ## YouTube動画の場合
   ```
-  新しい動画が投稿されました！
-  動画タイトル：{{ title }}
-  動画URL: {{ video_url }}
-  #Bluesky通知 #新着動画
+🎬 YouTube に新着動画投稿！
+
+タイトル: {{ title }}
+動画ID: {{ video_id }}
+視聴URL: {{ video_url }}
+
+チェックお願いします！👍
   ```
 ## ニコニコ動画の場合
   ```
-  新しい動画が投稿されました！
-  動画タイトル：{{ title }}
-  動画URL: {{ video_url }}
-  #Bluesky通知 #新着動画
-  ```
+📽 ニコニコ動画 新着投稿！
 
-- テンプレートを切り替える場合、\
-**settings.env** の各サービス用の設定項目から、使用するテンプレートのファイル名を、\
-指定（書き替える）とテンプレートの切り替えができます。
-- **テンプレートファイルが見つからない場合**は、エラーログが記録され、\
-デフォルトテンプレートが利用されます。
+タイトル: {{ title }}
+動画URL: {{ video_url }}
+
+ぜひご覧ください！
+  ```
 ---
 
 ## よくある質問（FAQ）
@@ -287,7 +322,7 @@ A. **アプリ自体は起動するのか**という意味であれば、利用�
 
 ### Q. Cloudflare以外でDNS管理をしていない場合でもこのアプリを利用できますか？
 
-A. アプリ自体は**他のサービスを使う事によって使用できます。**\
+A. アプリ自体は**他のサービスを使う事によって使用できます。**
 - ただし、公式でのサポート対象は、\
 Cloudflare DNSにより管理されたドメインを用いてCloudflare Tunnelを使うこととなっています。\
 そのため、Cloudflare DNSが使えない場合は公式サポートの対象外とさせていただいています。
@@ -311,7 +346,7 @@ settings.env の TUNNEL_CMD でパスを正しく指定してください。\
 ※運用環境によってはPathをダブルクォーテーションで囲って記載する必要がある場合があります。
 - (例：)wingetコマンドでインストールした場合の記載例。※[ ]内がコマンドです。
   ```
-  TUNNEL_CMD=["C:\Program Files (x86)\cloudflared\cloudflared.exe tunnel --config C:\Program Files (x86)\cloudflared\config.yml run <トンネル名>]"
+  TUNNEL_CMD=["C:\Program Files (x86)\cloudflared\cloudflared.exe tunnel --config C:\Users\[パソコンのユーザーID]\.cloudflared\config.yml run <トンネル名>]"
   ```
 ※例えば上の記載例のように、**ファイルパス内に空白がある場合**は、\
 **ダブルクォーテーションで囲って記載する**必要がありますので注意してください。
@@ -374,15 +409,18 @@ Discord：WebhookURL(Discordサーバーの設定→連携サービス→Webhook
 ### Q. 投稿文のテンプレートを変更したい／多言語対応したい
 
 A. templates/ ディレクトリにテンプレートを追加し、\
-**settings.env** の **BLUESKY_TEMPLATE_PATH**を切り替えてください。
+**settings.env**または**設定GUI**からテンプレートファイルを切り替えてください。
 
 ### Q. 配信終了時にも Bluesky に投稿したい
 
-A. 現状はTwitchのみ対応ですが、YouTube/ニコニコの配信終了通知テンプレート（BLUESKY_YT_OFFLINE_TEMPLATE_PATH, BLUESKY_NICO_OFFLINE_TEMPLATE_PATH）を追加し、今後のアップデートで対応予定です。
+A. 現時点では配信終了投稿機能はTwitchのみに対応していますが、\
+YouTube/ニコニコの配信終了通知についても今後のアップデートで対応すべく\
+現在実装方法の検討を行っております。
 
 ### Q. Blueskyに投稿する時に画像を添付したい
 
-A. imagesフォルダに画像を置いて、settings.envの`BLUESKY_IMAGE_PATH`にファイル名を設定してください。
+A. imagesフォルダに画像を置いて、\
+**settings.env**または**設定GUI**からファイルを設定してください。
 - Blueskyに投稿できる画像形式はJPEG（.jpg/.jpeg）、PNG（.png）、静止画GIFです。\
 アニメーションGIF投稿できません。
 - Blueskyへの動画投稿には対応していません。
@@ -423,10 +461,10 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 
 ## 運用上の注意
 
-- この Bot は個人運用・検証を想定しています。商用利用や大規模運用時は自己責任でお願いします。
-- セキュリティのため、API キーやパスワードは絶対に公開リポジトリに含めないでください。
+- この Bot は個人運用・検証を想定しています。\
+商用利用や大規模運用時は自己責任でお願いします。
+- セキュリティのため、**APIキーやパスワード**は**絶対に公開リポジトリに含めない**でください。
 - 依存パッケージの脆弱性は `pip-audit` や `safety` で定期的にチェックしてください。
-- シークレットやAPIキーはログやprintで絶対に出力しないでください。
 - **APIエラー発生時**は自動でリトライ処理を行います。\
 また、Webhook署名のタイムスタンプを検証するようになっているため、\
 リプレイ攻撃の防止にも効果があります。
@@ -463,12 +501,12 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 
 <details>
 
-1. 必要なパッケージをインストール（未インストールの場合）
+必要なパッケージをインストール（未インストールの場合）
 
  ```
  pip install pytest
  ```
-2. プロジェクトルートで以下のコマンドを実行
+プロジェクトルートで以下のコマンドを実行
  ```
 python -m pytest
  ```
@@ -477,7 +515,7 @@ python -m pytest
  pytest test/test_utils.py
  ```
 
-3. テスト結果が表示され、すべてのテストがパスすればOKです。
+テスト結果が表示され、すべてのテストがパスすればOKです。
 
 </details>
 
@@ -494,10 +532,6 @@ python -m pytest
 - **独自ドメイン未所持ユーザー向けのトンネル利用機能**
   - 管理者所有ドメインのサブドメインを貸し出し、\
   独自ドメインがなくてもCloudflare Tunnel経由でWebhookを受信できる仕組みを提供予定です。
-
-- **Bluesky投稿テンプレートのカスタマイズ強化**
-  - 投稿テンプレートの多様化・カスタマイズ性の向上、\
-  より柔軟な変数展開や条件分岐の実装を検討しています。
 
 ---
 
