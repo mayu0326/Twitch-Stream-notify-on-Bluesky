@@ -1,0 +1,73 @@
+ユーザーマニュアル：StreamNotifyonBluesky_GUI設定エディタ
+
+1. はじめに  
+このマニュアルは、
+設定と管理にGUIの使用を希望するStreamNotifyonBlueskyボットの
+エンドユーザーを対象としています。
+
+このマニュアルでは、
+GUIアプリケーションのインストール、設定、および使用方法について説明します。
+
+2. 前提条件  
+  ・Python 3.10以上  
+  ・依存パッケージのインストール
+  ※requirements.txtまたはdevelopment-requirements.txtを利用。
+  ・cloudflared.exe（Cloudflare Tunnel）やngrok等を利用する場合は実行ファイルをPATHに追加  
+  ・リポジトリ直下に settings.env.example があること  
+
+3. 初回セットアップ  
+  1) コマンドプロンプトを開き、プロジェクトルートに移動  
+  2) `python gui/app_gui.py` を実行  
+  3) settings.env が未作成／不完全な場合、自動で SetupWizard が起動  
+  4) ウィザードの手順：  
+    - step1: Twitch/YouTube/ニコニコ/Bluesky の認証情報入力  
+    - step2: 各サービスの通知ON/OFF、投稿テンプレート＆画像選択  
+    - step3: 設定内容確認 → settings.env に保存  
+
+4. メインウィンドウ概要  
+  アプリ起動後に表示される MainWindow は、5つのタブで構成されています。  
+  ・設定状況  
+  ・一般設定  
+  ・アカウント設定  
+  ・Bluesky投稿設定  
+  ・ログ・通知設定  
+
+5. 設定状況タブ   
+  – Twitch/YouTube/ニコニコ/Bluesky/の設定状況の表示
+  - Discord連携の設定状況の表示
+  - トンネルの接続の設定状況の表示    
+
+6. 一般設定タブ  
+  – タイムゾーン設定 (TimeZoneSettings)：プリセット or カスタム入力  
+  – トンネル起動コマンド (TunnelConnection)：cloudflared/ngrok等のコマンド登録  
+
+7. アカウント設定タブ  
+  Notebook内に以下のサブタブ：  
+  - Twitch: クライアントID/Secret/Broadcaster ID  
+  - Webhook: Discord Webhook URL & レベル設定  
+  - Bluesky: ユーザー名・アプリパスワード  
+  - YouTube: APIキー・チャンネルIDなど  
+  - ニコニコ: ユーザーID・ポーリング間隔など  
+  → 入力後「接続テスト」ボタンで認証チェック  
+
+8. Bluesky投稿設定タブ  
+  Notebook内に各サービス専用 NoticeFrame：  
+  - TwitchNoticeFrame  
+  - YouTubeNoticeFrame  
+  - NiconicoNoticeFrame  
+  各種通知ON/OFF、投稿テンプレート・画像の選択・プレビューが可能  
+
+9. ログ・通知設定タブ  
+  – ログレベル & 保持日数設定 (LoggingConsoleFrame)  
+  – Discord通知設定 (DiscordNotificationFrame)  
+  – ログファイルビューア (LogViewer): app.log, audit.log, post_history.csvの閲覧  
+
+10. テンプレート・画像管理  
+  – ファイルダイアログから選択後、templates/ または images/ 配下へコピー  
+  – 選択したパスが settings.env に保存  
+  – テンプレート内変数例: {title}, {url}, {username} など（README参照）  
+
+11. エラーハンドリング・注意事項  
+  – テンプレート未設定やファイル未存在時は投稿を中止し、エラーをログ／Discordへ通知  
+  – APIキー等機密情報はマスク表示  
+  – 設定変更後はBot再起動が必要な場合あり  
