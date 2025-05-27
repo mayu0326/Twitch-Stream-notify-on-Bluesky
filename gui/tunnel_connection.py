@@ -64,9 +64,16 @@ class TunnelConnection(tk.Frame):
         elif val == "ngrok":
             frame = TunnelNgrokFrame(self.frame_area)
         elif val == "localtunnel":
-            frame = TunnelLocaltunnelFrame(self.frame_area)  # ←ここも修正
+            frame = TunnelLocaltunnelFrame(self.frame_area)
         elif val == "custom":
             frame = TunnelCustomFrame(self.frame_area)
         else:
             frame = ttk.Label(self.frame_area, text="未対応のサービスです")
         frame.pack(fill=tk.BOTH, expand=True)
+        # 設定状況タブも即時再描画
+        parent = self.master
+        while parent is not None:
+            if hasattr(parent, 'tab_status') and hasattr(parent.tab_status, 'create_widgets'):
+                parent.tab_status.create_widgets()
+                break
+            parent = getattr(parent, 'master', None)

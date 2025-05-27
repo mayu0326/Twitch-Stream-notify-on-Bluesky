@@ -69,6 +69,8 @@ class MainWindow(tk.Tk):
         style.configure("TNotebook.Tab", font=("Meiryo", 10))
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.notebook = notebook  # ←インスタンス変数で保持
+
         # 設定状況タブ
         self.tab_status = SettingStatusFrame(notebook)
         notebook.add(self.tab_status, text="設定状況")
@@ -87,6 +89,18 @@ class MainWindow(tk.Tk):
         # ログ・通知設定タブ
         self.tab_notify = LoggigNotificationFrame(notebook)
         notebook.add(self.tab_notify, text="ログ・通知設定")
+
+        # タブ切り替え時に設定状況タブをリロード
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+
+    def on_tab_changed(self, event):
+        notebook = event.widget
+        # 現在選択されているタブのインデックス
+        idx = notebook.index(notebook.select())
+        # 設定状況タブが選択された場合のみ再描画
+        if notebook.tab(idx, "text") == "設定状況":
+            # SettingStatusFrameの内容を再描画
+            self.tab_status.create_widgets()
 
     def open_settings_editor(self):
         SettingsEditorDialog(self)

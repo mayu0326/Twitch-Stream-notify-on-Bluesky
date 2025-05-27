@@ -101,8 +101,13 @@ def stop_tunnel(proc, logger=None):
             proc.kill()  # 強制終了
             logger.info("トンネルを強制終了しました。")
         except Exception as e:
-            err_msg = f"トンネル終了中にエラーが発生しました: {e}"
-            logger.error(err_msg)
+            # terminate()で他の例外が出てもkillを試みる
+            logger.error(f"トンネル終了中にエラーが発生しました: {e}")
+            try:
+                proc.kill()
+                logger.info("トンネルを強制終了しました（例外対応）。")
+            except Exception as e2:
+                logger.error(f"トンネル強制終了にも失敗: {e2}")
     else:
         # プロセスがNoneの場合は何もしない
         logger.info("トンネルプロセスが存在しないため、終了処理はスキップされました。")
