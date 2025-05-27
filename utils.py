@@ -339,30 +339,30 @@ if __name__ == '__main__':
 
     # format_datetime_filterのテストケース
     test_iso_str = "2023-10-27T10:00:00Z"
-    print(f"Original ISO: {test_iso_str}")
+    # print(f"Original ISO: {test_iso_str}")
 
     os.environ["TIMEZONE"] = "Asia/Tokyo"
-    print(f"To Asia/Tokyo: {format_datetime_filter(test_iso_str)}")
-    print(
-        f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str, fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
+    # print(f"To Asia/Tokyo: {format_datetime_filter(test_iso_str)}")
+    # print(
+    #     f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str, fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
 
     os.environ["TIMEZONE"] = "America/New_York"
-    print(f"To America/New_York: {format_datetime_filter(test_iso_str)}")
+    # print(f"To America/New_York: {format_datetime_filter(test_iso_str)}")
 
     # システムローカルタイムゾーンでのテスト
     os.environ["TIMEZONE"] = "system"
-    print(f"To System Local: {format_datetime_filter(test_iso_str)}")
+    # print(f"To System Local: {format_datetime_filter(test_iso_str)}")
 
     os.environ["TIMEZONE"] = "Invalid/Timezone"
-    print(
-        f"To Invalid Timezone (fallback to UTC): {format_datetime_filter(test_iso_str)}")
+    # print(
+    #     f"To Invalid Timezone (fallback to UTC): {format_datetime_filter(test_iso_str)}")
 
-    print(f"Empty string input: '{format_datetime_filter('')}'")
-    print(
-        f"Invalid ISO string input: '{format_datetime_filter('not a date')}'")
+    # print(f"Empty string input: '{format_datetime_filter('')}'")
+    # print(
+    #     f"Invalid ISO string input: '{format_datetime_filter('not a date')}'")
     # strftimeでValueErrorが出るケース
-    print(
-        f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str, fmt='%%InvalidFormat')}'")
+    # print(
+    #     f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str, fmt='%%InvalidFormat')}'")
 
     # rotate_secret_if_neededのテスト
     util_logger.info("\nTesting rotate_secret_if_needed...")
@@ -370,7 +370,7 @@ if __name__ == '__main__':
     os.environ["TIMEZONE"] = "UTC"
     # セキュリティ上の理由でシークレット値は表示しない
     rotate_secret_if_needed(logger=util_logger, force=True)
-    print("Rotation Test (forced): 新しいシークレットが生成されました（値は表示しません）")
+    # print("Rotation Test (forced): 新しいシークレットが生成されました（値は表示しません）")
     # テストで作成されたsettings.envを削除
     if os.path.exists(SETTINGS_ENV_PATH):
         os.remove(SETTINGS_ENV_PATH)

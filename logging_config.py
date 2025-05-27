@@ -134,10 +134,9 @@ def configure_logging(app=None):
     app_logger_handlers = [info_file_handler,
                            error_file_handler, console_handler]  # Flask用にも使うハンドラリスト
 
-    if discord_enabled and discord_webhook_url:
+    if discord_enabled and discord_webhook_url and discord_webhook_url.startswith("https://discord.com/api/webhooks/"):
         try:
             from discord_logging.handler import DiscordHandler
-
             discord_handler = DiscordHandler(
                 "StreamApp_ErrorNotifier", discord_webhook_url)
             # 設定されたDiscord通知レベルを使用
@@ -157,11 +156,14 @@ def configure_logging(app=None):
             msg = f"DiscordHandlerの初期化に失敗しました: {e}。Discord通知は無効化されます。"
             logger.warning(msg)
             print(msg)
-    elif not discord_enabled:
-        msg = "DISCORD_NOTIFICATION_ENABLEDがfalseのため、Discord通知は無効です。"
-        logger.info(msg)
     else:
-        msg = "discord_error_notifier_urlが未設定のため、Discordエラー通知は無効です。"
+        # ユーザー指定の日本語メッセージで出力
+        if not discord_webhook_url or not discord_webhook_url.startswith("https://discord.com/api/webhooks/"):
+            msg = "Discord通知はオフになっています。"
+        elif not discord_enabled:
+            msg = "Discord通知はオフになっています。"
+        else:
+            msg = "Discord通知はオンになっています。"
         logger.info(msg)  # 設定上の選択なのでINFOで記録
 
     # Flaskアプリが渡された場合は、Flaskのロガーにも同じハンドラを追加

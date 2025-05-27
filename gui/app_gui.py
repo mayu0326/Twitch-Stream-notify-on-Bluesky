@@ -20,6 +20,7 @@ from setting_status import SettingStatusFrame
 from version_info import __version__
 import sys
 import os
+import io
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
@@ -100,7 +101,6 @@ class MainWindow(tk.Tk):
 
 def is_first_setup():
     return not os.path.exists("settings.env")
-
 
 if __name__ == "__main__":
     if is_first_setup():
