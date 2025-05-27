@@ -350,7 +350,7 @@ if __name__ == "__main__":
     # tunnel_proc = None # グローバル変数として定義したのでここでは不要
     try:
         # ロギング設定
-        logger, app_logger_handlers, audit_logger = configure_logging(app)
+        logger, app_logger_handlers, audit_logger, tunnel_logger = configure_logging(app)
         # シークレットのローテーション
         WEBHOOK_SECRET = rotate_secret_if_needed(logger)
         os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
@@ -375,9 +375,9 @@ if __name__ == "__main__":
             WEBHOOK_CALLBACK_URL, logger_to_use=logger)
 
         # トンネルの起動
-        tunnel_proc = start_tunnel(logger)
+        tunnel_proc = start_tunnel(tunnel_logger)
         if not tunnel_proc:
-            logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
+            tunnel_logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
 
         # 必須EventSubサブスクリプションの作成
@@ -554,7 +554,7 @@ if __name__ == "__main__":
         if logger:
             logger.critical(log_msg)
         else:
-            print(f"CRITICAL: {log_msg}")
+            app.logger.critical(log_msg)
         sys.exit(1)
     except Exception as e:
         # その他の初期化エラー時の処理
@@ -565,8 +565,10 @@ if __name__ == "__main__":
             for handler in app_logger_handlers:
                 handler.close()
         else:
-            print(f"CRITICAL: {log_msg_critical} {e}")
+            app.logger.critical(f"CRITICAL: {log_msg_critical} {e}")
         # cleanup_application() # エラー発生時もクリーンアップを試みる
         sys.exit(1)
     finally:
+        # クリーンアップ時もtunnel_loggerを渡す
+        stop_tunnel(tunnel_proc, tunnel_logger)
         cleanup_application()  # finallyブロックでも呼び出す

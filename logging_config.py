@@ -166,6 +166,21 @@ def configure_logging(app=None):
             msg = "Discord通知はオンになっています。"
         logger.info(msg)  # 設定上の選択なのでINFOで記録
 
+    # tunnel.log用ロガーの設定
+    tunnel_logger = logging.getLogger("tunnel.logger")
+    tunnel_logger.setLevel(log_level)
+    tunnel_format = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    tunnel_file_handler = TimedRotatingFileHandler(
+        "logs/tunnel.log",
+        when="D",
+        interval=1,
+        backupCount=log_retention_days,
+        encoding="utf-8",
+    )
+    tunnel_file_handler.setLevel(log_level)
+    tunnel_file_handler.setFormatter(tunnel_format)
+    tunnel_logger.addHandler(tunnel_file_handler)
+
     # Flaskアプリが渡された場合は、Flaskのロガーにも同じハンドラを追加
     if app is not None:
         app.logger.handlers.clear()  # Flaskデフォルトハンドラをクリア
@@ -174,4 +189,4 @@ def configure_logging(app=None):
         app.logger.setLevel(log_level)
         app.logger.propagate = False
 
-    return logger, app_logger_handlers, audit_logger
+    return logger, app_logger_handlers, audit_logger, tunnel_logger
