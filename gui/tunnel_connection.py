@@ -39,6 +39,26 @@ class TunnelConnection(tk.Frame):
         for child in self.frame_area.winfo_children():
             child.destroy()
         val = self.selected_service.get()
+        # settings.envにTUNNEL_SERVICEを書き込む
+        import os
+        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
+        lines = []
+        if os.path.exists(env_path):
+            with open(env_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+        new_lines = []
+        found_service = False
+        for line in lines:
+            if line.startswith('TUNNEL_SERVICE='):
+                new_lines.append(f'TUNNEL_SERVICE={val}\n')
+                found_service = True
+            else:
+                new_lines.append(line)
+        if not found_service:
+            new_lines.append(f'TUNNEL_SERVICE={val}\n')
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        # サービスに応じたフレームの表示
         if val == "cloudflare":
             frame = TunnelCloudflareFrame(self.frame_area)
         elif val == "ngrok":
