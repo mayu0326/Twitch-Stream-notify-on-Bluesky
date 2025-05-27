@@ -13,7 +13,7 @@ from tunnel_connection import TunnelConnection
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 from log_viewer import LogViewer
 from settings_editor_dialog import SettingsEditorDialog
-from notification_customization_frame import NotificationCustomizationFrame
+from loggig_notification_frame import LoggigNotificationFrame
 from main_control_frame import MainControlFrame
 from setup_wizard import SetupWizard
 from setting_status import SettingStatusFrame
@@ -85,7 +85,7 @@ class MainWindow(tk.Tk):
         self.tab_tunnel = TunnelConnection(notebook)
         notebook.add(self.tab_tunnel, text="トンネル通信設定")
         # ログ・通知設定タブ
-        self.tab_notify = NotificationCustomizationFrame(notebook)
+        self.tab_notify = LoggigNotificationFrame(notebook)
         notebook.add(self.tab_notify, text="ログ・通知設定")
 
     def open_settings_editor(self):

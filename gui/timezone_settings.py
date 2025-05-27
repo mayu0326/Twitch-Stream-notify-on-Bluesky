@@ -52,6 +52,7 @@ class TimeZoneSettings(tk.Frame):
             row=6, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=40)
 
     def update_now_label(self, auto=True):
+        import calendar
         tzname = self.var_timezone.get().strip()
         try:
             if not tzname or tzname == 'system':
@@ -60,7 +61,14 @@ class TimeZoneSettings(tk.Frame):
             else:
                 tz = pytz.timezone(tzname)
             now = datetime.datetime.now(tz)
-            now_str = now.strftime('%Y年%m月%d日%H時%M分%S秒')
+            # 曜日（日本語）
+            weekday_jp = ['月', '火', '水', '木', '金', '土', '日']
+            weekday = weekday_jp[now.weekday()]
+            # 午前/午後
+            ampm = '午前' if now.hour < 12 else '午後'
+            hour12 = now.hour if 1 <= now.hour <= 12 else (now.hour - 12 if now.hour > 12 else 12)
+            # フォーマット
+            now_str = f"{now.year}年{now.month:02d}月{now.day:02d}日({weekday}){ampm}{hour12:02d}時{now.minute:02d}分{now.second:02d}秒"
         except Exception:
             now_str = '(タイムゾーンが無効です)'
         self.lbl_now.config(text=f"現在日時: {now_str}")
