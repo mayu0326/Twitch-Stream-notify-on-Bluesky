@@ -14,7 +14,7 @@ from utils import (
     rotate_secret_if_needed,
     format_datetime_filter  # format_datetime_filterの追加
 )
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"

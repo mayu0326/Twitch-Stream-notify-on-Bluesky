@@ -7,10 +7,12 @@ Stream notify on Bluesky
 
 from pathlib import Path
 from dotenv import load_dotenv
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from logging.handlers import TimedRotatingFileHandler
 import logging
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -124,12 +126,15 @@ def configure_logging(app=None):
     console_handler.setFormatter(error_format)
     logger.addHandler(console_handler)
 
+    # Discord通知の有効/無効設定
+    discord_enabled = os.getenv("DISCORD_NOTIFICATION_ENABLED", "false").lower() == "true"
+
     # Discord通知用Webhookの設定
     discord_webhook_url = os.getenv("discord_error_notifier_url")
     app_logger_handlers = [info_file_handler,
                            error_file_handler, console_handler]  # Flask用にも使うハンドラリスト
 
-    if discord_webhook_url:
+    if discord_enabled and discord_webhook_url:
         try:
             from discord_logging.handler import DiscordHandler
 
@@ -152,6 +157,9 @@ def configure_logging(app=None):
             msg = f"DiscordHandlerの初期化に失敗しました: {e}。Discord通知は無効化されます。"
             logger.warning(msg)
             print(msg)
+    elif not discord_enabled:
+        msg = "DISCORD_NOTIFICATION_ENABLEDがfalseのため、Discord通知は無効です。"
+        logger.info(msg)
     else:
         msg = "discord_error_notifier_urlが未設定のため、Discordエラー通知は無効です。"
         logger.info(msg)  # 設定上の選択なのでINFOで記録

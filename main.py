@@ -38,7 +38,7 @@ from niconico_monitor import NiconicoMonitor
 import os
 import sys
 import signal
-from version import __version__
+from version_info import __version__
 from markupsafe import escape
 from dotenv import load_dotenv
 

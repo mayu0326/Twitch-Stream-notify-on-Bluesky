@@ -17,7 +17,7 @@ import hashlib
 import hmac
 import requests
 import os
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"

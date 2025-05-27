@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock, ANY, mock_open
 from bluesky import BlueskyPoster, load_template
 from atproto import exceptions as atproto_exceptions
 from jinja2 import Template  # Templateを追加
-from version import __version__
+from version_info import __version__
 import asyncio
 
 __author__ = "mayuneco(mayunya)"
