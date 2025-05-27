@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from tunnel_cloudflare_frame import TunnelCloudflareFrame
 from tunnel_ngrok_frame import TunnelNgrokFrame
-from tunnel_tempurl_frame import TunnelTempurlFrame
+from tunnel_localtunnel_frame import TunnellocaltunnelFrame
 from tunnel_custom_frame import TunnelCustomFrame
 
 
@@ -22,7 +22,7 @@ class TunnelConnection(tk.Frame):
         services = [
             ("Cloudflare", "cloudflare"),
             ("ngrok", "ngrok"),
-            ("一時生成URL", "tempurl"),
+            ("localtunnel", "localtunnel"),
             ("カスタム", "custom")
         ]
         for i, (label, value) in enumerate(services):
@@ -40,8 +40,8 @@ class TunnelConnection(tk.Frame):
             frame = TunnelCloudflareFrame(self.frame_area)
         elif val == "ngrok":
             frame = TunnelNgrokFrame(self.frame_area)
-        elif val == "tempurl":
-            frame = TunnelTempurlFrame(self.frame_area)
+        elif val == "localtunnel":
+            frame = TunnellocaltunnelFrame(self.frame_area)
         elif val == "custom":
             frame = TunnelCustomFrame(self.frame_area)
         else:

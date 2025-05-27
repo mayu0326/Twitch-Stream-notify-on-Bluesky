@@ -325,6 +325,16 @@ def signal_handler(sig, frame):
 
 
 if __name__ == "__main__":
+    # Register the global exception handler before starting the app
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log unhandled exceptions
+        app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
+        return (
+            jsonify({"error": "予期せぬサーバーエラーが発生しました。"}),
+            500,
+        )
+
     if os.name == "nt":
         sys.stdout = open(sys.stdout.fileno(), mode='w',
                           encoding='cp932', buffering=1)
@@ -560,17 +570,3 @@ if __name__ == "__main__":
         sys.exit(1)
     finally:
         cleanup_application()  # finallyブロックでも呼び出す
-
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # 未処理例外発生時のエラーハンドラ
-    app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
-    return (
-        jsonify(
-            {
-                "error": "予期せぬサーバーエラーが発生しました。"
-            }
-        ),
-        500,
-    )
