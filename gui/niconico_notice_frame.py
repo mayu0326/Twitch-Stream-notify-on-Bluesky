@@ -104,7 +104,36 @@ class NiconicoNoticeFrame(ttk.Frame):
         if path:
             self.img_path.set(path)
 
+    def _to_templates_relative(self, path):
+        """
+        templates/配下なら相対パス(templates/以降)を返す。そうでなければそのまま返す。
+        """
+        if not path:
+            return path
+        abs_templates = os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates'))
+        abs_path = os.path.abspath(path)
+        if abs_path.startswith(abs_templates):
+            rel = os.path.relpath(abs_path, os.path.dirname(__file__))
+            rel = rel.replace('..\\', '').replace('../', '')
+            return rel
+        return path
+
+    def _to_images_relative(self, path):
+        """
+        images/配下なら相対パス(images/以降)を返す。そうでなければそのまま返す。
+        """
+        if not path:
+            return path
+        abs_images = os.path.abspath(os.path.join(os.path.dirname(__file__), '../images'))
+        abs_path = os.path.abspath(path)
+        if abs_path.startswith(abs_images):
+            rel = os.path.relpath(abs_path, os.path.dirname(__file__))
+            rel = rel.replace('..\\', '').replace('../', '')
+            return rel
+        return path
+
     def save_nico_settings(self):
+        from tkinter import messagebox
         env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
         with open(env_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -121,14 +150,14 @@ class NiconicoNoticeFrame(ttk.Frame):
                 found_newvideo = True
             elif line.startswith('BLUESKY_NICO_ONLINE_TEMPLATE_PATH='):
                 new_lines.append(
-                    f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={self.tpl_online.get()}\n')
+                    f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={self._to_templates_relative(self.tpl_online.get())}\n')
                 found_tpl_online = True
             elif line.startswith('BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH='):
                 new_lines.append(
-                    f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={self.tpl_newvideo.get()}\n')
+                    f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={self._to_templates_relative(self.tpl_newvideo.get())}\n')
                 found_tpl_newvideo = True
             elif line.startswith('BLUESKY_IMAGE_PATH='):
-                new_lines.append(f'BLUESKY_IMAGE_PATH={self.img_path.get()}\n')
+                new_lines.append(f'BLUESKY_IMAGE_PATH={self._to_images_relative(self.img_path.get())}\n')
                 found_img = True
             else:
                 new_lines.append(line)
@@ -140,12 +169,12 @@ class NiconicoNoticeFrame(ttk.Frame):
                 f'NOTIFY_ON_NICONICO_NEW_VIDEO={str(self.var_nico_newvideo.get())}\n')
         if not found_tpl_online:
             new_lines.append(
-                f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={self.tpl_online.get()}\n')
+                f'BLUESKY_NICO_ONLINE_TEMPLATE_PATH={self._to_templates_relative(self.tpl_online.get())}\n')
         if not found_tpl_newvideo:
             new_lines.append(
-                f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={self.tpl_newvideo.get()}\n')
+                f'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH={self._to_templates_relative(self.tpl_newvideo.get())}\n')
         if not found_img:
-            new_lines.append(f'BLUESKY_IMAGE_PATH={self.img_path.get()}\n')
+            new_lines.append(f'BLUESKY_IMAGE_PATH={self._to_images_relative(self.img_path.get())}\n')
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)
@@ -159,3 +188,4 @@ class NiconicoNoticeFrame(ttk.Frame):
             'BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH', 'templates/nico_new_video_template.txt'))
         self.img_path.set(
             os.getenv('BLUESKY_IMAGE_PATH', 'images/noimage.png'))
+        messagebox.showinfo('保存完了', 'ニコニコ通知設定を保存しました。')
