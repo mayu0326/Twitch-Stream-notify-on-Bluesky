@@ -11,9 +11,9 @@ class TwitchNoticeFrame(ttk.Frame):
         env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
         load_dotenv(env_path)
         notify_online = os.getenv(
-            'NOTIFY_ON_ONLINE', 'False').lower() == 'true'
+            'NOTIFY_ON_TWITCH_ONINE', 'False').lower() == 'true'
         notify_offline = os.getenv(
-            'NOTIFY_ON_OFFLINE', 'False').lower() == 'true'
+            'NOTIFY_ON_TWITCH_OFFLINE', 'False').lower() == 'true'
         tpl_online = os.getenv('BLUESKY_TEMPLATE_PATH',
                                'templates/twitch_online_template.txt')
         tpl_offline = os.getenv(
@@ -89,19 +89,19 @@ class TwitchNoticeFrame(ttk.Frame):
 
     def change_template_file_online(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")])
+            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
         if path:
             self.tpl_online.set(path)
 
     def change_image_file(self):
         path = filedialog.askopenfilename(title="画像ファイルを選択", filetypes=[
-                                          ("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
+                                          ("Image files", "*.png;*.jpg;*.jpeg;*.gif")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../images')))
         if path:
             self.img_path.set(path)
 
     def change_template_file_offline(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")])
+            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
         if path:
             self.tpl_offline.set(path)
 
@@ -112,13 +112,13 @@ class TwitchNoticeFrame(ttk.Frame):
         new_lines = []
         found_online = found_offline = found_tpl_online = found_tpl_offline = found_img = False
         for line in lines:
-            if line.startswith('NOTIFY_ON_ONLINE='):
+            if line.startswith('NOTIFY_ON_TWITCH_ONINE='):
                 new_lines.append(
-                    f'NOTIFY_ON_ONLINE={str(self.var_online.get())}\n')
+                    f'NOTIFY_ON_TWITCH_ONINE={str(self.var_online.get())}\n')
                 found_online = True
-            elif line.startswith('NOTIFY_ON_OFFLINE='):
+            elif line.startswith('NOTIFY_ON_TWITCH_OFFLINE='):
                 new_lines.append(
-                    f'NOTIFY_ON_OFFLINE={str(self.var_offline.get())}\n')
+                    f'NOTIFY_ON_TWITCH_OFFLINE={str(self.var_offline.get())}\n')
                 found_offline = True
             elif line.startswith('BLUESKY_TEMPLATE_PATH='):
                 new_lines.append(
@@ -135,10 +135,10 @@ class TwitchNoticeFrame(ttk.Frame):
                 new_lines.append(line)
         if not found_online:
             new_lines.append(
-                f'NOTIFY_ON_ONLINE={str(self.var_online.get())}\n')
+                f'NOTIFY_ON_TWITCH_ONINE={str(self.var_online.get())}\n')
         if not found_offline:
             new_lines.append(
-                f'NOTIFY_ON_OFFLINE={str(self.var_offline.get())}\n')
+                f'NOTIFY_ON_TWITCH_OFFLINE={str(self.var_offline.get())}\n')
         if not found_tpl_online:
             new_lines.append(
                 f'BLUESKY_TEMPLATE_PATH={self.tpl_online.get()}\n')
@@ -151,9 +151,9 @@ class TwitchNoticeFrame(ttk.Frame):
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)
         self.var_online.set(
-            os.getenv('NOTIFY_ON_ONLINE', 'False').lower() == 'true')
+            os.getenv('NOTIFY_ON_TWITCH_ONINE', 'False').lower() == 'true')
         self.var_offline.set(
-            os.getenv('NOTIFY_ON_OFFLINE', 'False').lower() == 'true')
+            os.getenv('NOTIFY_ON_TWITCH_OFFLINE', 'False').lower() == 'true')
         self.tpl_online.set(os.getenv('BLUESKY_TEMPLATE_PATH',
                             'templates/twitch_online_template.txt'))
         self.tpl_offline.set(os.getenv(

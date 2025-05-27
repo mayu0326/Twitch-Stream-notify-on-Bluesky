@@ -44,8 +44,8 @@ def default_env_vars(monkeypatch):
     monkeypatch.setenv("WEBHOOK_CALLBACK_URL", "https://example.com/webhook")
     monkeypatch.setenv(
         "WEBHOOK_SECRET", "testsecret1234567890testsecret1234567890")
-    monkeypatch.setenv("NOTIFY_ON_ONLINE", "True")
-    monkeypatch.setenv("NOTIFY_ON_OFFLINE", "True")
+    monkeypatch.setenv("NOTIFY_ON_TWITCH_ONINE", "True")
+    monkeypatch.setenv("NOTIFY_ON_TWITCH_OFFLINE", "True")
     # 重要なロギング設定値も未設定ならセット
     monkeypatch.setenv("LOG_LEVEL", os.getenv("LOG_LEVEL", "DEBUG"))
     monkeypatch.setenv("LOG_RETENTION_DAYS",
@@ -182,7 +182,7 @@ class TestWebhookHandler:
     def test_webhook_stream_online_success(self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信開始イベントでBluesky投稿が成功する場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_ONLINE", "True")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_ONINE", "True")
 
         mock_poster_instance = MagicMock()
         mock_poster_instance.post_stream_online.return_value = True
@@ -229,7 +229,7 @@ class TestWebhookHandler:
     def test_webhook_stream_online_skipped_by_setting(self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信開始通知が設定で無効の場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_ONLINE", "False")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_ONINE", "False")
 
         mock_poster_instance = MagicMock()
         mock_bluesky_poster_class.return_value = mock_poster_instance
@@ -245,7 +245,7 @@ class TestWebhookHandler:
     def test_webhook_stream_online_missing_fields(self, client, monkeypatch):
         # 必須フィールド(title)が不足している場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_ONLINE", "True")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_ONINE", "True")
 
         payload_missing_title = {
             "subscription": self.STREAM_ONLINE_PAYLOAD["subscription"],
@@ -264,7 +264,7 @@ class TestWebhookHandler:
     def test_webhook_stream_offline_success(self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信終了イベントでBluesky投稿が成功する場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_OFFLINE", "True")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_OFFLINE", "True")
 
         mock_poster_instance = MagicMock()
         mock_poster_instance.post_stream_offline.return_value = True
@@ -304,7 +304,7 @@ class TestWebhookHandler:
     def test_webhook_stream_offline_skipped_by_setting(self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信終了通知が設定で無効の場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_OFFLINE", "False")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_OFFLINE", "False")
 
         mock_poster_instance = MagicMock()
         mock_bluesky_poster_class.return_value = mock_poster_instance
@@ -323,7 +323,7 @@ class TestWebhookHandler:
     def test_webhook_stream_offline_missing_broadcaster_login(self, client, monkeypatch):
         # 配信終了イベントでbroadcaster_user_loginが不足している場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
-        monkeypatch.setenv("NOTIFY_ON_OFFLINE", "True")
+        monkeypatch.setenv("NOTIFY_ON_TWITCH_OFFLINE", "True")
 
         payload_missing_login = {
             "subscription": self.STREAM_OFFLINE_PAYLOAD["subscription"],

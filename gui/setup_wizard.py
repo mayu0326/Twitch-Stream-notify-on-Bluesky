@@ -382,7 +382,7 @@ class SetupWizard(tk.Toplevel):
             'YOUTUBE_API_KEY': 'yt_api_key',
             'YOUTUBE_CHANNEL_ID': 'yt_channel_id',
             'NICONICO_USER_ID': 'nico_user_id',
-            'NOTIFY_ON_TWITCH_ONLINE': 'notify_twitch_online',
+            'NOTIFY_ON_TWITCH_ONINE': 'notify_twitch_online',
             'NOTIFY_ON_TWITCH_OFFLINE': 'notify_twitch_offline',
             'NOTIFY_ON_YOUTUBE_ONLINE': 'notify_yt_online',
             'NOTIFY_ON_YOUTUBE_NEW_VIDEO': 'notify_yt_video',

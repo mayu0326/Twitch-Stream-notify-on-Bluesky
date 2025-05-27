@@ -150,10 +150,9 @@ def handle_webhook():
         app.logger.info(
             f"通知受信 ({subscription_type}) for {broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
 
-        notify_on_online_str = os.getenv("NOTIFY_ON_ONLINE", "True").lower()
+        notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True").lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
-
-        notify_on_offline_str = os.getenv("NOTIFY_ON_OFFLINE", "False").lower()
+        notify_on_offline_str = os.getenv("NOTIFY_ON_TWITCH_OFFLINE", "False").lower()
         NOTIFY_ON_OFFLINE = notify_on_offline_str == "true"
 
         # 配信開始イベント

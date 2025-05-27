@@ -88,19 +88,19 @@ class YouTubeNoticeFrame(ttk.Frame):
 
     def change_template_file_online(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")])
+            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
         if path:
             self.tpl_online.set(path)
 
     def change_template_file_newvideo(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")])
+            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
         if path:
             self.tpl_newvideo.set(path)
 
     def change_image_file(self):
         path = filedialog.askopenfilename(title="画像ファイルを選択", filetypes=[
-                                          ("Image files", "*.png;*.jpg;*.jpeg;*.gif")])
+                                          ("Image files", "*.png;*.jpg;*.jpeg;*.gif")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../images')))
         if path:
             self.img_path.set(path)
 
