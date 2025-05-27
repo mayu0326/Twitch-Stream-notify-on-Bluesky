@@ -3,8 +3,10 @@
 - Twitch/YouTube/ニコニコ生放送の配信開始を自動検知し、\
 Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です。
 - Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。    
-- Cloudflare Tunnel による Webhook 受信、エラー通知、履歴記録など\
+- Cloudflare Tunnel **または他のトンネル（ngrok, localtunnel, customコマンド）**による Webhook 受信、エラー通知、履歴記録など\
 運用に便利な機能を多数備えています。
+- **トンネル（Cloudflare/ngrok/localtunnel/custom）自動管理・URL自動反映・GUI連携に対応**
+- **テンプレート・画像パスはtemplates/・images/配下の場合、相対パスでsettings.envに保存されます**
 
 ---
 
@@ -14,7 +16,10 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
 - 不要な**Twitch EventSub サブスクリプション**の自動クリーンアップ
 - **YouTubeLive/ニコニコ生放送**の放送開始の検知に対応(終了は非対応)
 - **Youtube動画/ニコニコ動画**のアップロード検知(App起動後の新着のみ)に対応
-- **Cloudflare Tunnel**でローカル環境でも Webhook 受信
+- **Cloudflare Tunnel/他トンネル（ngrok, localtunnel, customコマンド）**でローカル環境でも Webhook 受信
+- **トンネルの自動起動・URL自動反映・GUI連携**（main.pyで自動管理、GUIに即時反映）
+- **Webhook/URLタブ分離・自動反映・編集可否**（GUIでURLの自動取得・編集可否切替）
+- **設定保存時は「保存完了」メッセージを表示し、GUIに即時反映**
 - **設定ファイル**で設定を細かくカスタマイズ可能
 - **Discord へのエラー通知**・通知レベルの管理や機能オフも可能
 - **ログファイル・コンソール出力**のログレベルは設定ファイルで調整可能
@@ -42,13 +47,14 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
 **※LinuxやMacには対応していません。**
 - Python 3.10 以上 推奨
 - Git 2.49 以上 推奨
-- [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) （事前インストール必須）
+- [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) または他のトンネル（ngrok, localtunnel, customコマンド）
+  （いずれかのトンネルの事前インストール必須）
 
 ### アカウント関連
 - Twitch のユーザーID（EventSub 用）
 - Twitch APIのクライアントIDとクライアントシークレット(デベロッパーコンソールから取得)
 - Bluesky アカウント（投稿用）
-- Cloudflareのアカウント（Cloudflare Tunnel用）
+- Cloudflareのアカウント（Cloudflare Tunnel用、Cloudflare利用時のみ）
 
 ### その他に必要なもの
 - CloudflareでDNS管理されている独自ドメイン（推奨）\
@@ -151,14 +157,16 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
    ```
   - 開発者の方はdevelopment-requirements.txtのほうをお使いください。
 
-### 3. **Cloudflare Tunnel をインストール**  
-   [公式手順](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)に従い、 cloudflared（cloudflared.exe 等）をインストールしてください。\
-   ※簡単なのは**公式のwingetコマンド**でインストールすることです。\
-   ※場合によっては**Pathの設定**が必要な場合があります。
+### 3. **Cloudflare Tunnel または他のトンネル（ngrok, localtunnelなど）をインストール**  
+- CloudflareTunnelをご利用の場合は、[公式手順](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)に従い、 cloudflared（cloudflared.exe 等）をインストールしてください。\
+- ngrokやlocaltunnelを利用する場合は、各公式手順に従いインストールしてください。 
+- その他、本アプリケーションおよびGUIに対応していないトンネルサービスはcustomコマンドでご利用いただけます。\
+※場合によっては**Pathの設定**が必要な場合があります。
 
-### 4. **Cloudflare Tunnel をセットアップ**
+### 4. **Cloudflare Tunnel または他のトンネルをセットアップ**
 
-- Cloudflare Zero Trust でトンネルを作成し、設定ファイル(config.yml)を準備してください。\
+- CloudflareTunnelをご利用の場合は、Cloudflare Zero Trust でトンネルを作成し、\
+設定ファイル(config.yml)を準備してください。\
 ※詳細は[Cloudflare Tunnel 公式ドキュメント](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)を参照。
 - **Cloudflaredの設定ファイル config.yml のサンプル**は、\
 本アプリケーションの「Cloudflared」フォルダ内にあります。
@@ -171,9 +179,10 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
   ```
   C:\Users\[お使いのパソコンのuser名]\.cloudflared\config.yml
   ``` 
-#### Cloudflare Tunnelを使わない運用について
-- [TUNNEL_CMD]を書き換えればngrokなど他のトンネルアプリでも動作可能だと考えられます。\
-ただし、検証を行っているわけではないためサポート対象外とさせていただいています。
+#### Cloudflare Tunnelや他のトンネルを使わない運用について
+- 本アプリケーション(GUIを含む)は、CloudflareTunnel以外にngrokとlocaltunnelに対応しています。
+それ以外のトンネルソフトやアプリケーションもCustomで設定していただくことにより利用可能だと思われますが、
+動作確認およびサポートの対象外とさせていただいています。
 
 ### 5. **セットアップウィザードで初期設定を行う**
 
@@ -187,11 +196,11 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
 
 #### ウィザードで設定できる主な項目
 - Twitchアカウント・APIキー
-- Webhook URL
+- Webhook URL（トンネル起動時は自動取得・自動反映）
 - Blueskyアカウント・アプリパスワード
 - YouTube/ニコニコの監視設定
 - 通知ON/OFF（6項目：Twitch/YouTube/ニコニコの放送開始/終了/動画投稿）
-- トンネルコマンド
+- トンネルコマンド（Cloudflare/ngrok/localtunnel/customコマンド対応）
 
 > 詳細なウィザードの流れは\
 `gui/ユーザーマニュアル_StreamNotifyonBluesky_GUI設定エディタ.txt` も参照してください。
@@ -209,9 +218,9 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
   ※コンソール表示とログ保存の２つをまとめて変更します。
 ### **Bluesky 投稿履歴**
 すべての投稿履歴は`logs/post_history.csv`に自動記録されます。\
-※投稿履歴はGUIからはご確認いただけません。
-### **トンネルコマンドのカスタマイズ**
-  ngrok 等、他のトンネルサービスにも\
+※GUIのログビューアからも投稿履歴をご確認いただけます。
+### **トンネル設定のカスタマイズ**
+  CloudflareTunnel,ngrok,localtonnelの設定をサポートしています。他のトンネルサービスにも\
   `TUNNEL_CMD`を書き換えることで対応可能です(ただしサポート対象外)。
 ### **投稿テンプレートの切り替え**
 - テンプレートを切り替える場合、\
@@ -309,13 +318,35 @@ Twitch 放送開始 🎉
 
 ## よくある質問（FAQ）
 
+### パス・トンネル・Webhook/URL自動反映に関するFAQ
+<details>
+
+### Q. テンプレートや画像ファイルのパスはどのように指定すればよいですか？
+
+A. templates/ や images/ フォルダ内のファイルは、**相対パス（例: templates/xxx.txt, images/xxx.png）で指定してください。**
+- GUIでファイル選択した場合も自動で相対パスに変換されます。
+- プロジェクト外や絶対パスの場合はそのまま絶対パスで保存されます。
+
+### Q. トンネル（Cloudflare/ngrok/localtunnel/custom）はどのように管理されていますか？
+
+A. main.pyがトンネルの起動・停止・URL取得を自動で管理します。\
+トンネル起動後、Webhook URLは自動で取得され、GUIのURL欄に即時反映されます。
+
+### Q. Webhook/URLタブの編集や自動反映はどのような仕様ですか？
+
+A. Webhook設定とURL設定はGUIでタブ分離され、URLはトンネル起動時に自動取得・自動反映されます。\
+自動反映時は編集不可ですが、手動切替で編集可能です。\
+設定保存時は「保存完了」メッセージが必ず表示され、GUIに即時反映されます。
+
+</details>
+
 ### ドメイン・トンネル関連
 <details>
 
 ### Q. ドメインをもっていなくても利用できますか？
 
 A. **アプリ自体は起動するのか**という意味であれば、利用は可能です。
-- 現時点では、ドメインを持っていない場合はCloudflare Tunnelを使用できませんので、\
+- 現時点では、ドメインを持っていない場合はCloudflare Tunnel**または他のトンネル**を使用できませんので、\
 本アプリケーションの全機能の動作について保証およびサポートの対象外とさせていただいています。
 - 今後の機能追加で、ドメインを持っていない場合やCloudflare DNSが使えない場合にも、\
 本アプリケーションの全機能が利用可能となる「エンドポイント貸出機能」の提供を予定しています。
@@ -324,10 +355,10 @@ A. **アプリ自体は起動するのか**という意味であれば、利用�
 
 A. アプリ自体は**他のサービスを使う事によって使用できます。**
 - ただし、公式でのサポート対象は、\
-Cloudflare DNSにより管理されたドメインを用いてCloudflare Tunnelを使うこととなっています。\
+Cloudflare DNSにより管理されたドメインを用いてCloudflare Tunnel**または他のトンネル**を使うこととなっています。\
 そのため、Cloudflare DNSが使えない場合は公式サポートの対象外とさせていただいています。
 
-- Cloudflare Tunnelは、\
+- Cloudflare Tunnel**または他のトンネル**は、\
 独自ドメインの所有やCloudflareによるDNS管理が前提となるため、\
 **ドメインを持っていない場合**や**CloudflareでDNSを管理していない場合**には利用できません。
 
@@ -531,7 +562,7 @@ python -m pytest
 
 - **独自ドメイン未所持ユーザー向けのトンネル利用機能**
   - 管理者所有ドメインのサブドメインを貸し出し、\
-  独自ドメインがなくてもCloudflare Tunnel経由でWebhookを受信できる仕組みを提供予定です。
+  独自ドメインがなくてもCloudflare Tunnel**または他のトンネル**経由でWebhookを受信できる仕組みを提供予定です。
 
 ---
 
