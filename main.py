@@ -41,6 +41,8 @@ import signal
 from version_info import __version__
 from markupsafe import escape
 from dotenv import load_dotenv
+import threading
+from utils import get_ngrok_public_url, get_localtunnel_url_from_stdout, set_webhook_callback_url_temporary
 
 # 設定ファイルの存在チェック
 if not os.path.exists('settings.env'):
@@ -266,6 +268,7 @@ tunnel_proc = None
 yt_monitor_thread = None
 nn_monitor_thread = None
 flask_server_thread = None  # Flaskサーバーを別スレッドで動かす場合
+tunnel_monitor_thread = None  # ngrok/localtunnel監視用
 
 
 def cleanup_application():
@@ -324,6 +327,37 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
+def tunnel_monitor_loop(tunnel_service, tunnel_cmd, logger, proc_getter, proc_setter, env_path="settings.env"):
+    """
+    ngrok/localtunnelプロセスの死活監視・自動再起動・新URL自動反映ループ
+    proc_getter: 現在のプロセスを取得する関数
+    proc_setter: 新しいプロセスをセットする関数
+    """
+    import time
+    while True:
+        proc = proc_getter()
+        if proc is None or proc.poll() is not None:
+            logger.warning(f"トンネルプロセス({tunnel_service})が停止しました。自動再起動します。")
+            # 再起動
+            from tunnel import start_tunnel
+            new_proc = start_tunnel(logger)
+            proc_setter(new_proc)
+            time.sleep(2)  # 起動待ち
+            # 新しい一時URLを取得してenv反映
+            url = None
+            if tunnel_service == "ngrok":
+                url = get_ngrok_public_url(logger=logger)
+            elif tunnel_service == "localtunnel":
+                # localtunnelはコマンドのstdoutからURLを取得する必要があるが、
+                # ここでは再起動直後は取得できないため、ユーザーが別途反映する運用も許容
+                # TODO: より堅牢にする場合はPopenのstdoutを監視する設計に拡張
+                pass
+            if url:
+                set_webhook_callback_url_temporary(url, env_path=env_path)
+                logger.info(f"新しい一時URL({tunnel_service}): {url} をsettings.envに反映しました。")
+        time.sleep(5)
+
+
 if __name__ == "__main__":
     # Register the global exception handler before starting the app
     @app.errorhandler(Exception)
@@ -370,23 +404,57 @@ if __name__ == "__main__":
         logger.info("TwitchAPIアクセストークン取得を確認しました。")
 
         # EventSubサブスクリプションのクリーンアップ
-        WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
+        webhook_url = None
+        tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
+        if tunnel_service in ("cloudflare", "custom"):
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT")
+        elif tunnel_service in ("ngrok", "localtunnel"):
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_TEMPORARY")
+        else:
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL")
         cleanup_eventsub_subscriptions(
-            WEBHOOK_CALLBACK_URL, logger_to_use=logger)
+            webhook_url, logger_to_use=logger)
 
         # トンネルの起動
         tunnel_proc = start_tunnel(tunnel_logger)
         if not tunnel_proc:
             tunnel_logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
+        # ngrok/localtunnelの場合は監視スレッドを起動
+        tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
+        if tunnel_service in ("ngrok", "localtunnel"):
+            def get_proc():
+                return tunnel_proc
+            def set_proc(p):
+                global tunnel_proc
+                tunnel_proc = p
+            tunnel_monitor_thread = threading.Thread(
+                target=tunnel_monitor_loop,
+                args=(
+                    tunnel_service,
+                    os.getenv("NGROK_CMD") if tunnel_service=="ngrok" else os.getenv("LOCALTUNNEL_CMD"),
+                    tunnel_logger,
+                    get_proc,
+                    set_proc
+                ),
+                daemon=True
+            )
+            tunnel_monitor_thread.start()
 
         # 必須EventSubサブスクリプションの作成
         event_types_to_subscribe = ["stream.online", "stream.offline"]
         all_subscriptions_successful = True
         for event_type in event_types_to_subscribe:
             logger.info(f"{event_type} のEventSubサブスクリプションを作成します...")
+            # サブスクリプション作成時も同様にURLを分岐
+            if tunnel_service in ("cloudflare", "custom"):
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT")
+            elif tunnel_service in ("ngrok", "localtunnel"):
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_TEMPORARY")
+            else:
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL")
             sub_response = create_eventsub_subscription(
-                event_type, logger_to_use=logger)
+                event_type, logger_to_use=logger, webhook_url=webhook_url)
 
             if not sub_response or not isinstance(sub_response, dict) or \
                not sub_response.get("data") or not isinstance(sub_response["data"], list) or not sub_response["data"]:

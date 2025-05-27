@@ -292,7 +292,7 @@ def get_existing_eventsub_subscriptions(logger_to_use=None):
 # サブスクリプションの追加
 
 
-def create_eventsub_subscription(event_type: str, logger_to_use=None):
+def create_eventsub_subscription(event_type: str, logger_to_use=None, webhook_url=None):
     # 指定したイベントタイプのEventSubサブスクリプションを作成する
     current_logger = logger_to_use if logger_to_use else logger
     current_audit_logger = logging.getLogger("AuditLogger")
@@ -322,13 +322,14 @@ def create_eventsub_subscription(event_type: str, logger_to_use=None):
         "Authorization": f"Bearer {get_valid_app_access_token(logger_to_use=current_logger)}",
         "Content-Type": "application/json",
     }
+    callback_url = webhook_url if webhook_url else os.getenv("WEBHOOK_CALLBACK_URL")
     payload = {
         "type": event_type,
         "version": "1",
         "condition": {"broadcaster_user_id": TWITCH_BROADCASTER_ID},
         "transport": {
             "method": "webhook",
-            "callback": os.getenv("WEBHOOK_CALLBACK_URL"),
+            "callback": callback_url,
             "secret": current_webhook_secret,
         },
     }

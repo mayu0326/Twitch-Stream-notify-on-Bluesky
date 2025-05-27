@@ -330,6 +330,56 @@ def change_image_file(var):
         var.set(path)
 
 
+def get_ngrok_public_url(api_url="http://127.0.0.1:4040/api/tunnels", timeout=0.5, retries=20, logger=None):
+    """
+    ngrokのローカルAPIからpublic_urlを取得する（最大retries回リトライ）
+    """
+    import time
+    logger = logger or util_logger
+    for _ in range(retries):
+        try:
+            resp = requests.get(api_url, timeout=timeout)
+            tunnels = resp.json().get("tunnels", [])
+            for t in tunnels:
+                if t.get("public_url"):
+                    return t["public_url"]
+        except Exception as e:
+            logger.debug(f"ngrok APIからURL取得失敗: {e}")
+        time.sleep(timeout)
+    return None
+
+
+def get_localtunnel_url_from_stdout(stdout_line):
+    """
+    localtunnelのstdoutからURLを抽出する（'your url is:'以降）
+    """
+    if "your url is:" in stdout_line:
+        return stdout_line.strip().split("your url is:")[-1].strip()
+    return None
+
+
+def set_webhook_callback_url_temporary(url, env_path="settings.env"):
+    """
+    settings.envのWEBHOOK_CALLBACK_URL_TEMPORARYを指定URLで更新
+    """
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    new_lines = []
+    found = False
+    for line in lines:
+        if line.startswith('WEBHOOK_CALLBACK_URL_TEMPORARY='):
+            new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+            found = True
+        else:
+            new_lines.append(line)
+    if not found:
+        new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+    with open(env_path, 'w', encoding='utf-8') as f:
+        f.writelines(new_lines)
+
+
 # このファイルを直接実行した場合のテストコード例
 if __name__ == '__main__':
     # format_datetime_filterのテスト用ロガー設定
