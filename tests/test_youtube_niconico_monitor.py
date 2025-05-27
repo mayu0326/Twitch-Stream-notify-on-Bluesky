@@ -20,19 +20,21 @@ Stream notify on Bluesky
 # もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
 # 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-from version_info import __version__
-import os
-import time
-import types
+from niconico_monitor import NiconicoMonitor
+from youtube_monitor import YouTubeMonitor
 import pytest
+import types
+import time
+from version_info import __version__
+import sys
+import os
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
 __version__ = __version__
-
-from youtube_monitor import YouTubeMonitor
-from niconico_monitor import NiconicoMonitor
 
 
 @pytest.fixture

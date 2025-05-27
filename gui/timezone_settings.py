@@ -25,30 +25,36 @@ class TimeZoneSettings(tk.Frame):
         ttk.Label(center_frame, text="任意のタイムゾーンを直接入力も可", style="Big.TLabel").grid(
             row=1, column=0, columnspan=2, sticky=tk.W)
 
+        # 見出しラベル追加
+        self.lbl_heading = ttk.Label(
+            center_frame, text="指定のタイムゾーンの現在時刻", style="Big.TLabel")
+        self.lbl_heading.grid(row=2, column=0, columnspan=2,
+                              sticky=tk.W, pady=(10, 0))
+
         # 現在日時表示ラベル
         self.lbl_now = ttk.Label(center_frame, text="", style="Big.TLabel")
-        self.lbl_now.grid(row=2, column=0, columnspan=2,
+        self.lbl_now.grid(row=3, column=0, columnspan=2,
                           sticky=tk.W, pady=(5, 0))
-        self.update_now_label()
+        self._now_label_updating = False
+        self.update_now_label(auto=True)
         self.var_timezone.trace_add(
-            'write', lambda *a: self.update_now_label())
+            'write', lambda *a: self.update_now_label(auto=False))
         self.combo_tz.bind('<<ComboboxSelected>>',
-                           lambda e: self.update_now_label())
+                           lambda e: self.update_now_label(auto=False))
 
         label1 = tk.Label(center_frame, text='"system" を指定すると、実行環境のシステムタイムゾーンを自動的に使用します。', font=(
             "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-        label1.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+        label1.grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
         label2 = tk.Label(center_frame, text='無効な値や空の場合は\nシステムタイムゾーンまたはUTCにフォールバックします。', font=(
             "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-        label2.grid(row=4, column=0, columnspan=2, sticky=tk.W)
+        label2.grid(row=5, column=0, columnspan=2, sticky=tk.W)
         ttk.Button(center_frame, text="保存", command=self.save_timezone, style="Big.TButton").grid(
-            row=5, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=40)
+            row=6, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=40)
 
-    def update_now_label(self):
+    def update_now_label(self, auto=True):
         tzname = self.var_timezone.get().strip()
         try:
             if not tzname or tzname == 'system':
-                # システムタイムゾーン
                 import tzlocal
                 tz = tzlocal.get_localzone()
             else:
@@ -58,6 +64,13 @@ class TimeZoneSettings(tk.Frame):
         except Exception:
             now_str = '(タイムゾーンが無効です)'
         self.lbl_now.config(text=f"現在日時: {now_str}")
+        # 1秒ごとに自動更新
+        if auto:
+            if not self._now_label_updating:
+                self._now_label_updating = True
+            self.after(1000, self.update_now_label)
+        else:
+            self._now_label_updating = False
 
     def save_timezone(self):
         env_path = os.path.join(os.path.dirname(__file__), '../settings.env')

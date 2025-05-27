@@ -5,19 +5,23 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
-from tunnel_connection import TunnelConnection
-from timezone_settings import TimeZoneSettings
+import tkinter.ttk as ttk
+import tkinter as tk
 from account_settings_frame import AccountSettingsFrame
-import os
+from timezone_settings import TimeZoneSettings
+from tunnel_connection import TunnelConnection
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 from log_viewer import LogViewer
 from settings_editor_dialog import SettingsEditorDialog
 from notification_customization_frame import NotificationCustomizationFrame
 from main_control_frame import MainControlFrame
 from setup_wizard import SetupWizard
-import tkinter as tk
-from version_info import __version__
 from setting_status import SettingStatusFrame
+from version_info import __version__
+import sys
+import os
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
