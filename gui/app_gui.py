@@ -5,21 +5,21 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
-import os
-import sys
-import tkinter as tk
 import tkinter.ttk as ttk
-
+import tkinter as tk
 from account_settings_frame import AccountSettingsFrame
+from timezone_settings import TimeZoneSettings
+from tunnel_connection import TunnelConnection
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 from log_viewer import LogViewer
-from loggig_notification_frame import LoggigNotificationFrame
-from setting_status import SettingStatusFrame
 from settings_editor_dialog import SettingsEditorDialog
+from loggig_notification_frame import LoggigNotificationFrame
+from main_control_frame import MainControlFrame
 from setup_wizard import SetupWizard
-from tunnel_connection import TunnelConnection
+from setting_status import SettingStatusFrame
 from version_info import __version__
-
+import sys
+import os
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
@@ -53,15 +53,7 @@ class MainWindow(tk.Tk):
         super().__init__()
         self.title("Stream notify on Bluesky - 設定用GUI")
         self.geometry("596x535")
-        self.resizable(False, False)  # type: ignore[arg-type]
-        
-        # タブ関連の属性を初期化
-        self.tab_status = None
-        self.tab_account = None
-        self.tab_bluesky_post = None
-        self.tab_tunnel = None
-        self.tab_notify = None  # 追加
-        
+        self.resizable(False, False)
         self.create_menu()
         self.create_tabs()
         self._main_control_frame = None
@@ -76,8 +68,7 @@ class MainWindow(tk.Tk):
         style = tk.ttk.Style()
         style.configure("TNotebook.Tab", font=("Meiryo", 10))
         notebook = tk.ttk.Notebook(self)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)  # type: ignore[arg-type]
-
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         # 設定状況タブ
         self.tab_status = SettingStatusFrame(notebook)
         notebook.add(self.tab_status, text="設定状況")
@@ -109,6 +100,7 @@ class MainWindow(tk.Tk):
 
 def is_first_setup():
     return not os.path.exists("settings.env")
+
 
 if __name__ == "__main__":
     if is_first_setup():
