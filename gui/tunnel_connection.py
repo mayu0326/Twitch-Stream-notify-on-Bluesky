@@ -3,7 +3,7 @@ import tkinter.ttk as ttk
 
 from tunnel_cloudflare_frame import TunnelCloudflareFrame
 from tunnel_custom_frame import TunnelCustomFrame
-from tunnel_localtunnel_frame import TunnellocaltunnelFrame
+from tunnel_localtunnel_frame import TunnelLocaltunnelFrame
 from tunnel_ngrok_frame import TunnelNgrokFrame
 
 
@@ -44,7 +44,7 @@ class TunnelConnection(tk.Frame):
         elif val == "ngrok":
             frame = TunnelNgrokFrame(self.frame_area)
         elif val == "localtunnel":
-            frame = TunnellocaltunnelFrame(self.frame_area)
+            frame = TunnelLocaltunnelFrame(self.frame_area)  # ←ここも修正
         elif val == "custom":
             frame = TunnelCustomFrame(self.frame_area)
         else:
