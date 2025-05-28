@@ -8,7 +8,7 @@ if parent_dir not in sys.path:
 """
 テンプレート・画像カスタマイズUI
 """
-from .timezone_settings import TimeZoneSettings
+from gui.timezone_settings import TimeZoneSettings
 import tkinter as tk
 from tkinter import ttk
 from dotenv import load_dotenv
