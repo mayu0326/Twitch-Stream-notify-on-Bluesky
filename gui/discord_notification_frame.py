@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from dotenv import load_dotenv
+import tkinter.messagebox as messagebox
 
 
 class DiscordNotificationFrame(ttk.Frame):
@@ -16,8 +17,15 @@ class DiscordNotificationFrame(ttk.Frame):
         discord_enabled = os.getenv(
             'DISCORD_NOTIFY_ENABLED', 'True').lower() == 'true'
         self.var_discord_enabled = tk.BooleanVar(value=discord_enabled)
-        ttk.Checkbutton(self, text="Discord通知を有効化", variable=self.var_discord_enabled, style="Big.TCheckbutton").grid(
-            row=0, column=0, sticky=tk.W, columnspan=2)
+        ttk.Checkbutton(
+            self,
+            text="Discord通知を有効化",
+            variable=self.var_discord_enabled,
+            style="Big.TCheckbutton").grid(
+            row=0,
+            column=0,
+            sticky=tk.W,
+            columnspan=2)
         ttk.Label(self, text="Discord通知レベル:", style="Big.TLabel").grid(
             row=1, column=0, sticky=tk.W)
         self.combo_discord_level = ttk.Combobox(self, values=[
@@ -31,12 +39,30 @@ class DiscordNotificationFrame(ttk.Frame):
         self.entry_discord_url.insert(0, discord_url)
         self.entry_discord_url.grid(row=3, column=0, columnspan=2, sticky=tk.W)
         self.entry_discord_url.configure(font=("Meiryo", 12))
-        ttk.Button(self, text="設定を反映", command=self.save_discord_settings, style="Big.TButton").grid(
-            row=4, column=1, sticky=tk.W, pady=(5, 0))
-        ttk.Button(self, text="設定を消去", command=self.clear_discord_settings, style="Big.TButton").grid(
-            row=4, column=0, sticky=tk.W, pady=(5, 0))
+        ttk.Button(
+            self,
+            text="設定を反映",
+            command=self.save_discord_settings,
+            style="Big.TButton").grid(
+            row=4,
+            column=1,
+            sticky=tk.W,
+            pady=(
+                5,
+                0))
+        ttk.Button(
+            self,
+            text="設定を消去",
+            command=self.clear_discord_settings,
+            style="Big.TButton").grid(
+            row=4,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                5,
+                0))
 
-    def save_discord_settings(self):
+    def save_discord_settings(self, show_message=True):
         url = self.entry_discord_url.get().strip()
         level = self.combo_discord_level.get().strip()
         enabled = self.var_discord_enabled.get()
@@ -70,9 +96,12 @@ class DiscordNotificationFrame(ttk.Frame):
         self.entry_discord_url.insert(0, url)
         self.combo_discord_level.set(level)
         self.var_discord_enabled.set(enabled)
+        if show_message:
+            messagebox.showinfo("保存完了", "Discord通知設定を保存しました。")
 
     def clear_discord_settings(self):
         self.entry_discord_url.delete(0, tk.END)
         self.combo_discord_level.set('CRITICAL')
         self.var_discord_enabled.set(False)
-        self.save_discord_settings()
+        self.save_discord_settings(show_message=False)
+        messagebox.showinfo("初期化完了", "Discord通知設定を初期化しました。")

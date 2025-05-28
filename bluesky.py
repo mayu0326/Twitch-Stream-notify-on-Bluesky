@@ -12,7 +12,7 @@ import csv
 import logging
 from atproto import Client, exceptions
 from jinja2 import Template
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -41,9 +41,9 @@ RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 # アプリケーション用ロガー
 logger = logging.getLogger("AppLogger")
 
-# デフォルトテンプレートパス（メソッド内で個別パスを取得）
-DEFAULT_ONLINE_TEMPLATE_PATH = "templates/default_online_template.txt"
-DEFAULT_OFFLINE_TEMPLATE_PATH = "templates/default_offline_template.txt"
+# デフォルトテンプレートパス（ユーザーが直接触れない内部用・不可視ファイル）
+DEFAULT_ONLINE_TEMPLATE_PATH = ".templates/default_online_template.txt"
+DEFAULT_OFFLINE_TEMPLATE_PATH = ".templates/default_offline_template.txt"
 
 
 def load_template(path=None):
@@ -162,11 +162,14 @@ class BlueskyPoster:
                         "$type": "app.bsky.embed.images",
                         "images": [
                             {
-                                "alt": f"{event_context.get('title', event_context.get('broadcaster_user_name', 'Stream Image'))[:250]}",
-                                "image": blob
-                            }
-                        ]
-                    }
+                                "alt": f"{
+                                    event_context.get(
+                                        'title',
+                                        event_context.get(
+                                            'broadcaster_user_name',
+                                            'Stream Image'))[
+                                        :250]}",
+                                "image": blob}]}
                 else:
                     logger.warning(
                         f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
@@ -357,7 +360,13 @@ class BlueskyPoster:
                 event_type="new_video"
             )
 
-    def _write_post_history(self, title: str, category: str, url: str, success: bool, event_type: str):
+    def _write_post_history(
+            self,
+            title: str,
+            category: str,
+            url: str,
+            success: bool,
+            event_type: str):
         """
         投稿履歴をCSVファイルに記録する
         """

@@ -5,6 +5,9 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
+from tkinter import filedialog
+import requests
+from version_info import __version__
 import re
 import datetime as dt_module  # datetimeクラスとの衝突を避けるためのエイリアス
 from datetime import datetime, timezone  # 必要なクラスのみインポート
@@ -14,9 +17,9 @@ import logging
 import time
 import pytz
 from tzlocal import get_localzone
-from version import __version__
-import requests
-from tkinter import filedialog
+import sys
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -255,8 +258,7 @@ def rotate_secret_if_needed(logger=None, force=False):
                         f"WEBHOOK_SECRETが30日以上経過しているため ({(now - last_rotated_dt).days} 日)、ローテーションします。")
             except ValueError:
                 logger_to_use.warning(
-                    f"SECRET_LAST_ROTATED の日付形式 '{last_rotated_str}' が不正です。WEBHOOK_SECRETをローテーションします。"
-                )
+                    f"SECRET_LAST_ROTATED の日付形式 '{last_rotated_str}' が不正です。WEBHOOK_SECRETをローテーションします。")
                 need_rotate = True
             except Exception as e:
                 logger_to_use.warning(
@@ -298,6 +300,10 @@ def notify_discord_error(message: str):
     """
     DiscordのWebhookでエラー通知を送信
     """
+    # DISCORD_NOTIFY_ENABLEDがFalseなら送信しない
+    discord_enabled = os.getenv("DISCORD_NOTIFY_ENABLED", "True").lower() == "true"
+    if not discord_enabled:
+        return
     webhook_url = os.getenv("discord_error_notifier_url")
     if not webhook_url:
         return
@@ -327,6 +333,60 @@ def change_image_file(var):
         var.set(path)
 
 
+def get_ngrok_public_url(
+        api_url="http://127.0.0.1:4040/api/tunnels",
+        timeout=0.5,
+        retries=20,
+        logger=None):
+    """
+    ngrokのローカルAPIからpublic_urlを取得する（最大retries回リトライ）
+    """
+    import time
+    logger = logger or util_logger
+    for _ in range(retries):
+        try:
+            resp = requests.get(api_url, timeout=timeout)
+            tunnels = resp.json().get("tunnels", [])
+            for t in tunnels:
+                if t.get("public_url"):
+                    return t["public_url"]
+        except Exception as e:
+            logger.debug(f"ngrok APIからURL取得失敗: {e}")
+        time.sleep(timeout)
+    return None
+
+
+def get_localtunnel_url_from_stdout(stdout_line):
+    """
+    localtunnelのstdoutからURLを抽出する（'your url is:'以降）
+    """
+    if "your url is:" in stdout_line:
+        return stdout_line.strip().split("your url is:")[-1].strip()
+    return None
+
+
+def set_webhook_callback_url_temporary(url, env_path="settings.env"):
+    """
+    settings.envのWEBHOOK_CALLBACK_URL_TEMPORARYを指定URLで更新
+    """
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    new_lines = []
+    found = False
+    for line in lines:
+        if line.startswith('WEBHOOK_CALLBACK_URL_TEMPORARY='):
+            new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+            found = True
+        else:
+            new_lines.append(line)
+    if not found:
+        new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+    with open(env_path, 'w', encoding='utf-8') as f:
+        f.writelines(new_lines)
+
+
 # このファイルを直接実行した場合のテストコード例
 if __name__ == '__main__':
     # format_datetime_filterのテスト用ロガー設定
@@ -336,30 +396,32 @@ if __name__ == '__main__':
 
     # format_datetime_filterのテストケース
     test_iso_str = "2023-10-27T10:00:00Z"
-    print(f"Original ISO: {test_iso_str}")
+    # print(f"Original ISO: {test_iso_str}")
 
     os.environ["TIMEZONE"] = "Asia/Tokyo"
-    print(f"To Asia/Tokyo: {format_datetime_filter(test_iso_str)}")
-    print(
-        f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str, fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
+    # print(f"To Asia/Tokyo: {format_datetime_filter(test_iso_str)}")
+    # print(
+    # f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str,
+    # fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
 
     os.environ["TIMEZONE"] = "America/New_York"
-    print(f"To America/New_York: {format_datetime_filter(test_iso_str)}")
+    # print(f"To America/New_York: {format_datetime_filter(test_iso_str)}")
 
     # システムローカルタイムゾーンでのテスト
     os.environ["TIMEZONE"] = "system"
-    print(f"To System Local: {format_datetime_filter(test_iso_str)}")
+    # print(f"To System Local: {format_datetime_filter(test_iso_str)}")
 
     os.environ["TIMEZONE"] = "Invalid/Timezone"
-    print(
-        f"To Invalid Timezone (fallback to UTC): {format_datetime_filter(test_iso_str)}")
+    # print(
+    #     f"To Invalid Timezone (fallback to UTC): {format_datetime_filter(test_iso_str)}")
 
-    print(f"Empty string input: '{format_datetime_filter('')}'")
-    print(
-        f"Invalid ISO string input: '{format_datetime_filter('not a date')}'")
+    # print(f"Empty string input: '{format_datetime_filter('')}'")
+    # print(
+    #     f"Invalid ISO string input: '{format_datetime_filter('not a date')}'")
     # strftimeでValueErrorが出るケース
-    print(
-        f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str, fmt='%%InvalidFormat')}'")
+    # print(
+    # f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str,
+    # fmt='%%InvalidFormat')}'")
 
     # rotate_secret_if_neededのテスト
     util_logger.info("\nTesting rotate_secret_if_needed...")
@@ -367,7 +429,7 @@ if __name__ == '__main__':
     os.environ["TIMEZONE"] = "UTC"
     # セキュリティ上の理由でシークレット値は表示しない
     rotate_secret_if_needed(logger=util_logger, force=True)
-    print("Rotation Test (forced): 新しいシークレットが生成されました（値は表示しません）")
+    # print("Rotation Test (forced): 新しいシークレットが生成されました（値は表示しません）")
     # テストで作成されたsettings.envを削除
     if os.path.exists(SETTINGS_ENV_PATH):
         os.remove(SETTINGS_ENV_PATH)

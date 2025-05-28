@@ -5,11 +5,22 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
+<<<<<<< HEAD
+=======
+from version_info import __version__
+>>>>>>> development
 from dotenv import load_dotenv
 import os
 from tkinter import ttk
 import tkinter as tk
+<<<<<<< HEAD
 from version import __version__
+=======
+import sys
+
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
+>>>>>>> development
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -40,6 +51,7 @@ class MainControlFrame(ttk.Frame):
     def __init__(self, master=None, bot_manager=None):
         super().__init__(master)
         self.bot_manager = bot_manager
+<<<<<<< HEAD
         # 設定ファイルからID等を取得
         load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
         self.twitch_id = os.getenv('TWITCH_BROADCASTER_ID') or '未設定'
@@ -154,3 +166,9 @@ class MainControlFrame(ttk.Frame):
             self, text=f"トンネル通信機能：{tunnel_status} (サービス: {tunnel_service})", font=status_font)
         self.lbl_tunnel_status.grid(
             row=6, column=0, sticky=tk.W, pady=2, columnspan=3)
+=======
+        # 今後のボット管理機能用のプレースホルダ
+        label = ttk.Label(self, text="（将来のボット管理機能用フレームです）",
+                          font=("Meiryo", 14, "italic"))
+        label.pack(padx=40, pady=40)
+>>>>>>> development

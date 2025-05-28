@@ -38,9 +38,11 @@ from niconico_monitor import NiconicoMonitor
 import os
 import sys
 import signal
-from version import __version__
+from version_info import __version__
 from markupsafe import escape
 from dotenv import load_dotenv
+import threading
+from utils import get_ngrok_public_url, get_localtunnel_url_from_stdout, set_webhook_callback_url_temporary
 
 # 設定ファイルの存在チェック
 if not os.path.exists('settings.env'):
@@ -148,12 +150,12 @@ def handle_webhook():
         broadcaster_user_name_from_event = event_data.get(
             "broadcaster_user_name", broadcaster_user_login_from_event)
         app.logger.info(
-            f"通知受信 ({subscription_type}) for {broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
+            f"通知受信 ({subscription_type}) for {
+                broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
 
-        notify_on_online_str = os.getenv("NOTIFY_ON_ONLINE", "True").lower()
+        notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True").lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
-
-        notify_on_offline_str = os.getenv("NOTIFY_ON_OFFLINE", "False").lower()
+        notify_on_offline_str = os.getenv("NOTIFY_ON_TWITCH_OFFLINE", "False").lower()
         NOTIFY_ON_OFFLINE = notify_on_offline_str == "true"
 
         # 配信開始イベント
@@ -163,7 +165,8 @@ def handle_webhook():
                 if event_data.get("title") is None or event_data.get("category_name") is None:
                     app.logger.warning(
                         f"Webhook通知 (stream.online): 'title' または 'category_name' が不足しています. イベントデータ: {event_data}")
-                    return jsonify({"error": "Missing title or category_name for stream.online event"}), 400
+                    return jsonify(
+                        {"error": "Missing title or category_name for stream.online event"}), 400
 
                 event_context = {
                     "broadcaster_user_id": event_data.get("broadcaster_user_id"),
@@ -201,7 +204,8 @@ def handle_webhook():
                 except Exception as e:
                     app.logger.error(
                         f"Bluesky投稿中の未処理例外 (stream.online): {str(e)}", exc_info=e)
-                    return jsonify({"error": "Internal server error during stream.online processing"}), 500
+                    return jsonify(
+                        {"error": "Internal server error during stream.online processing"}), 500
             else:
                 app.logger.info(
                     f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
@@ -217,7 +221,9 @@ def handle_webhook():
                     "channel_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
                 }
                 app.logger.info(
-                    f"stream.offlineイベント処理開始: {event_context.get('broadcaster_user_name')} ({event_context.get('broadcaster_user_login')})")
+                    f"stream.offlineイベント処理開始: {
+                        event_context.get('broadcaster_user_name')} ({
+                        event_context.get('broadcaster_user_login')})")
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
@@ -227,14 +233,16 @@ def handle_webhook():
                         event_context=event_context
                     )
                     app.logger.info(
-                        f"Bluesky投稿試行 (stream.offline): {event_context.get('broadcaster_user_login')}, 成功: {success}")
+                        f"Bluesky投稿試行 (stream.offline): {
+                            event_context.get('broadcaster_user_login')}, 成功: {success}")
                     return jsonify(
                         {"status": "success, offline notification posted" if success else "bluesky error, offline notification not posted"}
                     ), 200
                 except Exception as e:
                     app.logger.error(
                         f"Bluesky投稿エラー (stream.offline): {str(e)}", exc_info=True)
-                    return jsonify({"error": "Internal server error during stream.offline processing"}), 500
+                    return jsonify(
+                        {"error": "Internal server error during stream.offline processing"}), 500
             else:
                 app.logger.info(
                     f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
@@ -244,13 +252,19 @@ def handle_webhook():
         else:
             app.logger.warning(
                 f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login_from_event}")
-            return jsonify({"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
+            return jsonify(
+                {"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
 
     # サブスクリプション失効通知
     if message_type == 'revocation':
         revocation_status = subscription_payload.get("status", "不明なステータス")
         app.logger.warning(
-            f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {data.get('event', {}).get('broadcaster_user_login', 'N/A')}")
+            f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {
+                data.get(
+                    'event',
+                    {}).get(
+                    'broadcaster_user_login',
+                    'N/A')}")
         return jsonify({"status": "revocation notification received"}), 200
 
     # 未処理のメッセージタイプ
@@ -267,6 +281,7 @@ tunnel_proc = None
 yt_monitor_thread = None
 nn_monitor_thread = None
 flask_server_thread = None  # Flaskサーバーを別スレッドで動かす場合
+tunnel_monitor_thread = None  # ngrok/localtunnel監視用
 
 
 def cleanup_application():
@@ -325,7 +340,54 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
+def tunnel_monitor_loop(
+        tunnel_service,
+        tunnel_cmd,
+        logger,
+        proc_getter,
+        proc_setter,
+        env_path="settings.env"):
+    """
+    ngrok/localtunnelプロセスの死活監視・自動再起動・新URL自動反映ループ
+    proc_getter: 現在のプロセスを取得する関数
+    proc_setter: 新しいプロセスをセットする関数
+    """
+    import time
+    while True:
+        proc = proc_getter()
+        if proc is None or proc.poll() is not None:
+            logger.warning(f"トンネルプロセス({tunnel_service})が停止しました。自動再起動します。")
+            # 再起動
+            from tunnel import start_tunnel
+            new_proc = start_tunnel(logger)
+            proc_setter(new_proc)
+            time.sleep(2)  # 起動待ち
+            # 新しい一時URLを取得してenv反映
+            url = None
+            if tunnel_service == "ngrok":
+                url = get_ngrok_public_url(logger=logger)
+            elif tunnel_service == "localtunnel":
+                # localtunnelはコマンドのstdoutからURLを取得する必要があるが、
+                # ここでは再起動直後は取得できないため、ユーザーが別途反映する運用も許容
+                # TODO: より堅牢にする場合はPopenのstdoutを監視する設計に拡張
+                pass
+            if url:
+                set_webhook_callback_url_temporary(url, env_path=env_path)
+                logger.info(f"新しい一時URL({tunnel_service}): {url} をsettings.envに反映しました。")
+        time.sleep(5)
+
+
 if __name__ == "__main__":
+    # Register the global exception handler before starting the app
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log unhandled exceptions
+        app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
+        return (
+            jsonify({"error": "予期せぬサーバーエラーが発生しました。"}),
+            500,
+        )
+
     if os.name == "nt":
         sys.stdout = open(sys.stdout.fileno(), mode='w',
                           encoding='cp932', buffering=1)
@@ -341,7 +403,7 @@ if __name__ == "__main__":
     # tunnel_proc = None # グローバル変数として定義したのでここでは不要
     try:
         # ロギング設定
-        logger, app_logger_handlers, audit_logger = configure_logging(app)
+        logger, app_logger_handlers, audit_logger, tunnel_logger = configure_logging(app)
         # シークレットのローテーション
         WEBHOOK_SECRET = rotate_secret_if_needed(logger)
         os.environ["WEBHOOK_SECRET"] = WEBHOOK_SECRET
@@ -361,26 +423,60 @@ if __name__ == "__main__":
         logger.info("TwitchAPIアクセストークン取得を確認しました。")
 
         # EventSubサブスクリプションのクリーンアップ
-        WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
+        webhook_url = None
+        tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
+        if tunnel_service in ("cloudflare", "custom"):
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT")
+        elif tunnel_service in ("ngrok", "localtunnel"):
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_TEMPORARY")
+        else:
+            webhook_url = os.getenv("WEBHOOK_CALLBACK_URL")
         cleanup_eventsub_subscriptions(
-            WEBHOOK_CALLBACK_URL, logger_to_use=logger)
+            webhook_url, logger_to_use=logger)
 
         # トンネルの起動
-        tunnel_proc = start_tunnel(logger)
+        tunnel_proc = start_tunnel(tunnel_logger)
         if not tunnel_proc:
-            logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
+            tunnel_logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
             sys.exit(1)
+        # ngrok/localtunnelの場合は監視スレッドを起動
+        tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
+        if tunnel_service in ("ngrok", "localtunnel"):
+            def get_proc():
+                return tunnel_proc
+
+            def set_proc(p):
+                global tunnel_proc
+                tunnel_proc = p
+            tunnel_monitor_thread = threading.Thread(
+                target=tunnel_monitor_loop,
+                args=(
+                    tunnel_service,
+                    os.getenv("NGROK_CMD") if tunnel_service == "ngrok" else os.getenv("LOCALTUNNEL_CMD"),
+                    tunnel_logger,
+                    get_proc,
+                    set_proc),
+                daemon=True)
+            tunnel_monitor_thread.start()
 
         # 必須EventSubサブスクリプションの作成
         event_types_to_subscribe = ["stream.online", "stream.offline"]
         all_subscriptions_successful = True
         for event_type in event_types_to_subscribe:
             logger.info(f"{event_type} のEventSubサブスクリプションを作成します...")
+            # サブスクリプション作成時も同様にURLを分岐
+            if tunnel_service in ("cloudflare", "custom"):
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT")
+            elif tunnel_service in ("ngrok", "localtunnel"):
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_TEMPORARY")
+            else:
+                webhook_url = os.getenv("WEBHOOK_CALLBACK_URL")
             sub_response = create_eventsub_subscription(
-                event_type, logger_to_use=logger)
+                event_type, logger_to_use=logger, webhook_url=webhook_url)
 
-            if not sub_response or not isinstance(sub_response, dict) or \
-               not sub_response.get("data") or not isinstance(sub_response["data"], list) or not sub_response["data"]:
+            if not sub_response or not isinstance(
+                    sub_response, dict) or not sub_response.get("data") or not isinstance(
+                    sub_response["data"], list) or not sub_response["data"]:
                 twitch_error_status = sub_response.get(
                     "status") if isinstance(sub_response, dict) else None
                 twitch_error_message = sub_response.get(
@@ -400,7 +496,9 @@ if __name__ == "__main__":
             else:
                 subscription_details = sub_response['data'][0]
                 logger.info(
-                    f"{event_type} EventSubサブスクリプション作成成功。ID: {subscription_details.get('id')}, ステータス: {subscription_details.get('status')}")
+                    f"{event_type} EventSubサブスクリプション作成成功。ID: {
+                        subscription_details.get('id')}, ステータス: {
+                        subscription_details.get('status')}")
 
         if not all_subscriptions_successful:
             logger.critical("必須EventSubサブスクリプションの作成に失敗したため、アプリケーションは起動できません。")
@@ -545,7 +643,7 @@ if __name__ == "__main__":
         if logger:
             logger.critical(log_msg)
         else:
-            print(f"CRITICAL: {log_msg}")
+            app.logger.critical(log_msg)
         sys.exit(1)
     except Exception as e:
         # その他の初期化エラー時の処理
@@ -556,22 +654,10 @@ if __name__ == "__main__":
             for handler in app_logger_handlers:
                 handler.close()
         else:
-            print(f"CRITICAL: {log_msg_critical} {e}")
+            app.logger.critical(f"CRITICAL: {log_msg_critical} {e}")
         # cleanup_application() # エラー発生時もクリーンアップを試みる
         sys.exit(1)
     finally:
+        # クリーンアップ時もtunnel_loggerを渡す
+        stop_tunnel(tunnel_proc, tunnel_logger)
         cleanup_application()  # finallyブロックでも呼び出す
-
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # 未処理例外発生時のエラーハンドラ
-    app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
-    return (
-        jsonify(
-            {
-                "error": "予期せぬサーバーエラーが発生しました。"
-            }
-        ),
-        500,
-    )

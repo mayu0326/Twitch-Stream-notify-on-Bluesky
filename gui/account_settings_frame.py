@@ -13,6 +13,7 @@ class AccountSettingsFrame(tk.Frame):
         big_font = ("Meiryo", 10)
         notebook.add(self._twitch_tab(notebook, big_font), text="Twitch")
         notebook.add(self._webhook_tab(notebook, big_font), text="Webhook")
+        notebook.add(self._webhookurl_tab(notebook, big_font), text="WebhookURL")
         # Blueskyタブ: entry_passをselfで保持
         self._bluesky_frame, self._bluesky_entry_pass = self._bluesky_tab(
             notebook, big_font)
@@ -20,18 +21,39 @@ class AccountSettingsFrame(tk.Frame):
         notebook.add(self._youtube_tab(notebook, big_font), text="YouTube")
         notebook.add(self._niconico_tab(notebook, big_font), text="ニコニコ")
 
-        # タブ切り替え時にBlueskyアプリパスワードを再読込
+        # タブ切り替え時にBluesky/Webhookアプリパスワード・URLを再読込
         def on_tab_changed(event):
             selected = event.widget.select()
             tab_text = event.widget.tab(selected, "text")
             if tab_text == "Bluesky":
                 from dotenv import load_dotenv
                 import os
-                load_dotenv(os.path.join(os.path.dirname(__file__),
-                            '../settings.env'), override=True)
+                load_dotenv(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        '../settings.env'),
+                    override=True)
                 bsky_pass = os.getenv('BLUESKY_APP_PASSWORD', '')
                 self._bluesky_entry_pass.delete(0, tk.END)
                 self._bluesky_entry_pass.insert(0, bsky_pass)
+            elif tab_text == "Webhook":
+                from dotenv import load_dotenv
+                import os
+                load_dotenv(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        '../settings.env'),
+                    override=True)
+                tunnel_service = os.getenv('TUNNEL_SERVICE', '').lower()
+                if tunnel_service in ("cloudflare", "custom"):
+                    callback_url = os.getenv('WEBHOOK_CALLBACK_URL_PERMANENT', '')
+                else:
+                    callback_url = os.getenv('WEBHOOK_CALLBACK_URL_TEMPORARY', '')
+                if self._webhook_entry_callback is not None:
+                    self._webhook_entry_callback.config(state="normal")
+                    self._webhook_entry_callback.delete(0, tk.END)
+                    self._webhook_entry_callback.insert(0, callback_url)
+                    self._webhook_entry_callback.config(state="readonly")
         notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 
     def _twitch_tab(self, master, big_font):
@@ -242,25 +264,28 @@ class AccountSettingsFrame(tk.Frame):
     def _webhook_tab(self, master, big_font):
         frame = tk.Frame(master)
         load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
-        callback_url = os.getenv('WEBHOOK_CALLBACK_URL', '')
+        tunnel_service = os.getenv('TUNNEL_SERVICE', '').lower()
+        if tunnel_service in ("cloudflare", "custom"):
+            callback_url = os.getenv('WEBHOOK_CALLBACK_URL_PERMANENT', '')
+            url_label = "WebhookコールバックURL（恒久用: Cloudflare/custom）"
+        else:
+            callback_url = os.getenv('WEBHOOK_CALLBACK_URL_TEMPORARY', '')
+            url_label = "WebhookコールバックURL（一時用: ngrok/localtunnel）"
         webhook_secret = os.getenv('WEBHOOK_SECRET', '')
         secret_last_rotated = os.getenv('SECRET_LAST_ROTATED', '')
         retry_max = os.getenv('RETRY_MAX', '3')
         retry_wait = os.getenv('RETRY_WAIT', '2')
-
-        # セクションタイトル
         lbl_section = tk.Label(
             frame, text="Twitch EventSub Webhook設定", font=("Meiryo", 12, "bold"))
         lbl_section.grid(row=0, column=0, sticky=tk.W,
                          pady=(10, 0), columnspan=2)
-
-        # コールバックURL
-        tk.Label(frame, text="WebhookコールバックURL", font=big_font).grid(
+        tk.Label(frame, text=url_label, font=big_font).grid(
             row=1, column=0, sticky=tk.W, pady=(10, 0))
-        entry_callback = tk.Entry(frame, font=big_font)
+        entry_callback = tk.Entry(frame, font=big_font, state="readonly")
         entry_callback.insert(0, callback_url)
         entry_callback.grid(row=2, column=0, sticky=tk.EW,
                             pady=(0, 10), columnspan=2)
+        self._webhook_entry_callback = entry_callback
 
         # Webhookシークレット
         tk.Label(frame, text="Webhookシークレットキー", font=big_font).grid(
@@ -366,6 +391,66 @@ class AccountSettingsFrame(tk.Frame):
         frame.grid_columnconfigure(1, weight=1)
         return frame
 
+    def _webhookurl_tab(self, master, big_font):
+        frame = tk.Frame(master)
+        load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
+        permanent_url = os.getenv('WEBHOOK_CALLBACK_URL_PERMANENT', '')
+        temporary_url = os.getenv('WEBHOOK_CALLBACK_URL_TEMPORARY', '')
+        # 恒久用
+        tk.Label(
+            frame,
+            text="WebhookコールバックURL（恒久用: Cloudflare/custom）",
+            font=big_font).grid(
+            row=0,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                10,
+                0))
+        entry_perm = tk.Entry(frame, font=big_font)
+        entry_perm.insert(0, permanent_url)
+        entry_perm.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
+        # 一時用（編集不可）
+        tk.Label(
+            frame,
+            text="WebhookコールバックURL（一時用: ngrok/localtunnel）",
+            font=big_font).grid(
+            row=2,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                10,
+                0))
+        entry_temp = tk.Entry(frame, font=big_font, state="readonly")
+        entry_temp.insert(0, temporary_url)
+        entry_temp.grid(row=3, column=0, sticky=tk.EW, pady=(0, 10))
+
+        # 保存ボタン（PERMANENTのみ保存）
+        def save_perm_url():
+            url = entry_perm.get().strip()
+            env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
+            lines = []
+            found = False
+            if os.path.exists(env_path):
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                if line.startswith('WEBHOOK_CALLBACK_URL_PERMANENT='):
+                    new_lines.append(f'WEBHOOK_CALLBACK_URL_PERMANENT={url}\n')
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f'WEBHOOK_CALLBACK_URL_PERMANENT={url}\n')
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.writelines(new_lines)
+            tk.messagebox.showinfo('保存完了', 'WEBHOOK_CALLBACK_URL_PERMANENTを保存しました。')
+        btn_save = tk.Button(frame, text="保存", font=("Meiryo", 10), command=save_perm_url)
+        btn_save.grid(row=4, column=0, sticky=tk.EW, pady=(10, 10))
+        frame.grid_columnconfigure(0, weight=1)
+        return frame
+
     def _bluesky_tab(self, master, big_font):
         frame = tk.Frame(master)
         load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
@@ -374,8 +459,19 @@ class AccountSettingsFrame(tk.Frame):
         # Blueskyユーザー名ラベル（2行）
         tk.Label(frame, text="Blueskyユーザー名:", font=big_font).grid(
             row=0, column=0, sticky=tk.W, pady=(10, 0))
-        tk.Label(frame, text="(例: your-handle.bsky.social or 独自ドメイン等ご利用中のID）", font=("Meiryo", 9), fg="gray").grid(
-            row=1, column=0, sticky=tk.W, pady=(0, 0))
+        tk.Label(
+            frame,
+            text="(例: your-handle.bsky.social or 独自ドメイン等ご利用中のID）",
+            font=(
+                "Meiryo",
+                9),
+            fg="gray").grid(
+            row=1,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                0,
+                0))
         label_user_status = tk.Label(frame, text="", font=("Meiryo", 10))
         label_user_status.grid(row=0, column=1, sticky=tk.W, pady=(10, 0))
         entry_user = tk.Entry(frame, font=big_font)

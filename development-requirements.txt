@@ -27,9 +27,12 @@ pytest-twisted==1.14.0
 twisted==24.3.0
 anyio==4.3.0
 PyYAML==6.0.2
-rich==12.5.1
+rich
 setuptools==80.7.1
 truststore==0.10.1
-typing-inspect==0.9.0
+typing-inspect
 tzdata==2025.2
 virtualenv==20.26.6
+ruff
+mypy
+python-semantic-release

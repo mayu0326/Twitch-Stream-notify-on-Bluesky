@@ -14,7 +14,7 @@ from utils import (
     rotate_secret_if_needed,
     format_datetime_filter  # format_datetime_filterの追加
 )
-from version import __version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -147,7 +147,8 @@ def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_
 
 # このテストでもsecrets.token_hexをモック
 @patch('utils.secrets.token_hex')
-def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+def test_rotate_secret_if_needed_force_rotation(
+        mock_secrets_token_hex, mock_env_for_rotate, caplog):
     mock_secrets_token_hex.return_value = "mocked_secret_key_123"  # モック値
 
     # caplogでINFOレベルのログを取得

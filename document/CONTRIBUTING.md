@@ -27,6 +27,21 @@ We highly recommend using Docker for a consistent development environment.
 ### `settings.env` Configuration
 Regardless of your setup method, you **must** create and configure a `settings.env` file with your API keys and preferences. See `settings.env.example` for details.
 
+### Tunnel Requirements
+- Cloudflare Tunnel is **not strictly required**. ngrok, localtunnel, and custom tunnels are also supported.
+- See the "Tunnel Requirements" section in the README.md for details.
+
+### Template File Handling
+- Default template files are located in the `.templates/` directory and start with `_default_`.
+- **Do not edit or delete these files directly.** To customize, copy and rename them before editing.
+
+### GUI Specification Notes
+- The settings editor uses a tabbed interface. Changes are auto-reflected and a save-complete message is shown.
+- It is recommended to use the GUI for editing settings and templates.
+
+### Unused File Cleanup
+- Please regularly remove unused or legacy GUI frames and unnecessary files from the repository.
+
 ## How to Contribute
 
 ### Reporting Bugs
@@ -44,12 +59,12 @@ Regardless of your setup method, you **must** create and configure a `settings.e
 
 1.  **Fork the repository** on GitHub.
 2.  **Clone your fork** locally: `git clone https://github.com/YOUR_USERNAME/Twitch-Stream-notify-on-Bluesky.git`
-3.  **Create a new branch** for your changes. It's good practice to base your branch off the `dev` branch: `git checkout -b your-feature-branch dev`
+3.  **Create a new branch** for your changes. It's good practice to base your branch off the `development` branch: `git checkout -b your-feature-branch development`
 4.  **Make your changes** and commit them with clear, descriptive commit messages.
 5.  **Ensure your code passes all tests.** (See "Running Tests" below).
 6.  **Update documentation** (`README.md`, comments, etc.) if your changes require it.
 7.  **Push your branch** to your fork on GitHub: `git push origin your-feature-branch`
-8.  **Open a Pull Request** from your branch to the `dev` branch of the `mayu0326/Twitch-Stream-notify-on-Bluesky` repository.
+8.  **Open a Pull Request** from your branch to the `development` branch of the `mayu0326/Twitch-Stream-notify-on-Bluesky` repository.
 9.  Provide a clear description of the changes in your PR. Reference any related issues.
 
 ## Coding Conventions

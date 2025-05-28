@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from dotenv import load_dotenv
+from tkinter import messagebox  # 追加
 
 
 class LoggingConsoleFrame(ttk.Frame):
@@ -14,14 +15,30 @@ class LoggingConsoleFrame(ttk.Frame):
         self.var_log_retention = tk.StringVar(value=log_retention)
         ttk.Label(self, text="アプリケーションのログレベル:", style="Big.TLabel").grid(
             row=0, column=0, sticky=tk.W, pady=(10, 0))
-        self.combo_log_level = ttk.Combobox(self, values=[
-                                            "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], state="readonly", width=12, textvariable=self.var_log_level)
+        self.combo_log_level = ttk.Combobox(
+            self,
+            values=[
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"],
+            state="readonly",
+            width=12,
+            textvariable=self.var_log_level)
         self.combo_log_level.grid(row=0, column=1, sticky=tk.W, pady=(10, 0))
         self.combo_log_level.configure(font=("Meiryo", 12))
         ttk.Label(self, text="ログファイルのローテーション保持日数:", style="Big.TLabel").grid(
             row=1, column=0, sticky=tk.W, pady=(10, 0))
         self.spin_retention = tk.Spinbox(
-            self, from_=1, to=365, width=8, textvariable=self.var_log_retention, font=("Meiryo", 12))
+            self,
+            from_=1,
+            to=365,
+            width=8,
+            textvariable=self.var_log_retention,
+            font=(
+                "Meiryo",
+                12))
         self.spin_retention.grid(row=1, column=1, sticky=tk.W, pady=(10, 0))
         ttk.Button(self, text="保存", command=self.save_log_settings, style="Big.TButton").grid(
             row=2, column=1, sticky=tk.W, pady=(15, 0))
@@ -50,3 +67,4 @@ class LoggingConsoleFrame(ttk.Frame):
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)
+        messagebox.showinfo('保存', '保存しました')  # 追加

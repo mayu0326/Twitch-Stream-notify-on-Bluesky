@@ -5,12 +5,14 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
+from version_info import __version__
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from dotenv import load_dotenv
+import sys
 import os
-from logging.handlers import TimedRotatingFileHandler
-import logging
-from version import __version__
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -67,7 +69,8 @@ def configure_logging(app=None):
             log_retention_days = 14
     except ValueError:
         print(
-            f"Warning: Invalid LOG_RETENTION_DAYS value '{os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
+            f"Warning: Invalid LOG_RETENTION_DAYS value '{
+                os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
         log_retention_days = 14
 
     # 監査ログ専用ロガーとハンドラの設定
@@ -124,15 +127,18 @@ def configure_logging(app=None):
     console_handler.setFormatter(error_format)
     logger.addHandler(console_handler)
 
+    # Discord通知の有効/無効設定
+    discord_enabled = os.getenv("DISCORD_NOTIFICATION_ENABLED", "false").lower() == "true"
+
     # Discord通知用Webhookの設定
     discord_webhook_url = os.getenv("discord_error_notifier_url")
     app_logger_handlers = [info_file_handler,
                            error_file_handler, console_handler]  # Flask用にも使うハンドラリスト
 
-    if discord_webhook_url:
+    if discord_enabled and discord_webhook_url and discord_webhook_url.startswith(
+            "https://discord.com/api/webhooks/"):
         try:
             from discord_logging.handler import DiscordHandler
-
             discord_handler = DiscordHandler(
                 "StreamApp_ErrorNotifier", discord_webhook_url)
             # 設定されたDiscord通知レベルを使用
@@ -153,8 +159,30 @@ def configure_logging(app=None):
             logger.warning(msg)
             print(msg)
     else:
-        msg = "discord_error_notifier_urlが未設定のため、Discordエラー通知は無効です。"
+        # ユーザー指定の日本語メッセージで出力
+        if not discord_webhook_url or not discord_webhook_url.startswith(
+                "https://discord.com/api/webhooks/"):
+            msg = "Discord通知はオフになっています。"
+        elif not discord_enabled:
+            msg = "Discord通知はオフになっています。"
+        else:
+            msg = "Discord通知はオンになっています。"
         logger.info(msg)  # 設定上の選択なのでINFOで記録
+
+    # tunnel.log用ロガーの設定
+    tunnel_logger = logging.getLogger("tunnel.logger")
+    tunnel_logger.setLevel(log_level)
+    tunnel_format = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    tunnel_file_handler = TimedRotatingFileHandler(
+        "logs/tunnel.log",
+        when="D",
+        interval=1,
+        backupCount=log_retention_days,
+        encoding="utf-8",
+    )
+    tunnel_file_handler.setLevel(log_level)
+    tunnel_file_handler.setFormatter(tunnel_format)
+    tunnel_logger.addHandler(tunnel_file_handler)
 
     # Flaskアプリが渡された場合は、Flaskのロガーにも同じハンドラを追加
     if app is not None:
@@ -164,4 +192,4 @@ def configure_logging(app=None):
         app.logger.setLevel(log_level)
         app.logger.propagate = False
 
-    return logger, app_logger_handlers, audit_logger
+    return logger, app_logger_handlers, audit_logger, tunnel_logger

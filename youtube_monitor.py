@@ -20,10 +20,14 @@ Stream notify on Bluesky
 # もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
 # 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+from version_info import __version__
 import time
 import requests
 from threading import Thread, Event
-from version import __version__
+import sys
+import os
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -36,7 +40,14 @@ class YouTubeMonitor(Thread):
     YouTubeライブ配信および動画投稿の新着を監視するスレッド。
     """
 
-    def __init__(self, api_key, channel_id, poll_interval, on_live, on_new_video, shutdown_event=None):
+    def __init__(
+            self,
+            api_key,
+            channel_id,
+            poll_interval,
+            on_live,
+            on_new_video,
+            shutdown_event=None):
         # APIキー、チャンネルID、ポーリング間隔、コールバック関数を初期化
         super().__init__(daemon=True)
         self.api_key = api_key

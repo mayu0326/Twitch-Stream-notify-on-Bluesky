@@ -1,57 +1,88 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import os
-from dotenv import load_dotenv
+
+from tunnel_cloudflare_frame import TunnelCloudflareFrame
+from tunnel_custom_frame import TunnelCustomFrame
+from tunnel_localtunnel_frame import TunnelLocaltunnelFrame
+from tunnel_ngrok_frame import TunnelNgrokFrame
 
 
 class TunnelConnection(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-        load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
-        tunnel_cmd = os.getenv('TUNNEL_CMD', '')
-        self.var_tunnel_cmd = tk.StringVar(value=tunnel_cmd)
-        center_frame = tk.Frame(self)
-        center_frame.pack(expand=True)
-        center_frame.grid_columnconfigure(0, weight=1)
-        center_frame.grid_columnconfigure(1, weight=1)
-        ttk.Label(center_frame, text="トンネル起動コマンド:", style="Big.TLabel").grid(
-            row=0, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
-        entry = ttk.Entry(
-            center_frame, textvariable=self.var_tunnel_cmd, width=48)
-        entry.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
-        entry.configure(font=("Meiryo", 12))
-        label1 = tk.Label(center_frame, text='Cloudflare Tunnelやngrokなど\nトンネル通信アプリケーションを起動するためのコマンドを\nここに入力し設定してください。', font=(
-            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-        label1.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+        self.selected_service = tk.StringVar(value="cloudflare")
+        self.service_frames = {}
 
-        def open_cloudflare_link(event=None):
-            import webbrowser
-            webbrowser.open_new(
-                "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/")
-        link = tk.Label(center_frame, text="[CloudflareTunnelのインストール]がまだの方はこちら", font=(
-            "Meiryo", 11, "underline"), fg="blue", cursor="hand2", anchor="w", justify="left", wraplength=420)
-        link.grid(row=3, column=0, columnspan=2, sticky=tk.W)
-        link.bind("<Button-1>", open_cloudflare_link)
-        label2 = tk.Label(center_frame, text='コマンド例: cloudflared tunnel run <トンネル名>', font=(
-            "Meiryo", 11, "bold"), anchor="w", justify="left", wraplength=420)
-        label2.grid(row=4, column=0, columnspan=2, sticky=tk.W)
-        ttk.Button(center_frame, text="保存", command=self.save_tunnel_cmd, style="Big.TButton").grid(
-            row=5, column=0, columnspan=2, sticky="ew", pady=(15, 0), padx=80)
+        # スタイルでラジオボタンのフォントサイズを大きく
+        style = ttk.Style(self)
+        style.configure("TRadiobutton", font=("Meiryo", 12))
+        # 見出し
+        headline = ttk.Label(self, text="使用するトンネルサービス", font=("Meiryo", 13, "bold"), anchor="w")
+        headline.pack(fill=tk.X, padx=0, pady=(5, 0))
+        # ラジオボタン
+        radio_frame = ttk.Frame(self)
+        radio_frame.pack(padx=10, pady=(10, 0), anchor="w")
+        services = [
+            ("Cloudflare", "cloudflare"),
+            ("ngrok", "ngrok"),
+            ("localtunnel", "localtunnel"),
+            ("カスタム", "custom")
+        ]
+        for i, (label, value) in enumerate(services):
+            ttk.Radiobutton(
+                radio_frame,
+                text=label,
+                variable=self.selected_service,
+                value=value,
+                command=self.switch_service,
+                style="TRadiobutton").grid(
+                row=0,
+                column=i,
+                padx=8)
+        # サービスごとのフレーム
+        self.frame_area = ttk.Frame(self)
+        self.frame_area.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.switch_service()
 
-    def save_tunnel_cmd(self):
+    def switch_service(self):
+        for child in self.frame_area.winfo_children():
+            child.destroy()
+        val = self.selected_service.get()
+        # settings.envにTUNNEL_SERVICEを書き込む
+        import os
         env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        lines = []
+        if os.path.exists(env_path):
+            with open(env_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
         new_lines = []
-        found = False
+        found_service = False
         for line in lines:
-            if line.startswith('TUNNEL_CMD='):
-                new_lines.append(f'TUNNEL_CMD={self.var_tunnel_cmd.get()}\n')
-                found = True
+            if line.startswith('TUNNEL_SERVICE='):
+                new_lines.append(f'TUNNEL_SERVICE={val}\n')
+                found_service = True
             else:
                 new_lines.append(line)
-        if not found:
-            new_lines.append(f'TUNNEL_CMD={self.var_tunnel_cmd.get()}\n')
+        if not found_service:
+            new_lines.append(f'TUNNEL_SERVICE={val}\n')
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
-        load_dotenv(env_path, override=True)
+        # サービスに応じたフレームの表示
+        if val == "cloudflare":
+            frame = TunnelCloudflareFrame(self.frame_area)
+        elif val == "ngrok":
+            frame = TunnelNgrokFrame(self.frame_area)
+        elif val == "localtunnel":
+            frame = TunnelLocaltunnelFrame(self.frame_area)
+        elif val == "custom":
+            frame = TunnelCustomFrame(self.frame_area)
+        else:
+            frame = ttk.Label(self.frame_area, text="未対応のサービスです")
+        frame.pack(fill=tk.BOTH, expand=True)
+        # 設定状況タブも即時再描画
+        parent = self.master
+        while parent is not None:
+            if hasattr(parent, 'tab_status') and hasattr(parent.tab_status, 'create_widgets'):
+                parent.tab_status.create_widgets()
+                break
+            parent = getattr(parent, 'master', None)
