@@ -46,7 +46,7 @@ class TwitchNoticeFrame(ttk.Frame):
         self.img_preview = tk.Label(
             self, width=120, height=90, relief=tk.SOLID, bg='white')
         self.img_preview.grid(row=5, column=0, rowspan=2,
-                              sticky=tk.W+tk.N+tk.S, padx=(0, 10), pady=(0, 10))
+                              sticky=tk.W + tk.N + tk.S, padx=(0, 10), pady=(0, 10))
 
         def update_img_label():
             lbl_online_img.config(text=os.path.basename(self.img_path.get()))
@@ -89,19 +89,40 @@ class TwitchNoticeFrame(ttk.Frame):
 
     def change_template_file_online(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
+            title="テンプレートファイルを選択",
+            filetypes=[
+                ("Text files",
+                 "*.txt")],
+            initialdir=os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    '../templates')))
         if path:
             self.tpl_online.set(path)
 
     def change_image_file(self):
-        path = filedialog.askopenfilename(title="画像ファイルを選択", filetypes=[
-                                          ("Image files", "*.png;*.jpg;*.jpeg;*.gif")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../images')))
+        path = filedialog.askopenfilename(
+            title="画像ファイルを選択",
+            filetypes=[
+                ("Image files",
+                 "*.png;*.jpg;*.jpeg;*.gif")],
+            initialdir=os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    '../images')))
         if path:
             self.img_path.set(path)
 
     def change_template_file_offline(self):
         path = filedialog.askopenfilename(
-            title="テンプレートファイルを選択", filetypes=[("Text files", "*.txt")], initialdir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
+            title="テンプレートファイルを選択",
+            filetypes=[
+                ("Text files",
+                 "*.txt")],
+            initialdir=os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    '../templates')))
         if path:
             self.tpl_offline.set(path)
 
@@ -156,10 +177,15 @@ class TwitchNoticeFrame(ttk.Frame):
                 found_tpl_online = True
             elif line.startswith('BLUESKY_OFFLINE_TEMPLATE_PATH='):
                 new_lines.append(
-                    f'BLUESKY_OFFLINE_TEMPLATE_PATH={self._to_templates_relative(self.tpl_offline.get())}\n')
+                    f'BLUESKY_OFFLINE_TEMPLATE_PATH={
+                        self._to_templates_relative(
+                            self.tpl_offline.get())}\n')
                 found_tpl_offline = True
             elif line.startswith('BLUESKY_IMAGE_PATH='):
-                new_lines.append(f'BLUESKY_IMAGE_PATH={self._to_images_relative(self.img_path.get())}\n')
+                new_lines.append(
+                    f'BLUESKY_IMAGE_PATH={
+                        self._to_images_relative(
+                            self.img_path.get())}\n')
                 found_img = True
             else:
                 new_lines.append(line)
@@ -174,9 +200,14 @@ class TwitchNoticeFrame(ttk.Frame):
                 f'BLUESKY_TEMPLATE_PATH={self._to_templates_relative(self.tpl_online.get())}\n')
         if not found_tpl_offline:
             new_lines.append(
-                f'BLUESKY_OFFLINE_TEMPLATE_PATH={self._to_templates_relative(self.tpl_offline.get())}\n')
+                f'BLUESKY_OFFLINE_TEMPLATE_PATH={
+                    self._to_templates_relative(
+                        self.tpl_offline.get())}\n')
         if not found_img:
-            new_lines.append(f'BLUESKY_IMAGE_PATH={self._to_images_relative(self.img_path.get())}\n')
+            new_lines.append(
+                f'BLUESKY_IMAGE_PATH={
+                    self._to_images_relative(
+                        self.img_path.get())}\n')
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)

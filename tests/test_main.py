@@ -211,14 +211,17 @@ class TestWebhookHandler:
             "title": payload_event_data.get("title"),
             "category_name": payload_event_data.get("category_name"),
             "game_id": payload_event_data.get("game_id"),
-            "game_name": payload_event_data.get("game_name", payload_event_data.get("category_name")),
+            "game_name": payload_event_data.get(
+                "game_name",
+                payload_event_data.get("category_name")),
             "language": payload_event_data.get("language"),
             "started_at": payload_event_data.get("started_at"),
             "type": payload_event_data.get("type"),
             "is_mature": payload_event_data.get("is_mature"),
-            "tags": payload_event_data.get("tags", []),
-            "stream_url": f"https://twitch.tv/{derived_broadcaster_login}"
-        }
+            "tags": payload_event_data.get(
+                "tags",
+                []),
+            "stream_url": f"https://twitch.tv/{derived_broadcaster_login}"}
 
         mock_poster_instance.post_stream_online.assert_called_once_with(
             event_context=expected_event_context,
@@ -226,7 +229,8 @@ class TestWebhookHandler:
         )
 
     @patch("main.BlueskyPoster")
-    def test_webhook_stream_online_skipped_by_setting(self, mock_bluesky_poster_class, client, monkeypatch):
+    def test_webhook_stream_online_skipped_by_setting(
+            self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信開始通知が設定で無効の場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
         monkeypatch.setenv("NOTIFY_ON_TWITCH_ONINE", "False")
@@ -301,7 +305,8 @@ class TestWebhookHandler:
         )
 
     @patch("main.BlueskyPoster")
-    def test_webhook_stream_offline_skipped_by_setting(self, mock_bluesky_poster_class, client, monkeypatch):
+    def test_webhook_stream_offline_skipped_by_setting(
+            self, mock_bluesky_poster_class, client, monkeypatch):
         # 配信終了通知が設定で無効の場合のテスト
         monkeypatch.setattr("main.verify_signature", lambda req: True)
         monkeypatch.setenv("NOTIFY_ON_TWITCH_OFFLINE", "False")
@@ -347,11 +352,13 @@ class TestWebhookHandler:
                 "type": "stream.online",
                 "version": "1",
                 "status": "authorization_revoked",
-                "condition": {"broadcaster_user_id": "12345"},
-                "transport": {"method": "webhook", "callback": "https://example.com/webhooks/twitch"},
+                "condition": {
+                    "broadcaster_user_id": "12345"},
+                "transport": {
+                    "method": "webhook",
+                    "callback": "https://example.com/webhooks/twitch"},
                 "created_at": "2019-11-16T10:11:12.123Z",
-            }
-        }
+            }}
         headers = {**self.COMMON_HEADERS,
                    "Twitch-Eventsub-Message-Type": "revocation"}
         response = client.post(
@@ -369,12 +376,17 @@ class TestWebhookHandler:
                 "type": "user.update",
                 "version": "1",
                 "status": "enabled",
-                "condition": {"user_id": "12345"},
-                "transport": {"method": "webhook", "callback": "https://example.com/webhooks/twitch"},
+                "condition": {
+                    "user_id": "12345"},
+                "transport": {
+                    "method": "webhook",
+                    "callback": "https://example.com/webhooks/twitch"},
                 "created_at": "2019-11-16T10:11:14.123Z",
             },
-            "event": {"user_id": "12345", "user_login": "testuser", "user_name": "TestUser"}
-        }
+            "event": {
+                "user_id": "12345",
+                "user_login": "testuser",
+                "user_name": "TestUser"}}
         headers = {**self.COMMON_HEADERS,
                    "Twitch-Eventsub-Message-Type": "notification"}
         response = client.post("/webhook", headers=headers,

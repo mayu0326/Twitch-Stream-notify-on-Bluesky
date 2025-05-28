@@ -28,14 +28,22 @@ class AccountSettingsFrame(tk.Frame):
             if tab_text == "Bluesky":
                 from dotenv import load_dotenv
                 import os
-                load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'), override=True)
+                load_dotenv(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        '../settings.env'),
+                    override=True)
                 bsky_pass = os.getenv('BLUESKY_APP_PASSWORD', '')
                 self._bluesky_entry_pass.delete(0, tk.END)
                 self._bluesky_entry_pass.insert(0, bsky_pass)
             elif tab_text == "Webhook":
                 from dotenv import load_dotenv
                 import os
-                load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'), override=True)
+                load_dotenv(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        '../settings.env'),
+                    override=True)
                 tunnel_service = os.getenv('TUNNEL_SERVICE', '').lower()
                 if tunnel_service in ("cloudflare", "custom"):
                     callback_url = os.getenv('WEBHOOK_CALLBACK_URL_PERMANENT', '')
@@ -389,12 +397,30 @@ class AccountSettingsFrame(tk.Frame):
         permanent_url = os.getenv('WEBHOOK_CALLBACK_URL_PERMANENT', '')
         temporary_url = os.getenv('WEBHOOK_CALLBACK_URL_TEMPORARY', '')
         # 恒久用
-        tk.Label(frame, text="WebhookコールバックURL（恒久用: Cloudflare/custom）", font=big_font).grid(row=0, column=0, sticky=tk.W, pady=(10, 0))
+        tk.Label(
+            frame,
+            text="WebhookコールバックURL（恒久用: Cloudflare/custom）",
+            font=big_font).grid(
+            row=0,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                10,
+                0))
         entry_perm = tk.Entry(frame, font=big_font)
         entry_perm.insert(0, permanent_url)
         entry_perm.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
         # 一時用（編集不可）
-        tk.Label(frame, text="WebhookコールバックURL（一時用: ngrok/localtunnel）", font=big_font).grid(row=2, column=0, sticky=tk.W, pady=(10, 0))
+        tk.Label(
+            frame,
+            text="WebhookコールバックURL（一時用: ngrok/localtunnel）",
+            font=big_font).grid(
+            row=2,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                10,
+                0))
         entry_temp = tk.Entry(frame, font=big_font, state="readonly")
         entry_temp.insert(0, temporary_url)
         entry_temp.grid(row=3, column=0, sticky=tk.EW, pady=(0, 10))
@@ -433,8 +459,19 @@ class AccountSettingsFrame(tk.Frame):
         # Blueskyユーザー名ラベル（2行）
         tk.Label(frame, text="Blueskyユーザー名:", font=big_font).grid(
             row=0, column=0, sticky=tk.W, pady=(10, 0))
-        tk.Label(frame, text="(例: your-handle.bsky.social or 独自ドメイン等ご利用中のID）", font=("Meiryo", 9), fg="gray").grid(
-            row=1, column=0, sticky=tk.W, pady=(0, 0))
+        tk.Label(
+            frame,
+            text="(例: your-handle.bsky.social or 独自ドメイン等ご利用中のID）",
+            font=(
+                "Meiryo",
+                9),
+            fg="gray").grid(
+            row=1,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                0,
+                0))
         label_user_status = tk.Label(frame, text="", font=("Meiryo", 10))
         label_user_status.grid(row=0, column=1, sticky=tk.W, pady=(10, 0))
         entry_user = tk.Entry(frame, font=big_font)

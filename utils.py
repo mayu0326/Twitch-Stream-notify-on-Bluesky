@@ -258,8 +258,7 @@ def rotate_secret_if_needed(logger=None, force=False):
                         f"WEBHOOK_SECRETが30日以上経過しているため ({(now - last_rotated_dt).days} 日)、ローテーションします。")
             except ValueError:
                 logger_to_use.warning(
-                    f"SECRET_LAST_ROTATED の日付形式 '{last_rotated_str}' が不正です。WEBHOOK_SECRETをローテーションします。"
-                )
+                    f"SECRET_LAST_ROTATED の日付形式 '{last_rotated_str}' が不正です。WEBHOOK_SECRETをローテーションします。")
                 need_rotate = True
             except Exception as e:
                 logger_to_use.warning(
@@ -334,7 +333,11 @@ def change_image_file(var):
         var.set(path)
 
 
-def get_ngrok_public_url(api_url="http://127.0.0.1:4040/api/tunnels", timeout=0.5, retries=20, logger=None):
+def get_ngrok_public_url(
+        api_url="http://127.0.0.1:4040/api/tunnels",
+        timeout=0.5,
+        retries=20,
+        logger=None):
     """
     ngrokのローカルAPIからpublic_urlを取得する（最大retries回リトライ）
     """
@@ -398,7 +401,8 @@ if __name__ == '__main__':
     os.environ["TIMEZONE"] = "Asia/Tokyo"
     # print(f"To Asia/Tokyo: {format_datetime_filter(test_iso_str)}")
     # print(
-    #     f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str, fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
+    # f"To Asia/Tokyo (custom format): {format_datetime_filter(test_iso_str,
+    # fmt='%Y年%m月%d日 %H時%M分%S秒 %Z%z')}")
 
     os.environ["TIMEZONE"] = "America/New_York"
     # print(f"To America/New_York: {format_datetime_filter(test_iso_str)}")
@@ -416,7 +420,8 @@ if __name__ == '__main__':
     #     f"Invalid ISO string input: '{format_datetime_filter('not a date')}'")
     # strftimeでValueErrorが出るケース
     # print(
-    #     f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str, fmt='%%InvalidFormat')}'")
+    # f"Valid ISO, invalid fmt: '{format_datetime_filter(test_iso_str,
+    # fmt='%%InvalidFormat')}'")
 
     # rotate_secret_if_neededのテスト
     util_logger.info("\nTesting rotate_secret_if_needed...")

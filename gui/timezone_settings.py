@@ -69,7 +69,13 @@ class TimeZoneSettings(tk.Frame):
             ampm = '午前' if now.hour < 12 else '午後'
             hour12 = now.hour if 1 <= now.hour <= 12 else (now.hour - 12 if now.hour > 12 else 12)
             # フォーマット
-            now_str = f"{now.year}年{now.month:02d}月{now.day:02d}日({weekday}){ampm}{hour12:02d}時{now.minute:02d}分{now.second:02d}秒"
+            now_str = f"{
+                now.year}年{
+                now.month:02d}月{
+                now.day:02d}日({weekday}){ampm}{
+                hour12:02d}時{
+                    now.minute:02d}分{
+                        now.second:02d}秒"
         except Exception:
             now_str = '(タイムゾーンが無効です)'
         self.lbl_now.config(text=f"現在日時: {now_str}")

@@ -8,6 +8,7 @@ import subprocess
 import signal
 from tunnel import start_tunnel, stop_tunnel  # TunnelErrorは未定義のため除外
 
+
 @pytest.fixture
 def mock_cloudflared():
     with patch('tunnel.subprocess.Popen') as mock_popen:
@@ -31,12 +32,13 @@ def mock_cloudflared():
 # def test_tunnel_start_failure(mock_cloudflared):
 #     # トンネル開始の異常系テスト
 #     mock_cloudflared.side_effect = subprocess.SubprocessError()
-    
+
 #     with pytest.raises(TunnelError) as exc_info:
 #         with patch('tunnel.TUNNEL_CMD', 'cloudflared tunnel --config config.yml'):
 #             start_tunnel()
-    
+
 #     assert "トンネルの開始に失敗しました" in str(exc_info.value)
+
 
 def test_tunnel_stop_success(mock_cloudflared):
     # トンネル停止の正常系テスト
@@ -44,6 +46,7 @@ def test_tunnel_stop_success(mock_cloudflared):
     stop_tunnel(proc)
     proc.terminate.assert_called_once()
     proc.wait.assert_called_once()
+
 
 def test_tunnel_stop_force_kill(mock_cloudflared):
     # 通常の終了が失敗した場合のフォースキルテスト
@@ -53,6 +56,8 @@ def test_tunnel_stop_force_kill(mock_cloudflared):
     proc.kill.assert_called_once()
 
 # TUNNEL_SERVICEごとの起動テスト（stdout/stderrはDEVNULLで検証）
+
+
 def test_tunnel_start_cloudflare():
     with patch.dict('os.environ', {"TUNNEL_SERVICE": "cloudflare", "TUNNEL_CMD": "cloudflared tunnel --config config.yml"}):
         with patch('tunnel.subprocess.Popen') as mock_popen:
@@ -64,6 +69,7 @@ def test_tunnel_start_cloudflare():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
+
 
 def test_tunnel_start_ngrok():
     with patch.dict('os.environ', {"TUNNEL_SERVICE": "ngrok", "NGROK_CMD": "ngrok http 8080"}):
@@ -77,6 +83,7 @@ def test_tunnel_start_ngrok():
                 stderr=subprocess.DEVNULL
             )
 
+
 def test_tunnel_start_localtunnel():
     with patch.dict('os.environ', {"TUNNEL_SERVICE": "localtunnel", "LOCALTUNNEL_CMD": "lt --port 8080"}):
         with patch('tunnel.subprocess.Popen') as mock_popen:
@@ -88,6 +95,7 @@ def test_tunnel_start_localtunnel():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
+
 
 def test_tunnel_start_custom():
     with patch.dict('os.environ', {"TUNNEL_SERVICE": "custom", "CUSTOM_TUNNEL_CMD": "mytunnel --foo bar"}):

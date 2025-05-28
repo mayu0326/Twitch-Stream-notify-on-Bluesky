@@ -40,7 +40,14 @@ class YouTubeMonitor(Thread):
     YouTubeライブ配信および動画投稿の新着を監視するスレッド。
     """
 
-    def __init__(self, api_key, channel_id, poll_interval, on_live, on_new_video, shutdown_event=None):
+    def __init__(
+            self,
+            api_key,
+            channel_id,
+            poll_interval,
+            on_live,
+            on_new_video,
+            shutdown_event=None):
         # APIキー、チャンネルID、ポーリング間隔、コールバック関数を初期化
         super().__init__(daemon=True)
         self.api_key = api_key

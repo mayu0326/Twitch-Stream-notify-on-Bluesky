@@ -5,14 +5,14 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
+from version_info import __version__
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from dotenv import load_dotenv
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from logging.handlers import TimedRotatingFileHandler
-import logging
-from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -69,7 +69,8 @@ def configure_logging(app=None):
             log_retention_days = 14
     except ValueError:
         print(
-            f"Warning: Invalid LOG_RETENTION_DAYS value '{os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
+            f"Warning: Invalid LOG_RETENTION_DAYS value '{
+                os.getenv('LOG_RETENTION_DAYS')}'. Defaulting to 14 days.")
         log_retention_days = 14
 
     # 監査ログ専用ロガーとハンドラの設定
@@ -134,7 +135,8 @@ def configure_logging(app=None):
     app_logger_handlers = [info_file_handler,
                            error_file_handler, console_handler]  # Flask用にも使うハンドラリスト
 
-    if discord_enabled and discord_webhook_url and discord_webhook_url.startswith("https://discord.com/api/webhooks/"):
+    if discord_enabled and discord_webhook_url and discord_webhook_url.startswith(
+            "https://discord.com/api/webhooks/"):
         try:
             from discord_logging.handler import DiscordHandler
             discord_handler = DiscordHandler(
@@ -158,7 +160,8 @@ def configure_logging(app=None):
             print(msg)
     else:
         # ユーザー指定の日本語メッセージで出力
-        if not discord_webhook_url or not discord_webhook_url.startswith("https://discord.com/api/webhooks/"):
+        if not discord_webhook_url or not discord_webhook_url.startswith(
+                "https://discord.com/api/webhooks/"):
             msg = "Discord通知はオフになっています。"
         elif not discord_enabled:
             msg = "Discord通知はオフになっています。"

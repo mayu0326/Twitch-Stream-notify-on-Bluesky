@@ -145,9 +145,12 @@ class SetupWizard(tk.Toplevel):
         ttk.Label(
             self.frame,
             text="このセットアップウィザードでは、\n各種サービスのアカウント、サービスごとの通知可否、\nトンネル通信機能のみを設定します。\nそれ以外の設定は、\nファイル作成後に開くメイン画面から設定してください。",
-            font=("Meiryo", 10),
-            justify="left"
-        ).pack(anchor=tk.W, pady=10)
+            font=(
+                "Meiryo",
+                10),
+            justify="left").pack(
+            anchor=tk.W,
+            pady=10)
 
     def step_twitch_account(self):
         ttk.Label(self.frame, text="Twitchアカウント設定", font=(
@@ -225,35 +228,103 @@ class SetupWizard(tk.Toplevel):
         # 1列目
         ttk.Label(grid_frame, text="Twitch：放送開始通知", font=item_font).grid(
             row=0, column=0, sticky=tk.W, padx=(0, 24), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_twitch_online'], style="BigCheck.TCheckbutton").grid(
-            row=1, column=0, sticky=tk.W, padx=(0, 24), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_twitch_online'],
+            style="BigCheck.TCheckbutton").grid(
+            row=1,
+            column=0,
+            sticky=tk.W,
+            padx=(
+                0,
+                24),
+            pady=2)
         ttk.Label(grid_frame, text="YouTube：放送開始通知", font=item_font).grid(
             row=2, column=0, sticky=tk.W, padx=(0, 24), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_yt_online'], style="BigCheck.TCheckbutton").grid(
-            row=3, column=0, sticky=tk.W, padx=(0, 24), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_yt_online'],
+            style="BigCheck.TCheckbutton").grid(
+            row=3,
+            column=0,
+            sticky=tk.W,
+            padx=(
+                0,
+                24),
+            pady=2)
         ttk.Label(grid_frame, text="ニコニコ：放送開始通知", font=item_font).grid(
             row=4, column=0, sticky=tk.W, padx=(0, 24), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_nico_online'], style="BigCheck.TCheckbutton").grid(
-            row=5, column=0, sticky=tk.W, padx=(0, 24), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_nico_online'],
+            style="BigCheck.TCheckbutton").grid(
+            row=5,
+            column=0,
+            sticky=tk.W,
+            padx=(
+                0,
+                24),
+            pady=2)
         # 2列目
         ttk.Label(grid_frame, text="Twitch：放送終了通知", font=item_font).grid(
             row=0, column=1, sticky=tk.W, padx=(0, 0), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_twitch_offline'], style="BigCheck.TCheckbutton").grid(
-            row=1, column=1, sticky=tk.W, padx=(0, 0), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_twitch_offline'],
+            style="BigCheck.TCheckbutton").grid(
+            row=1,
+            column=1,
+            sticky=tk.W,
+            padx=(
+                0,
+                0),
+            pady=2)
         ttk.Label(grid_frame, text="YouTube：動画投稿通知", font=item_font).grid(
             row=2, column=1, sticky=tk.W, padx=(0, 0), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_yt_video'], style="BigCheck.TCheckbutton").grid(
-            row=3, column=1, sticky=tk.W, padx=(0, 0), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_yt_video'],
+            style="BigCheck.TCheckbutton").grid(
+            row=3,
+            column=1,
+            sticky=tk.W,
+            padx=(
+                0,
+                0),
+            pady=2)
         ttk.Label(grid_frame, text="ニコニコ：動画投稿通知", font=item_font).grid(
             row=4, column=1, sticky=tk.W, padx=(0, 0), pady=2)
-        ttk.Checkbutton(grid_frame, text="通知する", variable=self.vars['notify_nico_video'], style="BigCheck.TCheckbutton").grid(
-            row=5, column=1, sticky=tk.W, padx=(0, 0), pady=2)
+        ttk.Checkbutton(
+            grid_frame,
+            text="通知する",
+            variable=self.vars['notify_nico_video'],
+            style="BigCheck.TCheckbutton").grid(
+            row=5,
+            column=1,
+            sticky=tk.W,
+            padx=(
+                0,
+                0),
+            pady=2)
         # チェックボックスのフォント拡大スタイル
         style = ttk.Style()
         style.configure("BigCheck.TCheckbutton", font=item_font, padding=6)
 
     def step_tunnel_settings(self):
-        ttk.Label(self.frame, text="トンネル通信設定", font=("Meiryo", 12, "bold")).pack(anchor=tk.W, pady=5)
+        ttk.Label(
+            self.frame,
+            text="トンネル通信設定",
+            font=(
+                "Meiryo",
+                12,
+                "bold")).pack(
+            anchor=tk.W,
+            pady=5)
         # サービス選択
         if 'tunnel_service' not in self.vars:
             self.vars['tunnel_service'] = tk.StringVar(value="cloudflare")
@@ -266,7 +337,16 @@ class SetupWizard(tk.Toplevel):
         radio_frame = ttk.Frame(self.frame)
         radio_frame.pack(anchor=tk.W, pady=(0, 8))
         for i, (label, value) in enumerate(services):
-            ttk.Radiobutton(radio_frame, text=label, variable=self.vars['tunnel_service'], value=value, style="TRadiobutton", command=self._update_tunnel_service_fields).grid(row=0, column=i, padx=8)
+            ttk.Radiobutton(
+                radio_frame,
+                text=label,
+                variable=self.vars['tunnel_service'],
+                value=value,
+                style="TRadiobutton",
+                command=self._update_tunnel_service_fields).grid(
+                row=0,
+                column=i,
+                padx=8)
         # サービスごとの入力欄
         self.tunnel_fields_area = ttk.Frame(self.frame)
         self.tunnel_fields_area.pack(fill=tk.X, expand=True)
@@ -280,23 +360,73 @@ class SetupWizard(tk.Toplevel):
         if service == "cloudflare":
             if 'tunnel_cmd' not in self.vars:
                 self.vars['tunnel_cmd'] = tk.StringVar()
-            ttk.Label(self.tunnel_fields_area, text="Cloudflare Tunnel起動コマンド (TUNNEL_CMD)").pack(anchor=tk.W)
-            ttk.Entry(self.tunnel_fields_area, textvariable=self.vars['tunnel_cmd'], width=48).pack(fill=tk.X)
-            ttk.Label(self.tunnel_fields_area, text='コマンド例: cloudflared tunnel run <トンネル名>', font=font10, anchor="w", justify="left", wraplength=420).pack(anchor=tk.W, pady=(5, 0))
-            link = tk.Label(self.tunnel_fields_area, text="[CloudflareTunnelのインストール]がまだの方はこちら", font=font10+("underline",), fg="blue", cursor="hand2", anchor="w", justify="left", wraplength=420)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text="Cloudflare Tunnel起動コマンド (TUNNEL_CMD)").pack(
+                anchor=tk.W)
+            ttk.Entry(
+                self.tunnel_fields_area,
+                textvariable=self.vars['tunnel_cmd'],
+                width=48).pack(
+                fill=tk.X)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text='コマンド例: cloudflared tunnel run <トンネル名>',
+                font=font10,
+                anchor="w",
+                justify="left",
+                wraplength=420).pack(
+                anchor=tk.W,
+                pady=(
+                    5,
+                    0))
+            link = tk.Label(self.tunnel_fields_area,
+                            text="[CloudflareTunnelのインストール]がまだの方はこちら",
+                            font=font10 + ("underline",
+                                           ),
+                            fg="blue",
+                            cursor="hand2",
+                            anchor="w",
+                            justify="left",
+                            wraplength=420)
             link.pack(anchor=tk.W)
+
             def open_cloudflare_link(event=None):
                 import webbrowser
-                webbrowser.open_new("https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/")
+                webbrowser.open_new(
+                    "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/")
             link.bind("<Button-1>", open_cloudflare_link)
         elif service == "ngrok":
             if 'ngrok_cmd' not in self.vars:
                 self.vars['ngrok_cmd'] = tk.StringVar()
             ttk.Label(self.tunnel_fields_area, text="ngrok起動コマンド (NGROK_CMD)").pack(anchor=tk.W)
-            ttk.Entry(self.tunnel_fields_area, textvariable=self.vars['ngrok_cmd'], width=48).pack(fill=tk.X)
-            ttk.Label(self.tunnel_fields_area, text='コマンド例: ngrok http 8080', font=font10, anchor="w", justify="left", wraplength=420).pack(anchor=tk.W, pady=(5, 0))
-            link = tk.Label(self.tunnel_fields_area, text="[ngrokのインストール]はこちら", font=font10+("underline",), fg="blue", cursor="hand2", anchor="w", justify="left", wraplength=420)
+            ttk.Entry(
+                self.tunnel_fields_area,
+                textvariable=self.vars['ngrok_cmd'],
+                width=48).pack(
+                fill=tk.X)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text='コマンド例: ngrok http 8080',
+                font=font10,
+                anchor="w",
+                justify="left",
+                wraplength=420).pack(
+                anchor=tk.W,
+                pady=(
+                    5,
+                    0))
+            link = tk.Label(self.tunnel_fields_area,
+                            text="[ngrokのインストール]はこちら",
+                            font=font10 + ("underline",
+                                           ),
+                            fg="blue",
+                            cursor="hand2",
+                            anchor="w",
+                            justify="left",
+                            wraplength=420)
             link.pack(anchor=tk.W)
+
             def open_ngrok_link(event=None):
                 import webbrowser
                 webbrowser.open_new("https://ngrok.com/download")
@@ -304,11 +434,37 @@ class SetupWizard(tk.Toplevel):
         elif service == "localtunnel":
             if 'localtunnel_cmd' not in self.vars:
                 self.vars['localtunnel_cmd'] = tk.StringVar()
-            ttk.Label(self.tunnel_fields_area, text="localtunnel起動コマンド (LOCALTUNNEL_CMD)").pack(anchor=tk.W)
-            ttk.Entry(self.tunnel_fields_area, textvariable=self.vars['localtunnel_cmd'], width=48).pack(fill=tk.X)
-            ttk.Label(self.tunnel_fields_area, text='コマンド例: lt --port 8080', font=font10, anchor="w", justify="left", wraplength=420).pack(anchor=tk.W, pady=(5, 0))
-            link = tk.Label(self.tunnel_fields_area, text="[localtunnelのインストール]はこちら", font=font10+("underline",), fg="blue", cursor="hand2", anchor="w", justify="left", wraplength=420)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text="localtunnel起動コマンド (LOCALTUNNEL_CMD)").pack(
+                anchor=tk.W)
+            ttk.Entry(
+                self.tunnel_fields_area,
+                textvariable=self.vars['localtunnel_cmd'],
+                width=48).pack(
+                fill=tk.X)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text='コマンド例: lt --port 8080',
+                font=font10,
+                anchor="w",
+                justify="left",
+                wraplength=420).pack(
+                anchor=tk.W,
+                pady=(
+                    5,
+                    0))
+            link = tk.Label(self.tunnel_fields_area,
+                            text="[localtunnelのインストール]はこちら",
+                            font=font10 + ("underline",
+                                           ),
+                            fg="blue",
+                            cursor="hand2",
+                            anchor="w",
+                            justify="left",
+                            wraplength=420)
             link.pack(anchor=tk.W)
+
             def open_lt_link(event=None):
                 import webbrowser
                 webbrowser.open_new("https://github.com/localtunnel/localtunnel")
@@ -316,9 +472,26 @@ class SetupWizard(tk.Toplevel):
         elif service == "custom":
             if 'custom_tunnel_cmd' not in self.vars:
                 self.vars['custom_tunnel_cmd'] = tk.StringVar()
-            ttk.Label(self.tunnel_fields_area, text="カスタムトンネル起動コマンド (CUSTOM_TUNNEL_CMD)").pack(anchor=tk.W)
-            ttk.Entry(self.tunnel_fields_area, textvariable=self.vars['custom_tunnel_cmd'], width=48).pack(fill=tk.X)
-            ttk.Label(self.tunnel_fields_area, text='任意のトンネルアプリケーションのコマンドを入力してください。', font=font10, anchor="w", justify="left", wraplength=420).pack(anchor=tk.W, pady=(5, 0))
+            ttk.Label(
+                self.tunnel_fields_area,
+                text="カスタムトンネル起動コマンド (CUSTOM_TUNNEL_CMD)").pack(
+                anchor=tk.W)
+            ttk.Entry(
+                self.tunnel_fields_area,
+                textvariable=self.vars['custom_tunnel_cmd'],
+                width=48).pack(
+                fill=tk.X)
+            ttk.Label(
+                self.tunnel_fields_area,
+                text='任意のトンネルアプリケーションのコマンドを入力してください。',
+                font=font10,
+                anchor="w",
+                justify="left",
+                wraplength=420).pack(
+                anchor=tk.W,
+                pady=(
+                    5,
+                    0))
 
     def step_summary(self):
         ttk.Label(self.frame, text="セットアップ最終確認", font=(
@@ -346,8 +519,8 @@ class SetupWizard(tk.Toplevel):
             return True
         lines = []
         # 1. Twitch
-        lines.append(
-            "【Twitchアカウント】" + (" 入力済み" if is_filled(['twitch_id', 'twitch_secret']) else " スキップしました"))
+        lines.append("【Twitchアカウント】" +
+                     (" 入力済み" if is_filled(['twitch_id', 'twitch_secret']) else " スキップしました"))
         # 2. Webhook
         lines.append("【Webhook設定】" +
                      (" 入力済み" if is_filled(['webhook_url']) else " スキップしました"))
@@ -361,8 +534,13 @@ class SetupWizard(tk.Toplevel):
         lines.append("【ニコニコアカウント】" +
                      (" 入力済み" if is_filled(['nico_user_id']) else " スキップしました"))
         # 6. 通知設定
-        notify_keys = ['notify_twitch_online', 'notify_twitch_offline',
-                       'notify_yt_online', 'notify_yt_video', 'notify_nico_online', 'notify_nico_video']
+        notify_keys = [
+            'notify_twitch_online',
+            'notify_twitch_offline',
+            'notify_yt_online',
+            'notify_yt_video',
+            'notify_nico_online',
+            'notify_nico_video']
         lines.append(
             "【通知設定】" + (" 入力済み" if is_filled(notify_keys) else " スキップしました"))
         # 7. トンネル
@@ -422,13 +600,23 @@ class SetupWizard(tk.Toplevel):
             if key == 'TUNNEL_SERVICE':
                 return v.get('tunnel_service', tk.StringVar()).get()
             if key == 'TUNNEL_CMD':
-                return v.get('tunnel_cmd', tk.StringVar()).get() if v.get('tunnel_service', tk.StringVar()).get() == 'cloudflare' else ''
+                return v.get(
+                    'tunnel_cmd',
+                    tk.StringVar()).get() if v.get(
+                    'tunnel_service',
+                    tk.StringVar()).get() == 'cloudflare' else ''
             if key == 'NGROK_CMD':
-                return v.get('ngrok_cmd', tk.StringVar()).get() if v.get('tunnel_service', tk.StringVar()).get() == 'ngrok' else ''
+                return v.get(
+                    'ngrok_cmd',
+                    tk.StringVar()).get() if v.get(
+                    'tunnel_service',
+                    tk.StringVar()).get() == 'ngrok' else ''
             if key == 'LOCALTUNNEL_CMD':
-                return v.get('localtunnel_cmd', tk.StringVar()).get() if v.get('tunnel_service', tk.StringVar()).get() == 'localtunnel' else ''
+                return v.get('localtunnel_cmd', tk.StringVar()).get() if v.get(
+                    'tunnel_service', tk.StringVar()).get() == 'localtunnel' else ''
             if key == 'CUSTOM_TUNNEL_CMD':
-                return v.get('custom_tunnel_cmd', tk.StringVar()).get() if v.get('tunnel_service', tk.StringVar()).get() == 'custom' else ''
+                return v.get('custom_tunnel_cmd', tk.StringVar()).get() if v.get(
+                    'tunnel_service', tk.StringVar()).get() == 'custom' else ''
             # ...既存の値取得...
             return v.get(key, tk.StringVar()).get() if key in v else ''
 

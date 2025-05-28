@@ -162,11 +162,14 @@ class BlueskyPoster:
                         "$type": "app.bsky.embed.images",
                         "images": [
                             {
-                                "alt": f"{event_context.get('title', event_context.get('broadcaster_user_name', 'Stream Image'))[:250]}",
-                                "image": blob
-                            }
-                        ]
-                    }
+                                "alt": f"{
+                                    event_context.get(
+                                        'title',
+                                        event_context.get(
+                                            'broadcaster_user_name',
+                                            'Stream Image'))[
+                                        :250]}",
+                                "image": blob}]}
                 else:
                     logger.warning(
                         f"画像 '{image_path}' のアップロードに失敗したため、画像なしで投稿します。")
@@ -357,7 +360,13 @@ class BlueskyPoster:
                 event_type="new_video"
             )
 
-    def _write_post_history(self, title: str, category: str, url: str, success: bool, event_type: str):
+    def _write_post_history(
+            self,
+            title: str,
+            category: str,
+            url: str,
+            success: bool,
+            event_type: str):
         """
         投稿履歴をCSVファイルに記録する
         """

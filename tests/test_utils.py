@@ -147,7 +147,8 @@ def test_rotate_secret_if_needed_no_secret(mock_secrets_token_hex, mock_env_for_
 
 # このテストでもsecrets.token_hexをモック
 @patch('utils.secrets.token_hex')
-def test_rotate_secret_if_needed_force_rotation(mock_secrets_token_hex, mock_env_for_rotate, caplog):
+def test_rotate_secret_if_needed_force_rotation(
+        mock_secrets_token_hex, mock_env_for_rotate, caplog):
     mock_secrets_token_hex.return_value = "mocked_secret_key_123"  # モック値
 
     # caplogでINFOレベルのログを取得

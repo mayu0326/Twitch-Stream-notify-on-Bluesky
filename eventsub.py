@@ -342,20 +342,26 @@ def create_eventsub_subscription(event_type: str, logger_to_use=None, webhook_ur
         current_audit_logger.info(
             f"EventSubサブスクリプション作成: {event_type} 成功")
         current_logger.info(
-            f"EventSubサブスクリプション ({event_type}) を正常に作成しました。ID: {result.get('data', [{}])[0].get('id')}")
+            f"EventSubサブスクリプション ({event_type}) を正常に作成しました。ID: {
+                result.get(
+                    'data', [
+                        {}])[0].get('id')}")
         return result
     except requests.exceptions.HTTPError as e:
         error_details = e.response.text if e.response else "N/A"
-        reason = f"HTTPError: {e.response.status_code if e.response else 'Unknown status'} - {error_details}"
+        reason = f"HTTPError: {
+            e.response.status_code if e.response else 'Unknown status'} - {error_details}"
         current_audit_logger.warning(
             f"EventSubサブスクリプション作成: {event_type} 失敗: {reason}")
         current_logger.error(
             f"EventSubサブスクリプション ({event_type}) 作成失敗: {reason}")
         try:
             error_json = e.response.json() if e.response else {}
-            return {"status": "error", "reason": reason, "details": error_json, "http_status": e.response.status_code if e.response else None}
+            return {"status": "error", "reason": reason, "details": error_json,
+                    "http_status": e.response.status_code if e.response else None}
         except ValueError:
-            return {"status": "error", "reason": reason, "details": error_details, "http_status": e.response.status_code if e.response else None}
+            return {"status": "error", "reason": reason, "details": error_details,
+                    "http_status": e.response.status_code if e.response else None}
     except Exception as e:
         reason = str(e)
         current_audit_logger.warning(
@@ -411,7 +417,8 @@ def cleanup_eventsub_subscriptions(webhook_callback_url, logger_to_use=None):
 
         # 自分のWebhook URLと異なるもの、またはstatusが"enabled"でないものを削除
         # "webhook_callback_verification_failed" や "notification_failures_exceeded" なども対象
-        if sub_callback != webhook_callback_url or sub_status not in ["enabled", "webhook_callback_verification_pending"]:
+        if sub_callback != webhook_callback_url or sub_status not in [
+                "enabled", "webhook_callback_verification_pending"]:
             current_logger.info(
                 f"サブスクリプションID {sub_id} (タイプ: {sub_type}, ステータス: {sub_status}, コールバック: {sub_callback}) は無効または古い設定のため削除します。")
             delete_eventsub_subscription(sub_id, logger_to_use=current_logger)

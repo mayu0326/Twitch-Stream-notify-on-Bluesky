@@ -150,7 +150,8 @@ def handle_webhook():
         broadcaster_user_name_from_event = event_data.get(
             "broadcaster_user_name", broadcaster_user_login_from_event)
         app.logger.info(
-            f"通知受信 ({subscription_type}) for {broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
+            f"通知受信 ({subscription_type}) for {
+                broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
 
         notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True").lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
@@ -164,7 +165,8 @@ def handle_webhook():
                 if event_data.get("title") is None or event_data.get("category_name") is None:
                     app.logger.warning(
                         f"Webhook通知 (stream.online): 'title' または 'category_name' が不足しています. イベントデータ: {event_data}")
-                    return jsonify({"error": "Missing title or category_name for stream.online event"}), 400
+                    return jsonify(
+                        {"error": "Missing title or category_name for stream.online event"}), 400
 
                 event_context = {
                     "broadcaster_user_id": event_data.get("broadcaster_user_id"),
@@ -202,7 +204,8 @@ def handle_webhook():
                 except Exception as e:
                     app.logger.error(
                         f"Bluesky投稿中の未処理例外 (stream.online): {str(e)}", exc_info=e)
-                    return jsonify({"error": "Internal server error during stream.online processing"}), 500
+                    return jsonify(
+                        {"error": "Internal server error during stream.online processing"}), 500
             else:
                 app.logger.info(
                     f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
@@ -218,7 +221,9 @@ def handle_webhook():
                     "channel_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
                 }
                 app.logger.info(
-                    f"stream.offlineイベント処理開始: {event_context.get('broadcaster_user_name')} ({event_context.get('broadcaster_user_login')})")
+                    f"stream.offlineイベント処理開始: {
+                        event_context.get('broadcaster_user_name')} ({
+                        event_context.get('broadcaster_user_login')})")
                 try:
                     bluesky_poster = BlueskyPoster(
                         os.getenv("BLUESKY_USERNAME"),
@@ -228,14 +233,16 @@ def handle_webhook():
                         event_context=event_context
                     )
                     app.logger.info(
-                        f"Bluesky投稿試行 (stream.offline): {event_context.get('broadcaster_user_login')}, 成功: {success}")
+                        f"Bluesky投稿試行 (stream.offline): {
+                            event_context.get('broadcaster_user_login')}, 成功: {success}")
                     return jsonify(
                         {"status": "success, offline notification posted" if success else "bluesky error, offline notification not posted"}
                     ), 200
                 except Exception as e:
                     app.logger.error(
                         f"Bluesky投稿エラー (stream.offline): {str(e)}", exc_info=True)
-                    return jsonify({"error": "Internal server error during stream.offline processing"}), 500
+                    return jsonify(
+                        {"error": "Internal server error during stream.offline processing"}), 500
             else:
                 app.logger.info(
                     f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
@@ -245,13 +252,19 @@ def handle_webhook():
         else:
             app.logger.warning(
                 f"不明なサブスクリプションタイプ ({subscription_type}) の通知受信: {broadcaster_user_login_from_event}")
-            return jsonify({"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
+            return jsonify(
+                {"status": "error", "message": f"Unknown or unhandled subscription type: {subscription_type}"}), 400
 
     # サブスクリプション失効通知
     if message_type == 'revocation':
         revocation_status = subscription_payload.get("status", "不明なステータス")
         app.logger.warning(
-            f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {data.get('event', {}).get('broadcaster_user_login', 'N/A')}")
+            f"Twitch EventSubサブスクリプション失効通知受信: タイプ - {subscription_type}, ステータス - {revocation_status}, ユーザー - {
+                data.get(
+                    'event',
+                    {}).get(
+                    'broadcaster_user_login',
+                    'N/A')}")
         return jsonify({"status": "revocation notification received"}), 200
 
     # 未処理のメッセージタイプ
@@ -327,7 +340,13 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def tunnel_monitor_loop(tunnel_service, tunnel_cmd, logger, proc_getter, proc_setter, env_path="settings.env"):
+def tunnel_monitor_loop(
+        tunnel_service,
+        tunnel_cmd,
+        logger,
+        proc_getter,
+        proc_setter,
+        env_path="settings.env"):
     """
     ngrok/localtunnelプロセスの死活監視・自動再起動・新URL自動反映ループ
     proc_getter: 現在のプロセスを取得する関数
@@ -425,6 +444,7 @@ if __name__ == "__main__":
         if tunnel_service in ("ngrok", "localtunnel"):
             def get_proc():
                 return tunnel_proc
+
             def set_proc(p):
                 global tunnel_proc
                 tunnel_proc = p
@@ -432,13 +452,11 @@ if __name__ == "__main__":
                 target=tunnel_monitor_loop,
                 args=(
                     tunnel_service,
-                    os.getenv("NGROK_CMD") if tunnel_service=="ngrok" else os.getenv("LOCALTUNNEL_CMD"),
+                    os.getenv("NGROK_CMD") if tunnel_service == "ngrok" else os.getenv("LOCALTUNNEL_CMD"),
                     tunnel_logger,
                     get_proc,
-                    set_proc
-                ),
-                daemon=True
-            )
+                    set_proc),
+                daemon=True)
             tunnel_monitor_thread.start()
 
         # 必須EventSubサブスクリプションの作成
@@ -456,8 +474,9 @@ if __name__ == "__main__":
             sub_response = create_eventsub_subscription(
                 event_type, logger_to_use=logger, webhook_url=webhook_url)
 
-            if not sub_response or not isinstance(sub_response, dict) or \
-               not sub_response.get("data") or not isinstance(sub_response["data"], list) or not sub_response["data"]:
+            if not sub_response or not isinstance(
+                    sub_response, dict) or not sub_response.get("data") or not isinstance(
+                    sub_response["data"], list) or not sub_response["data"]:
                 twitch_error_status = sub_response.get(
                     "status") if isinstance(sub_response, dict) else None
                 twitch_error_message = sub_response.get(
@@ -477,7 +496,9 @@ if __name__ == "__main__":
             else:
                 subscription_details = sub_response['data'][0]
                 logger.info(
-                    f"{event_type} EventSubサブスクリプション作成成功。ID: {subscription_details.get('id')}, ステータス: {subscription_details.get('status')}")
+                    f"{event_type} EventSubサブスクリプション作成成功。ID: {
+                        subscription_details.get('id')}, ステータス: {
+                        subscription_details.get('status')}")
 
         if not all_subscriptions_successful:
             logger.critical("必須EventSubサブスクリプションの作成に失敗したため、アプリケーションは起動できません。")

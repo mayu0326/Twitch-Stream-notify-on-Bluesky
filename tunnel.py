@@ -72,7 +72,8 @@ def start_tunnel(logger=None):
         logger.info(f"トンネルを起動しました: {tunnel_cmd}")
         return proc
     except FileNotFoundError:
-        err_msg = f"トンネルコマンド '{tunnel_cmd.split()[0] if tunnel_cmd else ''}' が見つかりません。Pathが通っているか確認してください。"
+        err_msg = f"トンネルコマンド '{
+            tunnel_cmd.split()[0] if tunnel_cmd else ''}' が見つかりません。Pathが通っているか確認してください。"
         logger.error(err_msg)
         return None
     except Exception as e:

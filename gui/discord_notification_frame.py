@@ -17,8 +17,15 @@ class DiscordNotificationFrame(ttk.Frame):
         discord_enabled = os.getenv(
             'DISCORD_NOTIFY_ENABLED', 'True').lower() == 'true'
         self.var_discord_enabled = tk.BooleanVar(value=discord_enabled)
-        ttk.Checkbutton(self, text="Discord通知を有効化", variable=self.var_discord_enabled, style="Big.TCheckbutton").grid(
-            row=0, column=0, sticky=tk.W, columnspan=2)
+        ttk.Checkbutton(
+            self,
+            text="Discord通知を有効化",
+            variable=self.var_discord_enabled,
+            style="Big.TCheckbutton").grid(
+            row=0,
+            column=0,
+            sticky=tk.W,
+            columnspan=2)
         ttk.Label(self, text="Discord通知レベル:", style="Big.TLabel").grid(
             row=1, column=0, sticky=tk.W)
         self.combo_discord_level = ttk.Combobox(self, values=[
@@ -32,10 +39,28 @@ class DiscordNotificationFrame(ttk.Frame):
         self.entry_discord_url.insert(0, discord_url)
         self.entry_discord_url.grid(row=3, column=0, columnspan=2, sticky=tk.W)
         self.entry_discord_url.configure(font=("Meiryo", 12))
-        ttk.Button(self, text="設定を反映", command=self.save_discord_settings, style="Big.TButton").grid(
-            row=4, column=1, sticky=tk.W, pady=(5, 0))
-        ttk.Button(self, text="設定を消去", command=self.clear_discord_settings, style="Big.TButton").grid(
-            row=4, column=0, sticky=tk.W, pady=(5, 0))
+        ttk.Button(
+            self,
+            text="設定を反映",
+            command=self.save_discord_settings,
+            style="Big.TButton").grid(
+            row=4,
+            column=1,
+            sticky=tk.W,
+            pady=(
+                5,
+                0))
+        ttk.Button(
+            self,
+            text="設定を消去",
+            command=self.clear_discord_settings,
+            style="Big.TButton").grid(
+            row=4,
+            column=0,
+            sticky=tk.W,
+            pady=(
+                5,
+                0))
 
     def save_discord_settings(self, show_message=True):
         url = self.entry_discord_url.get().strip()

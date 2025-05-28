@@ -22,13 +22,26 @@ class LogViewer(ttk.Frame):
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X)
         ttk.Button(btn_frame, text="開く", command=self.load_log).pack(side=tk.RIGHT)
-        ttk.Button(btn_frame, text="再読込", command=self.reload_log_files).pack(side=tk.RIGHT, padx=(0, 8))
+        ttk.Button(
+            btn_frame,
+            text="再読込",
+            command=self.reload_log_files).pack(
+            side=tk.RIGHT,
+            padx=(
+                0,
+                8))
 
         self.log_frame = ttk.Frame(self)
         self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # テーブル表示用Treeview（3列: 日付, レベル, 内容）
-        self.tree = ttk.Treeview(self.log_frame, columns=("date", "level", "message"), show="headings")
+        self.tree = ttk.Treeview(
+            self.log_frame,
+            columns=(
+                "date",
+                "level",
+                "message"),
+            show="headings")
         self.tree.heading("date", text="日付")
         self.tree.heading("level", text="レベル")
         self.tree.heading("message", text="内容")
@@ -89,7 +102,8 @@ class LogViewer(ttk.Frame):
                             continue  # ヘッダ行はスキップ
                         parts = line.strip().split(',')
                         if len(parts) >= 3:
-                            self.tree.insert('', 'end', values=(parts[0], parts[1], ','.join(parts[2:])))
+                            self.tree.insert('', 'end', values=(
+                                parts[0], parts[1], ','.join(parts[2:])))
                         elif len(parts) == 2:
                             self.tree.insert('', 'end', values=(parts[0], parts[1], ''))
                         elif len(parts) == 1:

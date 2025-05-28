@@ -101,9 +101,13 @@ class TestBlueskyPoster:
     # os.path.isfileの代わりにupload_imageをモック
     @patch("bluesky.BlueskyPoster.upload_image")
     def test_post_stream_online_success_with_image(
-        self, mock_upload_image, mock_load_template_func, mock_write_history, mock_atproto_client_class,
-        mock_env, mock_event_context_online
-    ):
+            self,
+            mock_upload_image,
+            mock_load_template_func,
+            mock_write_history,
+            mock_atproto_client_class,
+            mock_env,
+            mock_event_context_online):
         # テンプレートのモックを作成
         mock_template_obj = MagicMock(spec=Template)
         mock_template_obj.render.return_value = "Rendered Online Template Text"
@@ -257,7 +261,8 @@ class TestBlueskyPoster:
             text=expected_rendered_error_text)
 
     @patch("builtins.open", side_effect=FileNotFoundError)
-    def test_load_template_file_not_found_returns_error_template(self, mock_open_func, caplog, mock_env):
+    def test_load_template_file_not_found_returns_error_template(
+            self, mock_open_func, caplog, mock_env):
         # テンプレートファイルが存在しない場合のload_templateの動作をテスト
         non_existent_path = "path/to/nothing.txt"
         template_obj = load_template(path=non_existent_path)
@@ -268,7 +273,8 @@ class TestBlueskyPoster:
         assert f"Error: Template '{non_existent_path}' not found." in rendered_error
 
     @patch("builtins.open", side_effect=Exception("Some other read error"))
-    def test_load_template_other_error_returns_error_template(self, mock_open_func, caplog, mock_env):
+    def test_load_template_other_error_returns_error_template(
+            self, mock_open_func, caplog, mock_env):
         # テンプレートファイル読み込み時のその他エラーのテスト
         error_path = "path/to/problem.txt"
         template_obj = load_template(path=error_path)
