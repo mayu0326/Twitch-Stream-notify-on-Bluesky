@@ -4,7 +4,9 @@ Stream notify on Bluesky
 
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
-
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import tkinter as tk
 from account_settings_frame import AccountSettingsFrame
 from tunnel_connection import TunnelConnection
@@ -15,10 +17,6 @@ from logging_notification_frame import LoggingNotificationFrame
 from setup_wizard import SetupWizard
 from setting_status import SettingStatusFrame
 from version_info import __version__
-import sys
-import os
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..')))
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
