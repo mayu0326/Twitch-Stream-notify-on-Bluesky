@@ -1,0 +1,9 @@
+[tool.autopep8]
+max_line_length = 100
+aggressive = 2
+recursive = true
+exclude = [
+    "__pycache__",
+    "tests/__pycache__",
+    "gui/__pycache__"
+]
