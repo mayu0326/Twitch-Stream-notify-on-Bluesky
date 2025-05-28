@@ -5,8 +5,6 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
 - Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。    
 - Cloudflare Tunnel または他のトンネル通信アプリケーション(ngrok,localtunnel)による、\
 Webhook 受信、エラー通知、履歴記録など運用に便利な機能を多数備えています。
-- **トンネル通信アプリケーション(Cloudflare/ngrok/localtunnel)の自動管理・URL自動反映・GUI連携に対応**
-- **テンプレート・画像パスはtemplates/・images/配下の場合、相対パスでsettings.envに保存されます**
 
 ---
 
