@@ -42,8 +42,8 @@ RETRY_WAIT = int(os.getenv("RETRY_WAIT", 2))
 logger = logging.getLogger("AppLogger")
 
 # デフォルトテンプレートパス（ユーザーが直接触れない内部用・不可視ファイル）
-DEFAULT_ONLINE_TEMPLATE_PATH = ".templates/_default_online_template.txt"
-DEFAULT_OFFLINE_TEMPLATE_PATH = ".templates/_default_offline_template.txt"
+DEFAULT_ONLINE_TEMPLATE_PATH = ".templates/default_online_template.txt"
+DEFAULT_OFFLINE_TEMPLATE_PATH = ".templates/default_offline_template.txt"
 
 
 def load_template(path=None):

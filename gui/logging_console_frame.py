@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from dotenv import load_dotenv
+from tkinter import messagebox  # 追加
 
 
 class LoggingConsoleFrame(ttk.Frame):
@@ -50,3 +51,4 @@ class LoggingConsoleFrame(ttk.Frame):
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)
+        messagebox.showinfo('保存', '保存しました')  # 追加

@@ -301,6 +301,10 @@ def notify_discord_error(message: str):
     """
     DiscordのWebhookでエラー通知を送信
     """
+    # DISCORD_NOTIFY_ENABLEDがFalseなら送信しない
+    discord_enabled = os.getenv("DISCORD_NOTIFY_ENABLED", "True").lower() == "true"
+    if not discord_enabled:
+        return
     webhook_url = os.getenv("discord_error_notifier_url")
     if not webhook_url:
         return

@@ -47,7 +47,7 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("BLUESKY_USERNAME", "test_user")
     monkeypatch.setenv("BLUESKY_APP_PASSWORD", "test_pass")
     monkeypatch.setenv("BLUESKY_TEMPLATE_PATH",
-                       "templates/default_template.txt")
+                       ".templates/test_template.txt")
     monkeypatch.setenv("BLUESKY_OFFLINE_TEMPLATE_PATH",
                        "templates/offline_template.txt")
     # テスト用のデフォルト画像パス

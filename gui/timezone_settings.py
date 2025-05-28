@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import datetime
 import pytz
+from tkinter import messagebox  # 追加
 
 
 class TimeZoneSettings(tk.Frame):
@@ -98,3 +99,4 @@ class TimeZoneSettings(tk.Frame):
             f.writelines(new_lines)
         load_dotenv(env_path, override=True)
         self.update_now_label()
+        messagebox.showinfo('保存', '保存しました')  # 追加
