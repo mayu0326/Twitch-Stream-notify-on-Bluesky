@@ -46,7 +46,18 @@ from utils import get_ngrok_public_url, get_localtunnel_url_from_stdout, set_web
 
 # 設定ファイルの存在チェック
 if not os.path.exists('settings.env'):
-    print('設定ファイルが見つかりません。初期セットアップを実行してください。')
+    print('設定ファイルが見つかりません。初期セットアップを実行します。')
+    try:
+        import tkinter as tk
+        from gui.setup_wizard import SetupWizard
+        root = tk.Tk()
+        root.withdraw()
+        def on_finish():
+            root.destroy()
+        SetupWizard(master=root, on_finish=on_finish)
+        root.mainloop()
+    except Exception as e:
+        print(f"セットアップウィザードの起動に失敗しました: {e}")
     if __name__ == "__main__":
         sys.exit(1)
 
@@ -69,10 +80,22 @@ def validate_settings():
         "BLUESKY_APP_PASSWORD",
         "TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
-        "TWITCH_BROADCASTER_ID",
-        "WEBHOOK_CALLBACK_URL"
+        "TWITCH_BROADCASTER_ID"
     ]
     missing_keys = [key for key in required_keys if not os.getenv(key)]
+
+    # Webhook URLの必須判定をトンネル種別で分岐
+    tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
+    if tunnel_service in ("cloudflare", "custom"):
+        if not os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT"):
+            missing_keys.append("WEBHOOK_CALLBACK_URL_PERMANENT")
+    elif tunnel_service in ("ngrok", "localtunnel"):
+        if not os.getenv("WEBHOOK_CALLBACK_URL_TEMPORARY"):
+            missing_keys.append("WEBHOOK_CALLBACK_URL_TEMPORARY")
+    else:
+        if not os.getenv("WEBHOOK_CALLBACK_URL"):
+            missing_keys.append("WEBHOOK_CALLBACK_URL")
+
     if missing_keys:
         raise ValueError(f"settings.envの必須設定が未設定です: {', '.join(missing_keys)}")
 
