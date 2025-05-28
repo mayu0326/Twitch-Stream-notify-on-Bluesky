@@ -45,11 +45,7 @@ def test_full_notification_flow(test_client):
         "BLUESKY_USERNAME": "dummyuser",
         "BLUESKY_APP_PASSWORD": "dummypass",
         "BLUESKY_TEMPLATE_PATH": "templates/twitch_online_template.txt",
-<<<<<<< HEAD
-        "NOTIFY_ON_OFFLINE": "true"
-=======
         "NOTIFY_ON_TWITCH_OFFLINE": "true"
->>>>>>> development
     }):
         # verify_signature を常に True にする
         with patch('main.verify_signature', return_value=True):

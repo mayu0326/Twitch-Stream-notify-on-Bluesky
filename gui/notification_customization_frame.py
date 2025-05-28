@@ -1,10 +1,7 @@
 """
 テンプレート・画像カスタマイズUI
 """
-<<<<<<< HEAD
-=======
 from timezone_settings import TimeZoneSettings
->>>>>>> development
 import sys
 import os
 import tkinter as tk
@@ -27,12 +24,6 @@ class NotificationCustomizationFrame(ttk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
-<<<<<<< HEAD
-        # サービスごとにタブ分割
-        notebook = ttk.Notebook(self)
-        notebook.pack(fill=tk.BOTH, expand=True)
-
-=======
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -40,21 +31,10 @@ class NotificationCustomizationFrame(ttk.Frame):
         tz_frame = TimeZoneSettings(notebook)
         notebook.add(tz_frame, text="タイムゾーン設定")
 
->>>>>>> development
         # --- ログ/コンソール設定タブ ---
         from logging_console_frame import LoggingConsoleFrame
         log_console_frame = LoggingConsoleFrame(notebook)
         notebook.add(log_console_frame, text="ログ/コンソール設定")
-<<<<<<< HEAD
-        # --- Discordタブ（分割後） ---
-        from discord_notification_frame import DiscordNotificationFrame
-        discord_frame = DiscordNotificationFrame(notebook)
-        notebook.add(discord_frame, text="Discord通知設定")
-        # Discord通知設定のUI・保存処理はdiscord_notification_frame.pyに完全移行済み
-        # ここでself.save_discord_settings等は不要
-
-        # Add Log Viewer Tab
-=======
 
         # --- Discordタブ ---
         from discord_notification_frame import DiscordNotificationFrame
@@ -62,7 +42,6 @@ class NotificationCustomizationFrame(ttk.Frame):
         notebook.add(discord_frame, text="Discord通知設定")
 
         # --- ログビューアタブ ---
->>>>>>> development
         from log_viewer import LogViewer
         log_viewer_frame = LogViewer(notebook)
         notebook.add(log_viewer_frame, text="ログビューア")
@@ -75,47 +54,3 @@ class NotificationCustomizationFrame(ttk.Frame):
         small_lbl_style.configure("Big.TLabel", font=small_font)
         small_chk_style = ttk.Style()
         small_chk_style.configure("Big.TCheckbutton", font=small_font)
-<<<<<<< HEAD
-
-    @classmethod
-    def create_twitch_tab(cls, notebook):
-        # --- この関数はTwitchNoticeFrameへ完全移行のため削除 ---
-        pass
-
-    @staticmethod
-    def change_template_file(var):
-        # --- utils.pyへ移行 ---
-        pass
-
-    @staticmethod
-    def change_image_file(var):
-        # --- utils.pyへ移行 ---
-        pass
-
-    @staticmethod
-    def save_twitch_settings(frame):
-        # --- この関数はTwitchNoticeFrameへ完全移行のため削除 ---
-        pass
-
-    @classmethod
-    def create_youtube_tab(cls, notebook):
-        # --- この関数はYouTubeNoticeFrameへ完全移行のため削除 ---
-        pass
-
-    @staticmethod
-    def save_youtube_settings(frame):
-        # --- この関数はYouTubeNoticeFrameへ完全移行のため削除 ---
-        pass
-
-    @classmethod
-    def create_nico_tab(cls, notebook):
-        # --- この関数はNiconicoNoticeFrameへ完全移行のため削除 ---
-        pass
-
-    @staticmethod
-    def save_nico_settings(frame):
-        # --- この関数はNiconicoNoticeFrameへ完全移行のため削除 ---
-        pass
-    # --- YouTube/ニコニコ個別テンプレート処理は各notice_frame.pyへ移植済み ---
-=======
->>>>>>> development

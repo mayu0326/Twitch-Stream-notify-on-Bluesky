@@ -19,28 +19,6 @@ class LogViewer(ttk.Frame):
         ttk.Label(frame, text="ログファイルを選択:").pack(anchor=tk.W)
         self.cmb_file = ttk.Combobox(frame, values=self.get_log_files())
         self.cmb_file.pack(fill=tk.X, pady=5)
-<<<<<<< HEAD
-        ttk.Button(frame, text="開く", command=self.load_log).pack(anchor=tk.E)
-
-        # Enhanced log display with a scrollable Text widget
-        log_frame = ttk.Frame(self)
-        log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        self.txt_log = tk.Text(log_frame, height=20,
-                               wrap=tk.WORD, state=tk.DISABLED)
-        self.txt_log.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        scrollbar = ttk.Scrollbar(
-            log_frame, orient=tk.VERTICAL, command=self.txt_log.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.txt_log["yscrollcommand"] = scrollbar.set
-
-    def get_log_files(self):
-        try:
-            return [f for f in os.listdir(self.log_dir) if f.endswith(('.log', '.csv'))]
-        except Exception:
-            return []
-=======
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X)
         ttk.Button(btn_frame, text="開く", command=self.load_log).pack(side=tk.RIGHT)
@@ -94,7 +72,6 @@ class LogViewer(ttk.Frame):
         self.cmb_file['values'] = files
         if files:
             self.cmb_file.set(files[0])
->>>>>>> development
 
     def format_log_content(self, content):
         # Treat multiple consecutive dots as a single Japanese period (。)
@@ -113,15 +90,6 @@ class LogViewer(ttk.Frame):
             return
         path = os.path.join(self.log_dir, filename)
         try:
-<<<<<<< HEAD
-            with open(path, encoding="utf-8") as f:
-                content = f.read()
-            formatted_content = self.format_log_content(content)
-            self.txt_log.config(state=tk.NORMAL)
-            self.txt_log.delete(1.0, tk.END)
-            self.txt_log.insert(tk.END, formatted_content)
-            self.txt_log.config(state=tk.DISABLED)
-=======
             # .csvなら投稿履歴としてテーブル表示、.logなら従来のパース
             if filename.endswith('.csv'):
                 self.txt_log.pack_forget()
@@ -150,6 +118,5 @@ class LogViewer(ttk.Frame):
                 self.txt_log.delete(1.0, tk.END)
                 self.txt_log.insert(tk.END, formatted_content)
                 self.txt_log.config(state=tk.DISABLED)
->>>>>>> development
         except Exception as e:
             messagebox.showerror("エラー", f"ファイルを開けません: {e}")
