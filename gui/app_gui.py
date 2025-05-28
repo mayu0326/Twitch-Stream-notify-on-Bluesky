@@ -5,16 +5,13 @@ Stream notify on Bluesky
 このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
 
-import tkinter.ttk as ttk
 import tkinter as tk
 from account_settings_frame import AccountSettingsFrame
-from timezone_settings import TimeZoneSettings
 from tunnel_connection import TunnelConnection
 from bluesky_post_settings_frame import BlueskyPostSettingsFrame
 from log_viewer import LogViewer
 from settings_editor_dialog import SettingsEditorDialog
-from loggig_notification_frame import LoggigNotificationFrame
-from main_control_frame import MainControlFrame
+from logging_notification_frame import LoggingNotificationFrame
 from setup_wizard import SetupWizard
 from setting_status import SettingStatusFrame
 from version_info import __version__
@@ -87,7 +84,7 @@ class MainWindow(tk.Tk):
         self.tab_tunnel = TunnelConnection(notebook)
         notebook.add(self.tab_tunnel, text="トンネル通信設定")
         # ログ・通知設定タブ
-        self.tab_notify = LoggigNotificationFrame(notebook)
+        self.tab_notify = LoggingNotificationFrame(notebook)
         notebook.add(self.tab_notify, text="ログ・通知設定")
 
         # タブ切り替え時に設定状況タブをリロード
