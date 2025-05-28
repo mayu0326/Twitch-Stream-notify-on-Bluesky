@@ -60,7 +60,7 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 ---
 ## ファイル構成
 このプログラムは以下のファイル構成/フォルダで構成されています。
-<details>
+
 ```
 プロジェクトルート/
 ├── app_version.py
@@ -144,7 +144,6 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
     ├── test_youtube_niconico_monitor.py
     └── tunnel_tests.py
 ```
-</details>
 
 ## セットアップ手順
 - **※このアプリケーションはWindows専用です。LinuxやMacには対応していません。**
