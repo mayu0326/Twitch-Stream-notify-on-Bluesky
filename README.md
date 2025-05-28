@@ -493,7 +493,7 @@ A. 当アプリケーションはCloudflare/ngrok/localtonnelでご利用いた�
 **トンネル通信アプリケーションの自動インストール機能はついておりません**ので、\
 事前にインストールをお願いします。
 - CloudflareTunnelをご利用の方は、[公式ページ](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)から cloudflared をダウンロードし、\
-settings.env の TUNNEL_CMD でパスを正しく指定してください。\
+`settings.env`または`設定用GUI`からトンネルサービスを正しく設定してください。\
 ※運用環境によってはPathをダブルクォーテーションで囲って記載する必要がある場合があります。
 - (例：)wingetコマンドでインストールした場合の記載例。※[ ]内がコマンドです。
   ```
