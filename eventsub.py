@@ -17,12 +17,12 @@ import hashlib
 import hmac
 import requests
 import os
-from version_info import __version__
+from app_version import __app_version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__version__ = __version__
+__app_version__ = __app_version__
 
 # Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)
@@ -325,7 +325,7 @@ def create_eventsub_subscription(event_type: str, logger_to_use=None, webhook_ur
     callback_url = webhook_url if webhook_url else os.getenv("WEBHOOK_CALLBACK_URL")
     payload = {
         "type": event_type,
-        "version": "1",
+        "app_version": "1",
         "condition": {"broadcaster_user_id": TWITCH_BROADCASTER_ID},
         "transport": {
             "method": "webhook",

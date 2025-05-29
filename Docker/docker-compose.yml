@@ -1,4 +1,4 @@
-version: '3.8'
+app_version: '3.8'
 
 services:
   twitch-bluesky-bot:

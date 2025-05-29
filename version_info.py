@@ -1,3 +1,0 @@
-from app_version import __version__
-
-# ...existing code...

@@ -63,7 +63,7 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 
 ```
 プロジェクトルート/
-├── app_version.py
+├── app_app_version.py
 ├── bluesky.py
 ├── development-requirements.txt
 ├── eventsub.py
@@ -79,8 +79,8 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 ├── settings.env.example
 ├── tunnel.py
 ├── utils.py
-├── version_info.py
-├── version.py
+├── app_version.py
+├── app_version.py
 ├── youtube_monitor.py
 ├── Cloudflared/
 │   └── config.yml.example
@@ -452,7 +452,7 @@ Twitch 放送開始 🎉
 ### Q. ドメインをもっていなくても利用できますか？
 
 A.  はい。**ドメインを持っていなくともご利用いただけます**。\
-ただし、ドメインなしで利用するためには**Version1.0.4-beta以降**のアプリケーションが必要です。
+ただし、ドメインなしで利用するためには**app_version1.0.4-beta以降**のアプリケーションが必要です。
 
 ### Q. CloudflareTunnelを使うための条件はなんですか？
 

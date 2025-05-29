@@ -11,13 +11,13 @@ from unittest.mock import patch, MagicMock, ANY, mock_open
 from bluesky import BlueskyPoster, load_template
 from atproto import exceptions as atproto_exceptions
 from jinja2 import Template  # Templateを追加
-from version_info import __version__
+from app_version import __app_version__
 import asyncio
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__version__ = __version__
+__app_version__ = __app_version__
 
 
 # Stream notify on Bluesky

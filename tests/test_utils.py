@@ -14,12 +14,12 @@ from utils import (
     rotate_secret_if_needed,
     format_datetime_filter  # format_datetime_filterの追加
 )
-from version_info import __version__
+from app_version import __app_version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__version__ = __version__
+__app_version__ = __app_version__
 
 
 # Stream notify on Bluesky
@@ -193,7 +193,7 @@ class TestFormatDateTimeFilter:
         custom_fmt = "%H時%M分"
         assert format_datetime_filter(iso_str, fmt=custom_fmt) == "10時30分"
 
-    def test_timezone_conversion_tokyo(self, monkeypatch):
+    def test_timezone_conapp_version_tokyo(self, monkeypatch):
         monkeypatch.setenv("TIMEZONE", "Asia/Tokyo")
         iso_str_utc = "2023-10-27T00:00:00Z"  # UTCの深夜
         # 期待値: 2023-10-27 09:00 JST（または+0900、Asia/Tokyoなど）
@@ -201,7 +201,7 @@ class TestFormatDateTimeFilter:
         assert "2023-10-27 09:00" in result
         assert "JST" in result or "+0900" in result or "Asia/Tokyo" in result
 
-    def test_timezone_conversion_new_york(self, monkeypatch):
+    def test_timezone_conapp_version_new_york(self, monkeypatch):
         monkeypatch.setenv("TIMEZONE", "America/New_York")
         iso_str_utc = "2023-10-27T10:00:00Z"  # 10時UTC
         # 期待値: 2023-10-27 06:00 EDT（DST期間中）

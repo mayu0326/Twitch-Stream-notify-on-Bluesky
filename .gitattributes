@@ -78,7 +78,7 @@ profile_default/ export-ignore
 ipython_config.py export-ignore
 
 # pyenv
-.python-version export-ignore
+.python-app_version export-ignore
 
 # pipenv
 Pipfile.lock export-ignore

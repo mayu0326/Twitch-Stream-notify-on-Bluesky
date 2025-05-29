@@ -14,8 +14,7 @@
 | tunnel.py                | コア         | トンネル通信アプリ（Cloudflare/ngrok/localtunnel/custom）の起動・管理。        | main.py、GUI（tunnel_connection等）       |
 | utils.py                 | ユーティリティ| 各種共通関数（パス変換・日付整形・ファイル操作など）。                         | 各コア・GUI・テスト                       |
 | logging_config.py        | ユーティリティ| ログ設定・出力レベル管理。                                                     | main.py、各コア・GUI                      |
-| version_info.py/version.py| ユーティリティ| バージョン情報管理。                                                          | main.py、GUI                             |
-| app_version.py           | ユーティリティ| アプリバージョン管理（version_info.pyと役割重複の可能性あり）。                | main.py、GUI                             |
+| app_version.py           | ユーティリティ| アプリバージョン管理                                                         | main.py、GUI                             |
 
 ---
 
@@ -100,7 +99,7 @@
 
 - **main.py**が全体の起動点で、コアロジック・監視・トンネル・GUIを統括。
 - **bluesky.py, eventsub.py, niconico_monitor.py, youtube_monitor.py, tunnel.py**はmain.pyから直接呼ばれる。
-- **utils.py, logging_config.py, version_info.py**などは各所で共通利用。
+- **utils.py, logging_config.py, app_version.py**などは各所で共通利用。
 - **app_gui.py**がGUIのエントリーポイントで、各フレーム（account_settings_frame.py等）をimportして統合。
 - **tunnel_connection.py**はトンネル種別ごとのフレーム（tunnel_cloudflare_frame.py等）をimportして利用。
 - **tests/**配下はpytestによる自動テスト用。
