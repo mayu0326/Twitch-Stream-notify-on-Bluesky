@@ -1,16 +1,17 @@
-"""
-テンプレート・画像カスタマイズUI
-"""
-from timezone_settings import TimeZoneSettings
 import sys
 import os
-import tkinter as tk
-from tkinter import ttk
-from dotenv import load_dotenv
 # sys.pathの調整（親ディレクトリをパスに追加）
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
+
+"""
+テンプレート・画像カスタマイズUI
+"""
+from gui.timezone_settings import TimeZoneSettings
+import tkinter as tk
+from tkinter import ttk
+from dotenv import load_dotenv
 try:
     from utils import change_template_file, change_image_file
 except ModuleNotFoundError:
@@ -32,17 +33,17 @@ class NotificationCustomizationFrame(ttk.Frame):
         notebook.add(tz_frame, text="タイムゾーン設定")
 
         # --- ログ/コンソール設定タブ ---
-        from logging_console_frame import LoggingConsoleFrame
+        from gui.logging_console_frame import LoggingConsoleFrame
         log_console_frame = LoggingConsoleFrame(notebook)
         notebook.add(log_console_frame, text="ログ/コンソール設定")
 
         # --- Discordタブ ---
-        from discord_notification_frame import DiscordNotificationFrame
+        from gui.discord_notification_frame import DiscordNotificationFrame
         discord_frame = DiscordNotificationFrame(notebook)
         notebook.add(discord_frame, text="Discord通知設定")
 
         # --- ログビューアタブ ---
-        from log_viewer import LogViewer
+        from gui.log_viewer import LogViewer
         log_viewer_frame = LogViewer(notebook)
         notebook.add(log_viewer_frame, text="ログビューア")
 
