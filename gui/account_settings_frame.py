@@ -54,6 +54,21 @@ class AccountSettingsFrame(tk.Frame):
                     self._webhook_entry_callback.delete(0, tk.END)
                     self._webhook_entry_callback.insert(0, callback_url)
                     self._webhook_entry_callback.config(state="readonly")
+                # Webhookシークレットとローテーション日時も再取得して反映
+                webhook_secret = os.getenv('WEBHOOK_SECRET', '')
+                secret_last_rotated = os.getenv('SECRET_LAST_ROTATED', '')
+                try:
+                    # _webhook_tabでentry_secret, entry_rotatedをselfに保持しておく
+                    self._webhook_entry_secret.config(state="normal")
+                    self._webhook_entry_secret.delete(0, tk.END)
+                    self._webhook_entry_secret.insert(0, webhook_secret)
+                    self._webhook_entry_secret.config(state="readonly")
+                    self._webhook_entry_rotated.config(state="normal")
+                    self._webhook_entry_rotated.delete(0, tk.END)
+                    self._webhook_entry_rotated.insert(0, secret_last_rotated)
+                    self._webhook_entry_rotated.config(state="readonly")
+                except Exception:
+                    pass
         notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 
     def _twitch_tab(self, master, big_font):
@@ -273,8 +288,6 @@ class AccountSettingsFrame(tk.Frame):
             url_label = "WebhookコールバックURL（一時用: ngrok/localtunnel）"
         webhook_secret = os.getenv('WEBHOOK_SECRET', '')
         secret_last_rotated = os.getenv('SECRET_LAST_ROTATED', '')
-        retry_max = os.getenv('RETRY_MAX', '3')
-        retry_wait = os.getenv('RETRY_WAIT', '2')
         lbl_section = tk.Label(
             frame, text="Twitch EventSub Webhook設定", font=("Meiryo", 12, "bold"))
         lbl_section.grid(row=0, column=0, sticky=tk.W,
@@ -294,6 +307,7 @@ class AccountSettingsFrame(tk.Frame):
         entry_secret.insert(0, webhook_secret)
         entry_secret.grid(row=4, column=0, sticky=tk.EW,
                           pady=(0, 10), columnspan=2)
+        self._webhook_entry_secret = entry_secret
         btn_clear_secret = tk.Button(frame, text="シークレット消去", font=(
             "Meiryo", 9), command=lambda: clear_secret_and_rotated())
         btn_clear_secret.grid(row=4, column=2, sticky=tk.W, padx=(5, 0))
@@ -305,6 +319,7 @@ class AccountSettingsFrame(tk.Frame):
         entry_rotated.insert(0, secret_last_rotated)
         entry_rotated.grid(row=6, column=0, sticky=tk.EW,
                            pady=(0, 10), columnspan=2)
+        self._webhook_entry_rotated = entry_rotated
 
         def clear_secret_and_rotated():
             entry_secret.config(state="normal")
@@ -333,6 +348,7 @@ class AccountSettingsFrame(tk.Frame):
             tk.messagebox.showinfo('消去完了', 'Webhookシークレットとローテーション日時を消去しました。')
 
         # リトライ回数
+        retry_max = os.getenv('RETRY_MAX', '3')
         tk.Label(frame, text="APIリクエスト失敗時のリトライ回数", font=big_font).grid(
             row=7, column=0, sticky=tk.W, pady=(10, 0))
         entry_retry_max = tk.Entry(frame, font=big_font)
@@ -341,6 +357,7 @@ class AccountSettingsFrame(tk.Frame):
                              pady=(0, 10), columnspan=2)
 
         # リトライ待機秒数
+        retry_wait = os.getenv('RETRY_WAIT', '3')
         tk.Label(frame, text="リトライ時の待機秒数", font=big_font).grid(
             row=9, column=0, sticky=tk.W, pady=(10, 0))
         entry_retry_wait = tk.Entry(frame, font=big_font)

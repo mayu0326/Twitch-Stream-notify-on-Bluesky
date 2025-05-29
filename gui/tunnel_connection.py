@@ -1,10 +1,14 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import tkinter as tk
 import tkinter.ttk as ttk
 
-from tunnel_cloudflare_frame import TunnelCloudflareFrame
-from tunnel_custom_frame import TunnelCustomFrame
-from tunnel_localtunnel_frame import TunnelLocaltunnelFrame
-from tunnel_ngrok_frame import TunnelNgrokFrame
+from gui.tunnel_cloudflare_frame import TunnelCloudflareFrame
+from gui.tunnel_custom_frame import TunnelCustomFrame
+from gui.tunnel_localtunnel_frame import TunnelLocaltunnelFrame
+from gui.tunnel_ngrok_frame import TunnelNgrokFrame
 
 
 class TunnelConnection(tk.Frame):

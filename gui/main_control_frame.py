@@ -7,13 +7,11 @@ Stream notify on Bluesky
 
 from version_info import __version__
 from dotenv import load_dotenv
-import os
-from tkinter import ttk
-import tkinter as tk
 import sys
-
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..')))
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import tkinter as tk
+from tkinter import ttk
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"

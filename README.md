@@ -63,25 +63,32 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 
 ```
 プロジェクトルート/
+├── app_version.py
 ├── bluesky.py
+├── development-requirements.txt
 ├── eventsub.py
+├── LICENSE
 ├── logging_config.py
 ├── main.py
 ├── niconico_monitor.py
-├── tunnel.py
-├── utils.py
-├── version.py
-├── youtube_monitor.py
-├── requirements.txt
-├── development-requirements.txt
-├── settings.env.example
-├── LICENSE
+├── pep8_check.txt
+├── pyproject.toml
 ├── pytest.ini
 ├── README.md
-├── logs/
-│   └── ...(ログや投稿履歴はこちらに保存されます)
-├── images/
-│   └── noimage.png
+├── requirements.txt
+├── settings.env.example
+├── tunnel.py
+├── utils.py
+├── version_info.py
+├── version.py
+├── youtube_monitor.py
+├── Cloudflared/
+│   └── config.yml.example
+├── Docker/
+│   ├── docker_readme_section.ja.md
+│   ├── docker_readme_section.md
+│   ├── docker-compose.yml
+│   └── Dockerfile
 ├── document/
 │   ├── ARCHITECTURE.ja.md
 │   ├── ARCHITECTURE.md
@@ -89,25 +96,6 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 │   ├── consolidated_summary_japanese.md
 │   ├── CONTRIBUTING.ja.md
 │   └── CONTRIBUTING.md
-├── templates/
-│   ├── default_offline_template.txt
-│   ├── default_online_template.txt
-│   ├── nico_new_video_template.txt
-│   ├── nico_online_template.txt
-│   ├── twitch_offline_template.txt
-│   ├── twitch_online_template.txt
-│   ├── yt_new_video_template.txt
-│   └── yt_online_template.txt
-├── tests/
-│   ├── __init__.py
-│   ├── test_bluesky.py
-│   ├── test_eventsub.py
-│   ├── test_integration.py
-│   ├── test_main.py
-│   ├── test_performance.py
-│   ├── test_utils.py
-│   ├── test_youtube_niconico_monitor.py
-│   └── tunnel_tests.py
 ├── gui/
 │   ├── account_settings_frame.py
 │   ├── app_gui.py
@@ -116,6 +104,7 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 │   ├── console_output_viewer.py
 │   ├── discord_notification_frame.py
 │   ├── logging_console_frame.py
+│   ├── logging_notification_frame.py
 │   ├── log_viewer.py
 │   ├── main_control_frame.py
 │   ├── niconico_notice_frame.py
@@ -123,20 +112,39 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 │   ├── settings_editor_dialog.py
 │   ├── setup_wizard.py
 │   ├── timezone_settings.py
+│   ├── tunnel_cloudflare_frame.py
 │   ├── tunnel_connection.py
+│   ├── tunnel_custom_frame.py
+│   ├── tunnel_localtunnel_frame.py
+│   ├── tunnel_ngrok_frame.py
 │   ├── twitch_notice_frame.py
 │   ├── youtube_notice_frame.py
 │   └── ユーザーマニュアル_StreamNotifyonBluesky_GUI設定エディタ.txt
-├── Cloudflared/
-│   └── config.yml.example
-├── Docker/
-    ├── docker-compose.yml
-    ├── Dockerfile
-    ├── docker_readme_section.ja.md
-    └── docker_readme_section.md
+├── images/
+│   └── noimage.png
+├── logs/
+│   └── ...
+├── .templates/
+│   └── ...
+├── templates/
+│   ├── nico_new_video_template.txt
+│   ├── nico_online_template.txt
+│   ├── twitch_offline_template.txt
+│   ├── twitch_online_template.txt
+│   ├── yt_new_video_template.txt
+│   └── yt_online_template.txt
+└── tests/
+    ├── __init__.py
+    ├── test_bluesky.py
+    ├── test_eventsub.py
+    ├── test_integration.py
+    ├── test_main.py
+    ├── test_performance.py
+    ├── test_utils.py
+    ├── test_youtube_niconico_monitor.py
+    └── tunnel_tests.py
 ```
 
----
 ## セットアップ手順
 - **※このアプリケーションはWindows専用です。LinuxやMacには対応していません。**
 - もし仮にWindows以外の環境で動いたとしてもサポート対象外です。
@@ -180,9 +188,14 @@ customコマンドでご利用いただけます。\
 それ以外のトンネル通信アプリケーションでもCustomで設定していただくことにより\
 利用可能だと思われますが、動作確認およびサポートの対象外とさせていただいています。
 
-### 5. **セットアップウィザードで初期設定を行う**
+### 5. **初期設定を行う**
+- アプリケーションの起動時に設定ファイルがない場合、\
+「設定ファイルが見つかりません。初期セットアップを実行します。」が表示され、\
+セットアップウィザードが実行されます。
 
-- 初回起動時、`settings.env` が存在しない場合は「初期設定ウィザード」が自動的に起動します。
+### セットアップウィザードで設定を行う場合
+- 設定用GUI`gui\app_gui.py`を起動した時に設定ファイルが見つからなかった場合は、\
+「初期設定ウィザード」`gui\setup_wizard.py`が自動的に起動します。
 - ウィザードはGUIで、Twitch/YouTube/ニコニコ/Blueskyアカウント・Webhook設定\
 各種サイトへの通知可否・トンネル通信設定などをステップごとに分かりやすく案内します。
 - 各ステップは「スキップ」も可能で、未入力やスキップした項目は後からGUIの設定画面で編集できます。
@@ -200,6 +213,125 @@ customコマンドでご利用いただけます。\
 
 > 詳細なウィザードの流れは\
 `gui/ユーザーマニュアル_StreamNotifyonBluesky_GUI設定エディタ.txt` も参照してください。
+
+### 設定ファイルを直接編集する場合
+- 設定ファイルの直接編集は推奨されません。\
+設定用GUIやセットアップウィザードをご利用ください。
+
+<details>
+
+```
+# このファイルを settings.env にコピーして、各値を設定してください。
+# コメント行 (#で始まる行) や空行は無視されます。
+
+# --- Bluesky関連設定 ---
+# Blueskyのユーザー名 (例: your-handle.bsky.social or 独自ドメイン等ご利用中のID)
+BLUESKY_USERNAME=
+# Blueskyのアプリパスワード (Blueskyの設定画面で発行してください)
+BLUESKY_APP_PASSWORD=
+# Bluesky投稿時に使用する画像ファイルのパス(Twitch/YouTube/ニコニコ共通)
+BLUESKY_IMAGE_PATH=images/noimage.png
+# 放送開始投稿用テンプレートファイル(Twitch)
+BLUESKY_TEMPLATE_PATH=templates/twitch_online_template.txt
+# 放送終了投稿用テンプレートファイル(Twitch)
+BLUESKY_OFFLINE_TEMPLATE_PATH=templates/twitch_offline_template.txt
+# 放送開始通知投稿用テンプレートファイル(YouTubeLive)
+BLUESKY_YT_ONLINE_TEMPLATE_PATH=templates/yt_online_template.txt
+# 動画投稿通知用テンプレートファイル(YouTube動画)
+BLUESKY_YT_NEW_VIDEO_TEMPLATE_PATH=templates/yt_new_video_template.txt
+# 放送開始通知投稿用テンプレートファイル(ニコニコ生放送)
+BLUESKY_NICO_ONLINE_TEMPLATE_PATH=templates/nico_online_template.txt
+# 動画投稿通知用テンプレートファイル(ニコニコ動画)
+BLUESKY_NICO_NEW_VIDEO_TEMPLATE_PATH=templates/nico_new_video_template.txt
+
+# --- Twitch関連設定 ---
+# TwitchアプリケーションのクライアントID (Twitch Developer Consoleで取得)
+TWITCH_CLIENT_ID=
+# Twitchアプリケーションのクライアントシークレット (Twitch Developer Consoleで取得)
+TWITCH_CLIENT_SECRET=
+# 通知対象のTwitch配信者のユーザー名
+TWITCH_BROADCASTER_ID=
+# APIアクセス用TwitchBroadcasterID(自動変換・入力されます)
+TWITCH_BROADCASTER_ID_CONVERTED=
+# Twitch EventSub WebhookのコールバックURL
+# Cloudflare Tunnelなどで公開したこのアプリの /webhook エンドポイントのURL
+# トンネルサービスによって適切な値が利用されるため、この値は基本的には記入不要です。
+WEBHOOK_CALLBACK_URL=
+# WebhookコールバックURL（恒久用: Cloudflare/custom、または手動設定用）
+WEBHOOK_CALLBACK_URL_PERMANENT=
+# WebhookコールバックURL（一時用: ngrok/localtunnel自動取得用）
+WEBHOOK_CALLBACK_URL_TEMPORARY=
+# Webhook署名検証用のシークレットキー・前回更新日時
+# アプリケーション起動時に自動生成されますので空欄にしてください。
+WEBHOOK_SECRET=
+# シークレットが最後に更新された日時（自動入力されます）
+SECRET_LAST_ROTATED=
+# Twitch EventSubの各APIリクエストが失敗した場合のリトライ回数
+RETRY_MAX=3
+# リトライ時の待機秒数
+RETRY_WAIT=2
+
+# --- YouTube関連設定 ---
+# YouTube Data API v3のAPIキー
+YOUTUBE_API_KEY=
+# 監視対象のYouTubeチャンネルID
+YOUTUBE_CHANNEL_ID=
+# YouTubeのポーリング間隔（秒、デフォルト: 60）
+YOUTUBE_POLL_INTERVAL=60
+
+# --- ニコニコ関連設定 ---
+# 監視対象のニコニコユーザーID（数字のみ）
+NICONICO_USER_ID=
+# ニコニコのポーリング間隔（秒、デフォルト: 60）
+NICONICO_LIVE_POLL_INTERVAL=60
+
+# --- 通知設定 ---
+# Twitch配信開始時にBlueskyへ通知するか (True/False)
+NOTIFY_ON_TWITCH_ONINE=True
+# Twitch配信終了時にBlueskyへ通知するか (True/False)
+NOTIFY_ON_TWITCH_OFFLINE=False
+# YouTube配信開始時にBlueskyへ通知するか(True/False)
+NOTIFY_ON_YOUTUBE_ONLINE=False
+# YouTube新着動画投稿時にBlueskyへ通知するか(True/False)
+NOTIFY_ON_YOUTUBE_NEW_VIDEO=False
+# ニコニコ生放送配信開始時にBlueskyへ通知するか(True/False)
+NOTIFY_ON_NICONICO_ONLINE=False
+# ニコニコ動画新着投稿時にBlueskyへ通知するか(True/False)
+NOTIFY_ON_NICONICO_NEW_VIDEO=False
+# Discord通知を有効にするか (True/False)
+DISCORD_NOTIFY_ENABLED=False
+
+# --- ロギング関連設定 ---
+# Discordへ通知するログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+discord_notify_level=CRITICAL
+# コンソール・ログに出力するログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOG_LEVEL=DEBUG
+# Discord通知用のWebhook URL
+discord_error_notifier_url=
+# ログファイルのローテーション保持日数 (日単位の整数)
+LOG_RETENTION_DAYS=14
+
+# --- トンネル関連設定 ---
+# Cloudflare Tunnelなどのトンネルを起動するコマンド 
+# 設定しない場合はトンネルを起動しません。
+TUNNEL_SERVICE=
+TUNNEL_CMD=
+TUNNEL_NAME=
+NGROK_AUTH_TOKEN=
+NGROK_PORT=
+NGROK_PROTOCOL=
+LOCALTUNNEL_PORT=
+LOCALTUNNEL_CMD=
+CUSTOM_TUNNEL_CMD=
+
+# --- 一般設定 ---
+# タイムゾーン設定 (例: Asia/Tokyo, UTC, America/New_York, Europe/London)
+# "system" を指定すると、実行環境のシステムタイムゾーンを自動的に使用します。
+# 無効な値や空の場合はシステムタイムゾーンまたはUTCにフォールバックします。
+TIMEZONE=system
+
+```
+</details>
 
 ---
 
@@ -336,10 +468,12 @@ Cloudflare DNSにより管理されたドメインを用いたCloudflare Tunnel�
 または、**設定GUIで設定可能な他のトンネル通信アプリケーション**をご利用いただくこととなっております。\
 そのため、**Custom設定でご利用の場合は公式サポートの対象外**とさせていただいています。
 
-### Q. トンネル通信アプリケーション(Cloudflare/ngrok/localtunnel)はどのように管理されていますか？
+### Q. トンネル通信アプリケーションはどのように管理されていますか？
 
-A. アプリケーションの基本機能を担当するmain.pyがトンネル通信機能の起動・停止・URL取得を自動で管理します。\
-トンネル通信アプリケーションを起動後、WebhookURLは自動で取得され、GUIのURL欄に即時反映されます。
+A. アプリケーションの基本機能を担当するmain.pyがトンネル通信機能の起動\
+停止・URL取得を自動で管理します。\
+トンネル通信アプリケーションを起動後WebhookURLは自動で取得され、\
+GUIのURL欄に即時反映されます。
 
 ### Q. Webhook/URLタブの編集や自動反映はどのような仕様ですか？
 
@@ -353,13 +487,13 @@ URLはトンネル通信アプリケーション起動時に自動取得・自�
 ### エラー関連
 <details>
 
-### Q. cloudflaredまたは他のトンネル通信アプリケーションがインストールされていませんと出ます
+### Q. トンネル通信アプリケーションがインストールされていませんと出ます
 
 A. 当アプリケーションはCloudflare/ngrok/localtonnelでご利用いただけますが、\
 **トンネル通信アプリケーションの自動インストール機能はついておりません**ので、\
 事前にインストールをお願いします。
 - CloudflareTunnelをご利用の方は、[公式ページ](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)から cloudflared をダウンロードし、\
-settings.env の TUNNEL_CMD でパスを正しく指定してください。\
+`settings.env`または`設定用GUI`からトンネルサービスを正しく設定してください。\
 ※運用環境によってはPathをダブルクォーテーションで囲って記載する必要がある場合があります。
 - (例：)wingetコマンドでインストールした場合の記載例。※[ ]内がコマンドです。
   ```
@@ -397,21 +531,22 @@ A. **ファイル名の指定**が間違っている可能性があるので確�
 A. アプリケーションを起動後、設定したWebhookエンドポイントのURLにブラウザでアクセスしてください。\
 下記の状態であれば、外部との通信ができる状態になっています。
 - ブラウザの表示が **Webhook endpoint is working! POST requests only.** である。
-- コンソールやログファイルの出力に **Webhookエンドポイントは正常に稼働しています**というinfoログがある。
+- コンソールやログファイルの出力に **Webhookエンドポイントは正常に稼働しています**\
+というinfoログがある。
 
 ### Q. アプリケーションにはエラーが出力されていないのに疎通確認が取れません。
 
 A. 次のどれかが原因の可能性があります。
-- Cloudflare側でドメインとトンネル通信アプリケーションの紐付けができていない\
+- Cloudflare側でドメインとトンネルの紐付けができていない\
 → **DNSのCNAMEレコードが正しい値であるか**、Cloudflareダッシュボードで確認してください。
 
-- CNAMEレコードがトンネル通信アプリケーションのUUID.cfargotunnel.comに向いていない、またはAレコードになっている\
+- CNAMEレコードがトンネルのUUID.cfargotunnel.comに向いていない、またはAレコードになっている\
 → **必ずCNAMEでUUID.cfargotunnel.comに向けてください**。
 
 - Cloudflare DNSでドメインを管理していない（外部DNSや未設定）\
-→ Cloudflare DNSで管理していない場合、**独自ドメインでのトンネル通信アプリケーション公開はできません**。
+→ Cloudflare DNSで管理していない場合、**Cloudflareでのトンネル公開はできません**。
 
-- トンネル通信アプリケーション名やUUIDの設定ミス\
+- トンネル名やUUIDの設定ミス\
 → cloudflared tunnel listで表示されるUUIDと、DNS設定のCNAME先が**一致しているか確認してください**。\
 一致していない場合は、DNS設定を一致するように書き換えてください。
 </details>

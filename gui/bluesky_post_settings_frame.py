@@ -41,14 +41,14 @@ class BlueskyPostSettingsFrame(ttk.Frame):
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
         # --- Twitchタブ ---
-        from twitch_notice_frame import TwitchNoticeFrame
+        from gui.twitch_notice_frame import TwitchNoticeFrame
         self.twitch_frame = TwitchNoticeFrame(notebook)
         notebook.add(self.twitch_frame, text="Twitch")
         # --- YouTubeタブ ---
-        from youtube_notice_frame import YouTubeNoticeFrame
+        from gui.youtube_notice_frame import YouTubeNoticeFrame
         self.youtube_frame = YouTubeNoticeFrame(notebook)
         notebook.add(self.youtube_frame, text="YouTube")
         # --- ニコニコタブ ---
-        from niconico_notice_frame import NiconicoNoticeFrame
+        from gui.niconico_notice_frame import NiconicoNoticeFrame
         self.nico_frame = NiconicoNoticeFrame(notebook)
         notebook.add(self.nico_frame, text="ニコニコ")
