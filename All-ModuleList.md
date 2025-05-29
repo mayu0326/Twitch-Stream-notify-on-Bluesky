@@ -117,4 +117,5 @@
 - **GUIの各設定・状態はapp_gui.pyが統括し、各フレームで分担管理**。
 ---
 
-この一覧が現時点の全モジュールの種類・役割・使われ方のまとめです。さらに詳細な依存関係や設計意図はARCHITECTURE.ja.mdやcomprehensive_summary_japanese.mdも参照してください。
+この一覧が現時点の全モジュールの種類・役割・使われ方のまとめです。
+さらに詳細な依存関係や設計意図は`ARCHITECTURE.ja.md`や`comprehensive_summary_japanese.md`も参照してください。
