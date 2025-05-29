@@ -57,7 +57,26 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 ### その他に必要なもの
 - CloudflareでDNS管理されている独自ドメイン（推奨）\
 または(ngrokやlocaltunnelなど)他のトンネル通信アプリケーション
+
 ---
+
+## トンネル要件 / Tunnel Requirements
+
+本アプリケーションはCloudflare Tunnel「のみ」対応ではありません。\
+ngrok、localtunnel、カスタムトンネルもサポートされています。
+
+- `TUNNEL_SERVICE`環境変数でサービスを切り替え、各種コマンド\
+（`TUNNEL_CMD`/`NGROK_CMD`/`LOCALTUNNEL_CMD`/`CUSTOM_TUNNEL_CMD`）でトンネルを起動・管理します。
+- コマンド未設定時は警告ログを出し、トンネルは起動しません。\
+終了時はterminate/waitで正常終了、タイムアウトや例外時はkillで強制終了し、詳細なログを出力します。
+- Cloudflare Tunnel利用時は**Cloudflare Zero Trust**でトンネル作成・`config.yml`準備が必要です。
+- ngrokやlocaltunnel利用時は**各公式手順に従いインストール・設定**をしてください。
+- Customトンネルもコマンド指定で利用可能ですが、**動作保証・サポート対象外**です。
+
+詳細なセットアップ・運用方法は`ARCHITECTURE.ja.md`や`CONTRIBUTING.ja.md`も参照してください。
+
+---
+
 ## ファイル構成
 このプログラムは以下のファイル構成/フォルダで構成されています。
 
@@ -144,23 +163,6 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
     ├── test_youtube_niconico_monitor.py
     └── tunnel_tests.py
 ```
----
-
-## トンネル要件 / Tunnel Requirements
-
-本アプリケーションはCloudflare Tunnel「のみ」対応ではありません。\
-ngrok、localtunnel、カスタムトンネルもサポートされています。
-
-- `TUNNEL_SERVICE`環境変数でサービスを切り替え、各種コマンド\
-（`TUNNEL_CMD`/`NGROK_CMD`/`LOCALTUNNEL_CMD`/`CUSTOM_TUNNEL_CMD`）でトンネルを起動・管理します。
-- コマンド未設定時は警告ログを出し、トンネルは起動しません。\
-終了時はterminate/waitで正常終了、タイムアウトや例外時はkillで強制終了し、詳細なログを出力します。
-- Cloudflare Tunnel利用時は**Cloudflare Zero Trust**でトンネル作成・`config.yml`準備が必要です。
-- ngrokやlocaltunnel利用時は**各公式手順に従いインストール・設定**をしてください。
-- Customトンネルもコマンド指定で利用可能ですが、**動作保証・サポート対象外**です。
-
-詳細なセットアップ・運用方法は`ARCHITECTURE.ja.md``CONTRIBUTING.ja.md`も参照してください。
-
 ---
 ## セットアップ手順
 - **※このアプリケーションはWindows専用です。LinuxやMacには対応していません。**
