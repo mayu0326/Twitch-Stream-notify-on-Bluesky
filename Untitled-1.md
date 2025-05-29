@@ -112,9 +112,6 @@
 - **テンプレートファイルのデフォルトパス**はbluesky.pyで`.templates/_default_online_template.txt`等に変更済み。
 - **トンネル管理**はmain.pyとtunnel.pyが中心、GUIからも状態反映・コマンド実行可能。
 - **GUIの各設定・状態はapp_gui.pyが統括し、各フレームで分担管理**。
-- **未使用/削除候補**: gui/bluesky_notification_frame.py
-- **typo疑い**: gui/loggig_notification_frame.py（用途不明、要確認）
-
 ---
 
 この一覧が現時点の全モジュールの種類・役割・使われ方のまとめです。さらに詳細な依存関係や設計意図はARCHITECTURE.ja.mdやcomprehensive_summary_japanese.mdも参照してください。
