@@ -42,11 +42,15 @@
 - **Key Technologies:** atproto, Jinja2
 
 ### tunnel.py
-- **Role:** Manages Cloudflare Tunnel (cloudflared) execution.
+- **Role:** Manages Cloudflare/ngrok/localtunnel/custom tunnel services.
 - **Functionality:**
-  - start_tunnel(): Starts cloudflared using TUNNEL_CMD from settings.env.
-  - stop_tunnel(): Terminates cloudflared process.
-- **Key Technologies:** subprocess, shlex
+  - start_tunnel(): Launches the tunnel process according to the TUNNEL_SERVICE environment variable (cloudflare/ngrok/localtunnel/custom), using the appropriate command (TUNNEL_CMD/NGROK_CMD/LOCALTUNNEL_CMD/CUSTOM_TUNNEL_CMD).
+  - stop_tunnel(): Attempts graceful termination with terminate()/wait(), force-kills with kill() on timeout or exception, and logs all actions.
+  - Logger can be specified (defaults to "tunnel.logger").
+  - If the command is unset, logs a warning and does not start the tunnel.
+  - Uses shlex.split for safe command parsing; logs FileNotFoundError and other exceptions individually.
+  - Falls back to TUNNEL_CMD if TUNNEL_SERVICE is unset or unknown.
+- **Key Technologies:** subprocess, shlex, logging, environment variable-based service switching
 
 ### utils.py
 - **Role:** Common utilities and decorators.

@@ -144,7 +144,24 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
     ├── test_youtube_niconico_monitor.py
     └── tunnel_tests.py
 ```
+---
 
+## トンネル要件 / Tunnel Requirements
+
+本アプリケーションはCloudflare Tunnel「のみ」対応ではありません。\
+ngrok、localtunnel、カスタムトンネルもサポートされています。
+
+- `TUNNEL_SERVICE`環境変数でサービスを切り替え、各種コマンド\
+（`TUNNEL_CMD`/`NGROK_CMD`/`LOCALTUNNEL_CMD`/`CUSTOM_TUNNEL_CMD`）でトンネルを起動・管理します。
+- コマンド未設定時は警告ログを出し、トンネルは起動しません。\
+終了時はterminate/waitで正常終了、タイムアウトや例外時はkillで強制終了し、詳細なログを出力します。
+- Cloudflare Tunnel利用時は**Cloudflare Zero Trust**でトンネル作成・`config.yml`準備が必要です。
+- ngrokやlocaltunnel利用時は**各公式手順に従いインストール・設定**をしてください。
+- Customトンネルもコマンド指定で利用可能ですが、**動作保証・サポート対象外**です。
+
+詳細なセットアップ・運用方法は`ARCHITECTURE.ja.md``CONTRIBUTING.ja.md`も参照してください。
+
+---
 ## セットアップ手順
 - **※このアプリケーションはWindows専用です。LinuxやMacには対応していません。**
 - もし仮にWindows以外の環境で動いたとしてもサポート対象外です。
@@ -618,6 +635,7 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 そうすれば、次回起動時に再生成されます。
 </details>
 
+---
 ## 運用上の注意
 
 - この Bot は個人運用・検証を想定しています。\
@@ -646,11 +664,13 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
  pip install ggshield pre-commit
  ```
 
+---
 ## 貢献
 このアプリケーションを改善し、拡張するための貢献を歓迎します！\
 バグの報告、機能強化の提案、プルリクエストの提出方法の詳細については、\
 [貢献ガイドライン](CONTRIBUTING.ja.md)をご覧ください。
 
+---
 ## 自動テストの実行方法
 
 本アプリケーションは主要な機能やバリデーションの自動テストを備えています。  

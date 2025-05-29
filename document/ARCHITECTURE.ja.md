@@ -7,7 +7,7 @@
 - **機能:**
     - Flaskウェブサーバーを初期化・実行（本番はwaitress）。
     - 設定の読み込み、ロギング設定、設定検証。
-    - tunnel.py経由でCloudflareトンネルの開始/停止を管理。
+    - tunnel.py経由でCloudflareやその他のトンネルサービスの開始/停止を管理。
     - Twitch EventSubウェブフックのインタラクション（/webhookエンドポイント: GET=ヘルスチェック, POST=通知）。
     - eventsub.verify_signatureで署名検証。
     - Twitch webhook_callback_verificationチャレンジ処理。
@@ -16,7 +16,7 @@
     - Twitchからの失効メッセージのロギング。
     - EventSubサブスクリプションの管理（クリーンアップ/作成）。
     - WEBHOOK_SECRETのローテーション。
-    - TWITCH_BROADCASTER_IDの数値化。
+    - TWITCH_BROADCASTER_IDをユーザーIDから変換して使用。
     - GUI（Tkinter）との連携（settings.env同期・プロセス制御）。
 - **主要技術:** Flask, Waitress, Tkinter（GUI連携）
 
@@ -42,11 +42,15 @@
 - **主要技術:** atproto, Jinja2
 
 #### tunnel.py
-- **役割:** Cloudflare Tunnel（cloudflared）管理。
+- **役割:** Cloudflare/ngrok/localtunnel/custom 各種トンネルサービスの起動・管理。
 - **機能:**
-    - start_tunnel(): settings.envのTUNNEL_CMDでcloudflared起動。
-    - stop_tunnel(): cloudflaredプロセス終了。
-- **主要技術:** subprocess, shlex
+    - start_tunnel(): settings.envのTUNNEL_SERVICEで選択されたサービス（cloudflare/ngrok/localtunnel/custom）に応じて、各種コマンド（TUNNEL_CMD/NGROK_CMD/LOCALTUNNEL_CMD/CUSTOM_TUNNEL_CMD）でトンネルプロセスを起動。
+    - stop_tunnel(): プロセスをterminate()→wait()で正常終了、タイムアウト時はkill()で強制終了。例外時もkill()を試みる。
+    - ログ出力はlogger引数で指定可能（未指定時は"tunnel.logger"）。
+    - コマンド未設定時は警告ログを出し、起動しない。
+    - コマンド実行時はshlex.splitで安全に分割し、FileNotFoundErrorや一般例外も個別にログ。
+    - TUNNEL_SERVICEが未設定・未知の場合はTUNNEL_CMDを利用。
+- **主要技術:** subprocess, shlex, logging, 環境変数によるサービス切替
 
 #### utils.py
 - **役割:** 共通ユーティリティ。

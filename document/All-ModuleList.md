@@ -101,12 +101,12 @@
 
 ## 6. インポート・利用関係のポイント
 
-- **`main.py`**が全体の起動点で、コアロジック・監視・トンネル・GUIを統括。
-- **`bluesky.py`, `eventsub.py`, `niconico_monitor.py`, `youtube_monitor.py`, `tunnel.py`**は`main.py`から直接呼ばれる。
-- **`utils.py`, `logging_config.py`, `app_version.py`**などは各所で共通利用。
-- **`app_gui.py`**がGUIのエントリーポイントで、各フレーム（`account_settings_frame.py`等）をimportして統合。
-- **`tunnel_connection.py`**はトンネル種別ごとのフレーム（`tunnel_cloudflare_frame.py`等）をimportして利用。
-- **`tests/`**配下はpytestによる自動テスト用。
+- `main.py`が全体の起動点で、**コアロジック・監視・トンネル・GUIを統括**。
+- `bluesky.py`, `eventsub.py`, `niconico_monitor.py`, `youtube_monitor.py`, `tunnel.py`は`main.py`から直接呼ばれる。
+- `utils.py`, `logging_config.py`, `app_version.py`などは**各所で共通利用**。
+- `app_gui.py`がGUIのエントリーポイントで、各フレーム（`account_settings_frame.py`等）をimportして統合。
+- `tunnel_connection.py`はトンネル種別ごとのフレーム（`tunnel_cloudflare_frame.py`等）をimportして利用。
+- `tests/`配下は**pytestによる自動テスト用**。
 
 ---
 
@@ -114,8 +114,8 @@
 
 - **テンプレートファイルのデフォルトパス**は`bluesky.py`で`.templates/_default_online_template.txt`等に変更済み。
 - **トンネル管理**は`main.py`と`tunnel.py`が中心、GUIからも状態反映・コマンド実行可能。
-- **GUIの各設定・状態は`app_gui.py`が統括し、各フレームで分担管理**。
+- GUIの各設定・状態は`app_gui.py`が統括し、各フレームで分担管理。
 ---
 
-この一覧が現時点の全モジュールの種類・役割・使われ方のまとめです。
+この一覧が現時点の全モジュールの種類・役割・使われ方のまとめです。\
 さらに詳細な依存関係や設計意図は`ARCHITECTURE.ja.md`や`comprehensive_summary_japanese.md`も参照してください。
