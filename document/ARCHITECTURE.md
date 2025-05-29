@@ -18,6 +18,8 @@
   - Handles WEBHOOK_SECRET rotation.
   - Ensures TWITCH_BROADCASTER_ID is numeric.
   - Integrates with GUI (Tkinter) for settings/env sync and process control.
+  - **GUI allows starting/stopping server and tunnel, status monitoring, and safe shutdown/cleanup.**
+  - **Both CUI and GUI guarantee cleanup, log output, and file lock release on exit, even on abnormal termination.**
 - **Key Technologies:** Flask, Waitress, Tkinter (GUI integration)
 
 ### eventsub.py

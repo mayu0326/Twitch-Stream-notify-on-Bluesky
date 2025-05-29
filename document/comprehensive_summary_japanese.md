@@ -6,7 +6,9 @@
 *   **Bluesky通知:** サービスごとにカスタマイズ可能なテンプレート・画像でBlueskyに投稿。テンプレート・画像・Webhook・APIキー等は各サービスごとに個別管理可能。
     * テンプレート・画像パスは `templates/`・`images/` 以降の相対パスで保存・管理。
 *   **トンネル機能:** Cloudflare Tunnel/ngrok/localtunnel/customコマンドに対応し、TUNNEL_SERVICE環境変数でサービスを切り替え、各種コマンド（TUNNEL_CMD/NGROK_CMD/LOCALTUNNEL_CMD/CUSTOM_TUNNEL_CMD）でトンネルの自動起動・監視・URL自動反映・再接続を実装。WebhookコールバックURLは恒久用/一時用を自動切替。コマンド未設定時は警告ログを出し、起動しない。終了時はterminate/waitで正常終了、タイムアウトや例外時はkillで強制終了し、詳細なログを出力。
-*   **GUI管理:** TkinterベースのGUIで、settings.envと双方向連携し、各種設定・テンプレート・画像・Webhook・APIキー等を統合管理。タブ構成・レイアウト・UI/UX改善済み。保存時は完了メッセージを表示し、タブ切替時に最新設定を自動反映。
+*   **GUI管理:** TkinterベースのGUIで、settings.envと双方向連携し、各種設定・テンプレート・画像・Webhook・APIキー等を統合管理。タブ構成・レイアウト・UI/UX改善済み。保存時は完了メッセージを表示し、タブ切替時に最新設定を自動反映。メイン機能やトンネル等もGUIから起動可能。
+    * **GUIからサーバー・トンネルの起動/停止・状態確認・安全な終了・クリーンアップが可能です。**
+    * **CUI/GUIどちらでも、終了時に必ずクリーンアップ・ログ出力・ファイルロック解放が保証されます。異常終了時もログが残ります。**
 *   **設定:** settings.envファイルでAPIキー、通知ON/OFF、テンプレート・画像パス、Discord Webhook、ログレベル等を柔軟にカスタマイズ。
 *   **エラー処理とロギング:**
     * 重大なエラー時のDiscord通知

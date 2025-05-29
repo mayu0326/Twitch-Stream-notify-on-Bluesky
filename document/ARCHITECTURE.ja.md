@@ -18,6 +18,8 @@
     - WEBHOOK_SECRETのローテーション。
     - TWITCH_BROADCASTER_IDをユーザーIDから変換して使用。
     - GUI（Tkinter）との連携（settings.env同期・プロセス制御）。
+        - **GUIからサーバー・トンネルの起動/停止・状態確認・安全な終了・クリーンアップが可能。**
+        - **CUI/GUIどちらでも、終了時に必ずクリーンアップ・ログ出力・ファイルロック解放が保証される。異常終了時もログが残る。**
 - **主要技術:** Flask, Waitress, Tkinter（GUI連携）
 
 #### eventsub.py
@@ -107,9 +109,10 @@
 - document/CONTRIBUTING.md: 貢献ガイド
 - document/comprehensive_summary_japanese.md: 日本語要約
 - document/consolidated_summary_japanese.md: 内部メモ・推奨事項
-- document/contributing_readme_section.md: 貢献セクションスニペット
 - LICENSE: GPLv2
 
 ### 全体概要
 
-本プロジェクトは、Twitch/YouTube/ニコニコのイベントをBlueskyへ通知するPythonボットで、各サービスごとのテンプレート・画像・Webhook・APIキー個別管理、GUI（Tkinter）連携、強力なエラーハンドリング、包括的なドキュメント・テストを備え、拡張性・安全性に優れた設計です。
+本プロジェクトは、Twitch/YouTube/ニコニコのイベントをBlueskyへ通知するPythonボットで、\
+各サービスごとのテンプレート・画像・Webhook・APIキー個別管理、GUI（Tkinter）連携、\
+強力なエラーハンドリング、包括的なドキュメント・テストを備え、拡張性・安全性に優れた設計です。
