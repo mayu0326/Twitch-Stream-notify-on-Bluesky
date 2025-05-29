@@ -46,6 +46,8 @@ from utils import get_ngrok_public_url, get_localtunnel_url_from_stdout, set_web
 import cherrypy
 import atexit
 import warnings
+import re
+import select
 
 # CherryPyのRuntimeWarningを抑制
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="cherrypy")
@@ -363,18 +365,6 @@ def cleanup_application():
         # nn_monitor_thread.stop() # 例
         nn_monitor_thread.join(timeout=5)
 
-    # EventSubサブスクリプションのクリーンアップ (必要に応じて)
-    # WEBHOOK_CALLBACK_URL = os.getenv("WEBHOOK_CALLBACK_URL")
-    # if WEBHOOK_CALLBACK_URL:
-    #     cleanup_eventsub_subscriptions(WEBHOOK_CALLBACK_URL, logger_to_use=logger)
-
-    # Flaskサーバーのスレッドを停止 (もし別スレッドで動かしている場合)
-    # if flask_server_thread and flask_server_thread.is_alive():
-    #     if logger:
-    #         logger.info("Flaskサーバーを停止します。")
-        # ここでFlaskサーバーを安全に停止する処理 (例: waitressのshutdown)
-        # flask_server_thread.join(timeout=5)
-
     if logger:
         logger.info("アプリケーションのクリーンアップ処理が完了しました。")
         # loggerのハンドラをflush/closeし、removeHandlerで外す
@@ -456,10 +446,28 @@ def tunnel_monitor_loop(
             if tunnel_service == "ngrok":
                 url = get_ngrok_public_url(logger=logger)
             elif tunnel_service == "localtunnel":
-                # localtunnelはコマンドのstdoutからURLを取得する必要があるが、
-                # ここでは再起動直後は取得できないため、ユーザーが別途反映する運用も許容
-                # TODO: より堅牢にする場合はPopenのstdoutを監視する設計に拡張
-                pass
+                # localtunnelのPopen stdoutからURLを取得する
+                try:
+                    if proc is not None and hasattr(proc, "stdout") and proc.stdout:
+                        url = None
+                        # localtunnelのURLが出力されるまで最大10秒間監視
+                        for _ in range(20):
+                            ready, _, _ = select.select([proc.stdout], [], [], 0.5)
+                            if ready:
+                                line = proc.stdout.readline()
+                                if not line:
+                                    break
+                                decoded = line.decode("utf-8", errors="ignore").strip()
+                                # localtunnelのURLパターンを検出
+                                match = re.search(r"(https://[a-zA-Z0-9\-]+\.loca\.lt)", decoded)
+                                if match:
+                                    url = match.group(1)
+                                    logger.info(f"localtunnel URL検出: {url}")
+                                    break
+                            else:
+                                continue
+                except Exception as e:
+                    logger.error(f"localtunnelのURL取得中に例外発生: {e}", exc_info=e)
             if url:
                 set_webhook_callback_url_temporary(url, env_path=env_path)
                 logger.info(f"新しい一時URL({tunnel_service}): {url} をsettings.envに反映しました。")
