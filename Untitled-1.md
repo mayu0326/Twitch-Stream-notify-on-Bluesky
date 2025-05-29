@@ -14,7 +14,8 @@
 | tunnel.py                | コア         | トンネル通信アプリ（Cloudflare/ngrok/localtunnel/custom）の起動・管理。        | main.py、GUI（tunnel_connection等）       |
 | utils.py                 | ユーティリティ| 各種共通関数（パス変換・日付整形・ファイル操作など）。                         | 各コア・GUI・テスト                       |
 | logging_config.py        | ユーティリティ| ログ設定・出力レベル管理。                                                     | main.py、各コア・GUI                      |
-| app_version.py           | ユーティリティ| アプリバージョン管理                                                         | main.py、GUI                             |
+| app_version.py           | ユーティリティ| アプリバージョン管理（version_info.py経由で全体からimport・利用）              | version_info.py、main.py、各コア・GUI     |
+| version_info.py          | ユーティリティ| __version__を一元的に提供（from app_version import __app_version__ as __version__）| main.py、各コア・GUI、テスト             |
 
 ---
 

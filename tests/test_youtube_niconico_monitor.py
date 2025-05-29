@@ -25,7 +25,7 @@ from youtube_monitor import YouTubeMonitor
 import pytest
 import types
 import time
-from app_version import __app_version__
+from version_info import __version__
 import sys
 import os
 sys.path.insert(0, os.path.abspath(
@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.abspath(
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__app_version__ = __app_version__
+__app_version__ = __version__
 
 
 @pytest.fixture

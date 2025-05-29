@@ -12,12 +12,12 @@ import csv
 import logging
 from atproto import Client, exceptions
 from jinja2 import Template
-from app_version import __app_version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__app_version__ = __app_version__
+__app_version__ = __version__
 
 # Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)

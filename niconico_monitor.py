@@ -23,12 +23,12 @@ Stream notify on Bluesky
 import time
 import feedparser
 from threading import Thread, Event
-from app_version import __app_version__
+from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__app_version__ = __app_version__
+__app_version__ = __version__
 
 
 class NiconicoMonitor(Thread):
