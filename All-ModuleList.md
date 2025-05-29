@@ -6,16 +6,16 @@
 
 | ファイル名                | 種類         | 主な用途・役割                                                                 | 主なインポート先・使われ方                |
 |--------------------------|--------------|-------------------------------------------------------------------------------|-------------------------------------------|
-| main.py                  | コア         | アプリ全体の起動・管理。トンネル管理や監視、GUI起動などのエントリーポイント。 | 単体実行・全体の起動点                    |
+| app_version.py           | ユーティリティ| アプリバージョン管理（version_info.py経由で全体からimport・利用）              | version_info.py、main.py、各コア・GUI     |
 | bluesky.py               | コア         | Blueskyへの投稿処理・テンプレート管理。                                        | main.py、各監視モジュール                 |
 | eventsub.py              | コア         | Twitch EventSub Webhookの管理・通知検知。                                      | main.py                                   |
+| logging_config.py        | ユーティリティ| ログ設定・出力レベル管理。                                                     | main.py、各コア・GUI                      |
+| main.py                  | コア         | アプリ全体の起動・管理。トンネル管理や監視、GUI起動などのエントリーポイント。 | 単体実行・全体の起動点                    |
 | niconico_monitor.py      | コア         | ニコニコ生放送・動画の監視・通知。                                             | main.py                                   |
-| youtube_monitor.py       | コア         | YouTubeLive・動画の監視・通知。                                                | main.py                                   |
 | tunnel.py                | コア         | トンネル通信アプリ（Cloudflare/ngrok/localtunnel/custom）の起動・管理。        | main.py、GUI（tunnel_connection等）       |
 | utils.py                 | ユーティリティ| 各種共通関数（パス変換・日付整形・ファイル操作など）。                         | 各コア・GUI・テスト                       |
-| logging_config.py        | ユーティリティ| ログ設定・出力レベル管理。                                                     | main.py、各コア・GUI                      |
-| app_version.py           | ユーティリティ| アプリバージョン管理（version_info.py経由で全体からimport・利用）              | version_info.py、main.py、各コア・GUI     |
 | version_info.py          | ユーティリティ| __version__を一元的に提供（from app_version import __app_version__ as __version__）| main.py、各コア・GUI、テスト             |
+| youtube_monitor.py       | コア         | YouTubeLive・動画の監視・通知。                                                | main.py                                   |
 
 ---
 
@@ -23,28 +23,28 @@
 
 | ファイル名                              | 種類      | 主な用途・役割                                               | 主なインポート先・使われ方                |
 |-----------------------------------------|-----------|-------------------------------------------------------------|-------------------------------------------|
-| app_gui.py                             | GUI本体   | メインGUIウィンドウ・各フレームの統括・起動                  | main.py（GUI起動時のエントリーポイント）  |
 | account_settings_frame.py               | GUI       | アカウント設定タブ                                           | app_gui.py                                |
+| app_gui.py                             | GUI本体   | メインGUIウィンドウ・各フレームの統括・起動                  | main.py（GUI起動時のエントリーポイント）  |
 | bluesky_post_settings_frame.py          | GUI       | Bluesky投稿設定タブ                                          | app_gui.py                                |
 | console_output_viewer.py                | GUI       | コンソール出力表示                                           | app_gui.py                                |
 | discord_notification_frame.py           | GUI       | Discord通知設定タブ                                          | app_gui.py                                |
 | log_viewer.py                          | GUI       | ログ・投稿履歴ビューア                                       | app_gui.py                                |
 | logging_console_frame.py                | GUI       | ログ出力・レベル設定                                         | app_gui.py                                |
+| logging_notification_frame.py           | GUI補助   | ログ出力・レベル設定の補助                                   | logging_console_frame.py等                |
 | main_control_frame.py                   | GUI       | メイン操作パネル                                             | app_gui.py                                |
 | niconico_notice_frame.py                | GUI       | ニコニコ通知設定タブ                                         | app_gui.py                                |
 | notification_customization_frame.py     | GUI       | 通知カスタマイズ設定                                         | app_gui.py                                |
+| setting_status.py                       | GUI補助   | 設定状態管理・補助クラス                                     | app_gui.py等                              |
 | settings_editor_dialog.py               | GUI       | 設定ファイル編集ダイアログ                                   | app_gui.py                                |
 | setup_wizard.py                        | GUI       | 初期セットアップウィザード                                   | app_gui.py                                |
 | timezone_settings.py                    | GUI       | タイムゾーン設定                                             | app_gui.py                                |
+| tunnel_cloudflare_frame.py              | GUI       | Cloudflare Tunnel専用設定フレーム                            | tunnel_connection.py等                    |
 | tunnel_connection.py                    | GUI       | トンネル接続管理・状態表示                                   | app_gui.py                                |
+| tunnel_custom_frame.py                  | GUI       | Customトンネル設定フレーム                                   | tunnel_connection.py等                    |
+| tunnel_localtunnel_frame.py             | GUI       | localtunnel専用設定フレーム                                  | tunnel_connection.py等                    |
+| tunnel_ngrok_frame.py                   | GUI       | ngrok専用設定フレーム                                        | tunnel_connection.py等                    |
 | twitch_notice_frame.py                  | GUI       | Twitch通知設定タブ                                           | app_gui.py                                |
 | youtube_notice_frame.py                 | GUI       | YouTube通知設定タブ                                          | app_gui.py                                |
-| tunnel_cloudflare_frame.py              | GUI       | Cloudflare Tunnel専用設定フレーム                            | tunnel_connection.py等                    |
-| tunnel_ngrok_frame.py                   | GUI       | ngrok専用設定フレーム                                        | tunnel_connection.py等                    |
-| tunnel_localtunnel_frame.py             | GUI       | localtunnel専用設定フレーム                                  | tunnel_connection.py等                    |
-| tunnel_custom_frame.py                  | GUI       | Customトンネル設定フレーム                                   | tunnel_connection.py等                    |
-| setting_status.py                       | GUI補助   | 設定状態管理・補助クラス                                     | app_gui.py等                              |
-| logging_notification_frame.py    　　　　| GUI補助   | ログ出力・レベル設定の補助                                  | logging_console_frame.py等                |
 | gui/ユーザーマニュアル_...txt           | ドキュメント| GUI設定エディタのユーザーマニュアル                          | ドキュメント用途                          |
 
 ---
@@ -53,6 +53,7 @@
 
 | ファイル名                        | 種類      | 主な用途・役割                                               | 主なインポート先・使われ方                |
 |-----------------------------------|-----------|-------------------------------------------------------------|-------------------------------------------|
+| __init__.py                 | テスト    | テストパッケージ初期化                                       | pytest                                   |
 | test_bluesky.py             | テスト    | bluesky.pyのテスト                                           | pytest                                   |
 | test_eventsub.py            | テスト    | eventsub.pyのテスト                                          | pytest                                   |
 | test_integration.py         | テスト    | 統合テスト                                                   | pytest                                   |
@@ -61,7 +62,6 @@
 | test_utils.py               | テスト    | utils.pyのテスト                                             | pytest                                   |
 | test_youtube_niconico_monitor.py | テスト| youtube_monitor.py/niconico_monitor.pyのテスト               | pytest                                   |
 | tunnel_tests.py             | テスト    | tunnel.pyのテスト                                            | pytest                                   |
-| __init__.py                 | テスト    | テストパッケージ初期化                                       | pytest                                   |
 
 ---
 
@@ -69,20 +69,23 @@
 
 | ファイル名                        | 種類      | 主な用途・役割                                               | 主なインポート先・使われ方                |
 |-----------------------------------|-----------|-------------------------------------------------------------|-------------------------------------------|
-| requirements.txt                  | 設定      | 本番用依存パッケージリスト                                   | pip                                      |
-| development-requirements.txt      | 設定      | 開発用依存パッケージリスト                                   | pip                                      |
-| settings.env / settings.env.example| 設定     | 環境変数・設定ファイル                                       | main.py、各コア・GUI                      |
-| LICENSE                           | ライセンス| ライセンス文書                                               | -                                        |
-| pytest.ini                        | 設定      | pytest設定                                                   | pytest                                   |
-| README.md                         | ドキュメント| 全体説明・セットアップ・FAQ等                                | -                                        |
 | ARCHITECTURE.ja.md       | ドキュメント| アーキテクチャ詳細（日本語）                                 | -                                        |
 | ARCHITECTURE.md          | ドキュメント| アーキテクチャ詳細（英語）                                   | -                                        |
-| comprehensive_summary_japanese.md | ドキュメント| 機能・構成の詳細まとめ（日本語）                             | -                                        |
-| consolidated_summary_japanese.md  | ドキュメント| 機能・構成の簡易まとめ（日本語）                             | -                                        |
 | CONTRIBUTING.ja.md       | ドキュメント| コントリビュートガイド（日本語）                             | -                                        |
 | CONTRIBUTING.md          | ドキュメント| コントリビュートガイド（英語）                               | -                                        |
+| LICENSE                           | ライセンス| ライセンス文書                                               | -                                        |
+| README.md                         | ドキュメント| 全体説明・セットアップ・FAQ等                                | -                                        |
+| comprehensive_summary_japanese.md | ドキュメント| 機能・構成の詳細まとめ（日本語）                             | -                                        |
 | config.yml.example    | 設定      | Cloudflared用サンプル設定                                    | Cloudflare利用時                         |
-| Docker/Dockerfile, docker-compose.yml, docker_readme_section.* | 設定/ドキュメント| Docker用構成・説明書                                        | Docker利用時                             |
+| consolidated_summary_japanese.md  | ドキュメント| 機能・構成の簡易まとめ（日本語）                             | -                                        |
+| development-requirements.txt      | 設定      | 開発用依存パッケージリスト                                   | pip                                      |
+| docker_readme_section.ja.md | ドキュメント| Docker用構成・説明書（日本語）                               | Docker利用時                             |
+| docker_readme_section.md    | ドキュメント| Docker用構成・説明書（英語）                                 | Docker利用時                             |
+| docker-compose.yml          | 設定      | Docker用構成ファイル                                         | Docker利用時                             |
+| Dockerfile                  | 設定      | Docker用ビルドファイル                                       | Docker利用時                             |
+| pytest.ini                        | 設定      | pytest設定                                                   | pytest                                   |
+| requirements.txt                  | 設定      | 本番用依存パッケージリスト                                   | pip                                      |
+| settings.env / settings.env.example| 設定     | 環境変数・設定ファイル                                       | main.py、各コア・GUI                      |
 
 ---
 
@@ -90,9 +93,9 @@
 
 | ディレクトリ/ファイル             | 種類      | 主な用途・役割                                   | 主なインポート先・使われ方                |
 |---------------------------------|-----------|-------------------------------------------------|-------------------------------------------|
-| templates/                      | テンプレート| 投稿文テンプレート（各サービス・デフォルト）       | bluesky.py、GUI                          |
 | images/                         | 画像      | 投稿用画像（noimage.png等）                      | bluesky.py、GUI                          |
 | logs/                           | ログ      | 投稿履歴・監査ログ・エラーログ等                   | main.py、GUI、各コア                     |
+| templates/                      | テンプレート| 投稿文テンプレート（各サービス・デフォルト）       | bluesky.py、GUI                          |
 
 ---
 
