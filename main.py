@@ -43,6 +43,12 @@ from markupsafe import escape
 from dotenv import load_dotenv
 import threading
 from utils import get_ngrok_public_url, get_localtunnel_url_from_stdout, set_webhook_callback_url_temporary
+import cherrypy
+import atexit
+import warnings
+
+# CherryPyのRuntimeWarningを抑制
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="cherrypy")
 
 # 設定ファイルの存在チェック
 if not os.path.exists('settings.env'):
@@ -296,6 +302,15 @@ def handle_webhook():
     return jsonify({"status": "unhandled message type or event"}), 200
 
 
+@app.route("/api/tunnel_status", methods=["GET"])
+def api_tunnel_status():
+    global tunnel_proc
+    if tunnel_proc and hasattr(tunnel_proc, 'poll') and tunnel_proc.poll() is None:
+        return jsonify({"status": "UP"})
+    else:
+        return jsonify({"status": "DOWN"})
+
+
 logger = None
 audit_logger = None
 
@@ -305,12 +320,24 @@ yt_monitor_thread = None
 nn_monitor_thread = None
 flask_server_thread = None  # Flaskサーバーを別スレッドで動かす場合
 tunnel_monitor_thread = None  # ngrok/localtunnel監視用
+cherrypy_server_thread = None  # CherryPyサーバー用
 
 
 def cleanup_application():
-    global tunnel_proc, yt_monitor_thread, nn_monitor_thread, flask_server_thread
+    global logger, app_logger_handlers, tunnel_proc, yt_monitor_thread, nn_monitor_thread, flask_server_thread
+    # loggerがNoneなら再取得
+    if 'logger' not in globals() or logger is None:
+        import logging
+        logger = logging.getLogger("AppLogger")
+    if 'app_logger_handlers' not in globals() or not app_logger_handlers:
+        app_logger_handlers = []
+        for h in getattr(logger, 'handlers', []):
+            app_logger_handlers.append(h)
+
     if logger:
         logger.info("アプリケーションのクリーンアップ処理を開始します。")
+    else:
+        print("アプリケーションのクリーンアップ処理を開始します。")
 
     # トンネルを停止
     if tunnel_proc:
@@ -350,8 +377,47 @@ def cleanup_application():
 
     if logger:
         logger.info("アプリケーションのクリーンアップ処理が完了しました。")
+        # loggerのハンドラをflush/closeし、removeHandlerで外す
+        for handler in list(getattr(logger, 'handlers', [])):
+            try:
+                handler.flush()
+            except Exception:
+                pass
+            try:
+                handler.close()
+            except Exception:
+                pass
+            try:
+                logger.removeHandler(handler)
+            except Exception:
+                pass
+        # app_logger_handlersも同様に
+        if 'app_logger_handlers' in globals() and app_logger_handlers:
+            for handler in list(app_logger_handlers):
+                try:
+                    handler.flush()
+                except Exception:
+                    pass
+                try:
+                    handler.close()
+                except Exception:
+                    pass
+                try:
+                    logger.removeHandler(handler)
+                except Exception:
+                    pass
+        import logging
+        logging.shutdown()
+        # 参照も解放
+        logger = None
+        if 'app_logger_handlers' in globals():
+            app_logger_handlers = None
     else:
         print("アプリケーションのクリーンアップ処理が完了しました。")
+
+
+def cleanup_from_gui():
+    cleanup_application()
 
 
 def signal_handler(sig, frame):
@@ -400,30 +466,30 @@ def tunnel_monitor_loop(
         time.sleep(5)
 
 
-if __name__ == "__main__":
-    # Register the global exception handler before starting the app
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        # Log unhandled exceptions
-        app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
-        return (
-            jsonify({"error": "予期せぬサーバーエラーが発生しました。"}),
-            500,
-        )
+def run_cherrypy_server():
+    cherrypy.tree.graft(app, '/')
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 3000,
+        'engine.autoreload.on': False,
+    })
+    cherrypy.engine.start()
+    cherrypy.engine.block()
 
-    if os.name == "nt":
-        sys.stdout = open(sys.stdout.fileno(), mode='w',
-                          encoding='cp932', buffering=1)
-        sys.stderr = open(sys.stderr.fileno(), mode='w',
-                          encoding='cp932', buffering=1)
-    # シグナルハンドラの設定
-    signal.signal(signal.SIGINT, signal_handler)
-    # Windowsの場合、CTRL_BREAK_EVENTも同様に処理することが考えられる
-    if os.name == 'nt':
-        signal.signal(signal.SIGBREAK, signal_handler)
 
-    # メイン処理（初期化・監視・サーバ起動）
-    # tunnel_proc = None # グローバル変数として定義したのでここでは不要
+def start_server_in_thread():
+    global cherrypy_server_thread
+    cherrypy_server_thread = threading.Thread(target=run_cherrypy_server, daemon=True)
+    cherrypy_server_thread.start()
+
+
+def stop_cherrypy_server():
+    cherrypy.engine.exit()
+
+
+def initialize_app():
+    global logger, app_logger_handlers, audit_logger, tunnel_logger
+    global tunnel_proc, tunnel_monitor_thread, yt_monitor_thread, nn_monitor_thread
     try:
         # ロギング設定
         logger, app_logger_handlers, audit_logger, tunnel_logger = configure_logging(app)
@@ -442,7 +508,7 @@ if __name__ == "__main__":
             logger_to_use=logger)
         if not TWITCH_APP_ACCESS_TOKEN:
             logger.critical("TwitchAPIアクセストークンの取得に失敗しました。アプリケーションは起動できません。")
-            sys.exit(1)
+            return False
         logger.info("TwitchAPIアクセストークン取得を確認しました。")
 
         # EventSubサブスクリプションのクリーンアップ
@@ -455,19 +521,17 @@ if __name__ == "__main__":
         else:
             webhook_url = os.getenv("WEBHOOK_CALLBACK_URL")
         cleanup_eventsub_subscriptions(
-            webhook_url, logger_to_use=logger)
-
-        # トンネルの起動
+            webhook_url, logger_to_use=logger)        # トンネルの起動
+        global tunnel_proc
         tunnel_proc = start_tunnel(tunnel_logger)
         if not tunnel_proc:
             tunnel_logger.critical("トンネルの起動に失敗しました。アプリケーションは起動できません。")
-            sys.exit(1)
+            return False
         # ngrok/localtunnelの場合は監視スレッドを起動
         tunnel_service = os.getenv("TUNNEL_SERVICE", "").lower()
         if tunnel_service in ("ngrok", "localtunnel"):
             def get_proc():
                 return tunnel_proc
-
             def set_proc(p):
                 global tunnel_proc
                 tunnel_proc = p
@@ -487,7 +551,6 @@ if __name__ == "__main__":
         all_subscriptions_successful = True
         for event_type in event_types_to_subscribe:
             logger.info(f"{event_type} のEventSubサブスクリプションを作成します...")
-            # サブスクリプション作成時も同様にURLを分岐
             if tunnel_service in ("cloudflare", "custom"):
                 webhook_url = os.getenv("WEBHOOK_CALLBACK_URL_PERMANENT")
             elif tunnel_service in ("ngrok", "localtunnel"):
@@ -500,16 +563,7 @@ if __name__ == "__main__":
             if not sub_response or not isinstance(
                     sub_response, dict) or not sub_response.get("data") or not isinstance(
                     sub_response["data"], list) or not sub_response["data"]:
-                twitch_error_status = sub_response.get(
-                    "status") if isinstance(sub_response, dict) else None
-                twitch_error_message = sub_response.get(
-                    "message") if isinstance(sub_response, dict) else None
-                log_message = f"{event_type} EventSubサブスクリプションの作成に失敗しました。"
-                if twitch_error_status:
-                    pass
-                if twitch_error_message:
-                    pass
-                logger.critical(log_message + f" 詳細: {sub_response}")
+                logger.critical(f"{event_type} EventSubサブスクリプションの作成に失敗しました。詳細: {sub_response}")
                 all_subscriptions_successful = False
                 break
 
@@ -525,11 +579,10 @@ if __name__ == "__main__":
 
         if not all_subscriptions_successful:
             logger.critical("必須EventSubサブスクリプションの作成に失敗したため、アプリケーションは起動できません。")
-            sys.exit(1)
+            return False
 
         # --- YouTube・ニコニコ監視スレッド起動 ---
         def on_youtube_live(live_info):
-            # YouTubeライブ配信開始時のコールバック
             if os.getenv("NOTIFY_ON_YOUTUBE_ONLINE", "False") == "True":
                 logger.info("[YouTube] 配信開始検出！")
                 try:
@@ -537,7 +590,6 @@ if __name__ == "__main__":
                         os.getenv("BLUESKY_USERNAME"),
                         os.getenv("BLUESKY_APP_PASSWORD")
                     )
-                    # 投稿内容を組み立て
                     event_context = {
                         "title": "YouTubeライブ配信開始",
                         "channel_id": youtube_channel_id,
@@ -556,7 +608,6 @@ if __name__ == "__main__":
                     logger.error(f"[YouTube] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_youtube_new_video(video_id):
-            # YouTube新着動画検出時のコールバック
             if os.getenv("NOTIFY_ON_YOUTUBE_NEW_VIDEO", "False") == "True":
                 logger.info(f"[YouTube] 新着動画検出: {video_id}")
                 try:
@@ -581,7 +632,6 @@ if __name__ == "__main__":
                     logger.error(f"[YouTube] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_niconico_live(live_id):
-            # ニコニコ生放送配信開始時のコールバック
             if os.getenv("NOTIFY_ON_NICONICO_ONLINE", "False") == "True":
                 logger.info(f"[ニコ生] 配信開始検出: {live_id}")
                 try:
@@ -607,7 +657,6 @@ if __name__ == "__main__":
                     logger.error(f"[ニコ生] Bluesky投稿中に例外発生: {e}", exc_info=e)
 
         def on_niconico_new_video(video_id):
-            # ニコニコ動画新着投稿検出時のコールバック
             if os.getenv("NOTIFY_ON_NICONICO_NEW_VIDEO", "False") == "True":
                 logger.info(f"[ニコ動] 新着動画検出: {video_id}")
                 try:
@@ -655,32 +704,55 @@ if __name__ == "__main__":
             )
             nn_monitor.start()
 
-        # Flask (waitress) サーバーの起動
-        logger.info("アプリケーションの起動を完了しました。")
-        from waitress import serve
-        serve(app, host="0.0.0.0", port=3000)  # 現状のまま直接実行
-
-    except ValueError as ve:
-        # 設定値エラー時の処理
-        log_msg = f"設定エラー: {ve}. アプリケーションは起動できません。"
-        if logger:
-            logger.critical(log_msg)
-        else:
-            app.logger.critical(log_msg)
-        sys.exit(1)
+        logger.info("アプリケーションの初期化が完了しました。")
+        return True
     except Exception as e:
-        # その他の初期化エラー時の処理
-        log_msg_critical = "初期化中の未処理例外によりアプリケーションの起動に失敗しました。"
-        if logger:
+        log_msg_critical = f"初期化中の未処理例外によりアプリケーションの起動に失敗しました: {e}"
+        if 'logger' in globals() and logger:
             logger.critical(log_msg_critical, exc_info=e)
-            # ログローテーションハンドラを閉じる
-            for handler in app_logger_handlers:
-                handler.close()
         else:
-            app.logger.critical(f"CRITICAL: {log_msg_critical} {e}")
-        # cleanup_application() # エラー発生時もクリーンアップを試みる
+            print(f"CRITICAL: {log_msg_critical}")
+        return False
+
+
+if __name__ == "__main__":
+    # Register the global exception handler before starting the app
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log unhandled exceptions
+        app.logger.error("リクエスト処理中に未処理例外発生", exc_info=e)
+        return (
+            jsonify({"error": "予期せぬサーバーエラーが発生しました。"}),
+            500,
+        )
+
+    if os.name == "nt":
+        sys.stdout = open(sys.stdout.fileno(), mode='w',
+                          encoding='cp932', buffering=1)
+        sys.stderr = open(sys.stderr.fileno(), mode='w',
+                          encoding='cp932', buffering=1)
+    # シグナルハンドラの設定
+    signal.signal(signal.SIGINT, signal_handler)
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, signal_handler)
+
+    # アプリケーション終了時のクリーンアップ処理登録
+    atexit.register(cleanup_application)
+
+    import threading
+    import time
+
+    if initialize_app():
+        # CherryPyサーバーをサブスレッドで起動
+        server_thread = threading.Thread(target=run_cherrypy_server, daemon=True)
+        server_thread.start()
+        try:
+            while server_thread.is_alive():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            # Ctrl+CでSIGINTを受けた場合
+            signal_handler(signal.SIGINT, None)
+        # サーバースレッドが自然終了した場合もクリーンアップ
+        cleanup_application()
+    else:
         sys.exit(1)
-    finally:
-        # クリーンアップ時もtunnel_loggerを渡す
-        stop_tunnel(tunnel_proc, tunnel_logger)
-        cleanup_application()  # finallyブロックでも呼び出す

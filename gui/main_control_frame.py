@@ -12,6 +12,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import tkinter as tk
 from tkinter import ttk
+import importlib
 
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
@@ -53,6 +54,8 @@ class MainControlFrame(ttk.Frame):
         self.step_labels = []
         self.create_widgets()
         self.reset_status()
+        # main.pyの起動・停止APIをimport
+        self.main_module = importlib.import_module("main")
 
     def create_widgets(self):
         # 見出し
@@ -128,6 +131,20 @@ class MainControlFrame(ttk.Frame):
         self.start_button.config(state="disabled")
         self.stop_button.config(state="disabled")
         self.append_console("[INFO] サーバー起動処理を開始します。")
+        # main.pyの初期化APIを呼ぶ
+        try:
+            if not self.main_module.initialize_app():
+                self.append_console("[ERROR] アプリ初期化に失敗しました。サーバーは起動できません。")
+                self.status_label.config(text="初期化失敗", foreground="red")
+                self.start_button.config(state="normal")
+                return
+            self.append_console("[INFO] アプリ初期化が完了しました。CherryPyサーバー起動要求を送信します。")
+            self.main_module.start_server_in_thread()
+        except Exception as e:
+            self.append_console(f"[ERROR] サーバー起動失敗: {e}")
+            self.status_label.config(text="起動失敗", foreground="red")
+            self.start_button.config(state="normal")
+            return
         import threading
         threading.Thread(target=self._startup_sequence, daemon=True).start()
 
@@ -136,6 +153,15 @@ class MainControlFrame(ttk.Frame):
         self.append_console("[INFO] サーバー停止処理を開始します。")
         self.start_button.config(state="disabled")
         self.stop_button.config(state="disabled")
+        # main.pyのCherryPyサーバー停止APIを呼ぶ
+        try:
+            self.main_module.stop_cherrypy_server()
+            self.append_console("[INFO] CherryPyサーバー停止要求を送信しました。")
+            # クリーンアップも明示的に呼ぶ
+            self.main_module.cleanup_from_gui()
+            self.append_console("[INFO] クリーンアップ処理を実行しました。")
+        except Exception as e:
+            self.append_console(f"[ERROR] CherryPyサーバー停止失敗: {e}")
         import threading
         threading.Thread(target=self._shutdown_sequence, daemon=True).start()
 
