@@ -1,2 +1,2 @@
 # アプリケーションのバージョン情報
-__version__ = "1.0.2-beta"
+__app_version__ = "0.0.4beta"

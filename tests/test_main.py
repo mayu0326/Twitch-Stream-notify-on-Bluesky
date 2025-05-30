@@ -14,7 +14,7 @@ from version_info import __version__
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__version__ = __version__
+__app_version__ = __version__
 
 
 # Stream notify on Bluesky
@@ -89,7 +89,7 @@ class TestWebhookHandler:
         "subscription": {
             "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
             "type": "stream.online",
-            "version": "1",
+            "app_version": "1",
             "status": "enabled",
             "cost": 1,
             "condition": {"broadcaster_user_id": "12345"},
@@ -113,7 +113,7 @@ class TestWebhookHandler:
         "subscription": {
             "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c5",  # 異なるID
             "type": "stream.offline",
-            "version": "1",
+            "app_version": "1",
             "status": "enabled",
             "cost": 1,
             "condition": {"broadcaster_user_id": "12345"},
@@ -350,7 +350,7 @@ class TestWebhookHandler:
             "subscription": {
                 "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
                 "type": "stream.online",
-                "version": "1",
+                "app_version": "1",
                 "status": "authorization_revoked",
                 "condition": {
                     "broadcaster_user_id": "12345"},
@@ -374,7 +374,7 @@ class TestWebhookHandler:
             "subscription": {
                 "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c6",
                 "type": "user.update",
-                "version": "1",
+                "app_version": "1",
                 "status": "enabled",
                 "condition": {
                     "user_id": "12345"},
