@@ -29,7 +29,9 @@ Regardless of your setup method, you **must** create and configure a `settings.e
 
 ### Tunnel Requirements
 - Cloudflare Tunnel is **not strictly required**. ngrok, localtunnel, and custom tunnels are also supported.
-- See the "Tunnel Requirements" section in the README.md for details.
+- The tunnel service is selected via the TUNNEL_SERVICE environment variable, and the tunnel is started/managed using the appropriate command (TUNNEL_CMD/NGROK_CMD/LOCALTUNNEL_CMD/CUSTOM_TUNNEL_CMD).
+- If the command is not set, a warning is logged and the tunnel will not start. On shutdown, the process is terminated with terminate/wait; on timeout or exception, it is force-killed with kill, and all actions are logged in detail.
+- See the "Tunnel Requirements" section in the README.md for more details.
 
 ### Template File Handling
 - Default template files are located in the `.templates/` directory and start with `_default_`.

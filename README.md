@@ -5,6 +5,8 @@ Bluesky へリアルタイムにお知らせ投稿する Python 製 Bot です�
 - Youtubeとニコニコについては、放送だけでなく動画投稿の通知にも対応します。    
 - Cloudflare Tunnel または他のトンネル通信アプリケーション(ngrok,localtunnel)による、\
 Webhook 受信、エラー通知、履歴記録など運用に便利な機能を多数備えています。
+- **GUI（設定アプリ）からもサーバー・トンネルの起動/停止・状態確認・安全な終了が可能**
+- **CUI（main.py）/GUIどちらからでもCtrl+Cや停止ボタンで安全にクリーンアップ・ログ出力・ファイルロック解放**
 
 ---
 
@@ -57,13 +59,32 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 ### その他に必要なもの
 - CloudflareでDNS管理されている独自ドメイン（推奨）\
 または(ngrokやlocaltunnelなど)他のトンネル通信アプリケーション
+
 ---
+
+## トンネル要件 / Tunnel Requirements
+
+本アプリケーションはCloudflare Tunnel「のみ」対応ではありません。\
+ngrok、localtunnel、カスタムトンネルもサポートされています。
+
+- `TUNNEL_SERVICE`環境変数でサービスを切り替え、各種コマンド\
+（`TUNNEL_CMD`/`NGROK_CMD`/`LOCALTUNNEL_CMD`/`CUSTOM_TUNNEL_CMD`）でトンネルを起動・管理します。
+- コマンド未設定時は警告ログを出し、トンネルは起動しません。\
+終了時はterminate/waitで正常終了、タイムアウトや例外時はkillで強制終了し、詳細なログを出力します。
+- Cloudflare Tunnel利用時は**Cloudflare Zero Trust**でトンネル作成・`config.yml`準備が必要です。
+- ngrokやlocaltunnel利用時は**各公式手順に従いインストール・設定**をしてください。
+- Customトンネルもコマンド指定で利用可能ですが、**動作保証・サポート対象外**です。
+
+詳細なセットアップ・運用方法は`ARCHITECTURE.ja.md`や`CONTRIBUTING.ja.md`も参照してください。
+
+---
+
 ## ファイル構成
 このプログラムは以下のファイル構成/フォルダで構成されています。
 
 ```
 プロジェクトルート/
-├── app_version.py
+├── app_app_version.py
 ├── bluesky.py
 ├── development-requirements.txt
 ├── eventsub.py
@@ -79,8 +100,8 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
 ├── settings.env.example
 ├── tunnel.py
 ├── utils.py
-├── version_info.py
-├── version.py
+├── app_version.py
+├── app_version.py
 ├── youtube_monitor.py
 ├── Cloudflared/
 │   └── config.yml.example
@@ -144,7 +165,7 @@ Webhook 受信、エラー通知、履歴記録など運用に便利な機能を
     ├── test_youtube_niconico_monitor.py
     └── tunnel_tests.py
 ```
-
+---
 ## セットアップ手順
 - **※このアプリケーションはWindows専用です。LinuxやMacには対応していません。**
 - もし仮にWindows以外の環境で動いたとしてもサポート対象外です。
@@ -333,9 +354,20 @@ TIMEZONE=system
 ```
 </details>
 
+### 6.サーバー・トンネルの起動/停止
+
+- 本アプリケーションは「CUI（`main.py`）」だけでなく「GUI（`gui/app_gui.py`）」からも、 \
+サーバー・トンネルの起動/停止・状態確認が可能です。
+- GUIからアプリおよびトンネルを「開始」「停止」する場合は「アプリ管理」タブから操作できます。
+- アプリおよびトンネルをCUIから開始する場合は`main.py`で開始し、Ctrl+C（SIGINT）で安全に終了できます。
+- どちらの方法で実行しても、終了時に必ず「**アプリケーションのクリーンアップ処理**」が動作し、\
+コンソール表示とログファイルに**ログが記録されます**。
+- GUI/CUIどちらからの操作に関わらず、異常終了や強制終了時であっても、\
+**ログファイル保存**,**ファイルロック解放**,**プロセス終了**が保証されます。
+
 ---
 
-## 使い方・カスタマイズ
+## カスタマイズ
 
 ### **通知レベルの変更**
 **settings.env**または**設定GUI** で\
@@ -452,7 +484,7 @@ Twitch 放送開始 🎉
 ### Q. ドメインをもっていなくても利用できますか？
 
 A.  はい。**ドメインを持っていなくともご利用いただけます**。\
-ただし、ドメインなしで利用するためには**Version1.0.4-beta以降**のアプリケーションが必要です。
+ただし、ドメインなしで利用するためには**app_version1.0.4-beta以降**のアプリケーションが必要です。
 
 ### Q. CloudflareTunnelを使うための条件はなんですか？
 
@@ -618,6 +650,7 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
 そうすれば、次回起動時に再生成されます。
 </details>
 
+---
 ## 運用上の注意
 
 - この Bot は個人運用・検証を想定しています。\
@@ -646,11 +679,13 @@ settings.envの**WEBHOOK_SECRETとSECRET_LAST_ROTATEDを空欄にして**再起�
  pip install ggshield pre-commit
  ```
 
+---
 ## 貢献
 このアプリケーションを改善し、拡張するための貢献を歓迎します！\
 バグの報告、機能強化の提案、プルリクエストの提出方法の詳細については、\
 [貢献ガイドライン](CONTRIBUTING.ja.md)をご覧ください。
 
+---
 ## 自動テストの実行方法
 
 本アプリケーションは主要な機能やバリデーションの自動テストを備えています。  

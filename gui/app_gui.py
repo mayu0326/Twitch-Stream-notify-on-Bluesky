@@ -16,6 +16,7 @@ from gui.settings_editor_dialog import SettingsEditorDialog
 from gui.logging_notification_frame import LoggingNotificationFrame
 from gui.setup_wizard import SetupWizard
 from gui.setting_status import SettingStatusFrame
+from gui.main_control_frame import MainControlFrame
 from version_info import __version__
 
 __author__ = "mayuneco(mayunya)"
@@ -65,6 +66,10 @@ class MainWindow(tk.Tk):
         notebook = tk.ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.notebook = notebook  # ←インスタンス変数で保持
+
+        # アプリ管理タブ（サーバー起動・停止・ステータス管理）
+        self.tab_app_control = MainControlFrame(notebook)
+        notebook.add(self.tab_app_control, text="アプリ管理")
 
         # 設定状況タブ
         self.tab_status = SettingStatusFrame(notebook)

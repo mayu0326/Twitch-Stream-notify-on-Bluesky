@@ -24,7 +24,7 @@ COPY eventsub.py C:/app/
 COPY tunnel.py C:/app/
 COPY utils.py C:/app/
 COPY logging_config.py C:/app/
-COPY version.py C:/app/
+COPY app_version.py C:/app/
 
 COPY templates/ C:/app/templates/
 COPY settings.env.example C:/app/settings.env

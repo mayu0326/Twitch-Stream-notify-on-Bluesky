@@ -1,7 +1,7 @@
 [tool.semantic_release]
-version_variable = [
-    "version_info.py:__version__",
-    "app_version.py:__version__"
+app_version_variable = [
+    "app_version.py:__app_version__",
+    "app_app_version.py:__app_version__"
 ]
 branch = "main"
 upload_to_pypi = false
@@ -9,7 +9,7 @@ build_command = ""
 changelog_file = "CHANGELOG.md"
 commit_parser = "conventional"
 commit_author = "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
-commit_message = "chore(release): {version} [skip ci]"
+commit_message = "chore(release): {app_version} [skip ci]"
 
 [tool.autopep8]
 max_line_length = 100
