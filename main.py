@@ -53,22 +53,37 @@ import select
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="cherrypy")
 
 # 設定ファイルの存在チェック
-if not os.path.exists('settings.env'):
-    print('設定ファイルが見つかりません。初期セットアップを実行します。')
-    try:
-        import tkinter as tk
-        from gui.setup_wizard import SetupWizard
-        root = tk.Tk()
-        root.withdraw()
-        def on_finish():
-            root.destroy()
-        SetupWizard(master=root, on_finish=on_finish)
-        root.mainloop()
-    except Exception as e:
-        print(f"セットアップウィザードの起動に失敗しました: {e}")
-    if __name__ == "__main__":
-        sys.exit(1)
+# if not os.path.exists('settings.env'):
+#    print('設定ファイルが見つかりません。初期セットアップを実行します。')
+#    try:
+#        import tkinter as tk
+#        from gui.setup_wizard import SetupWizard
+#        root = tk.Tk()
+#        root.withdraw()
+#        def on_finish():
+#            root.destroy()
+#        SetupWizard(master=root, on_finish=on_finish)
+#        root.mainloop()
+#    except Exception as e:
+#        print(f"セットアップウィザードの起動に失敗しました: {e}")
+#    if __name__ == "__main__":
+#        sys.exit(1)
 
+# 設定ファイルの存在チェック(一時的なセットアップウィザード回避用)
+if not os.path.exists('settings.env'):
+    print('settings.envが見つかりません。空ファイルを自動生成し設定GUIを起動します。')
+    with open('settings.env', 'w', encoding='utf-8') as f:
+        pass  # 空ファイル作成
+    # --- 一時的なCUI→GUI誘導処理（新GUI完成後はこのブロックを削除/コメントアウト） ---
+    import subprocess
+    import sys
+    # Windows: pythonwでGUI起動、他OSはpython
+    if sys.platform.startswith('win'):
+        subprocess.Popen([sys.executable, '-m', 'gui.app_gui'])
+    else:
+        subprocess.Popen([sys.executable, '-m', 'gui.app_gui'])
+    print('設定GUIを起動しました。CUIアプリは終了します。')
+    sys.exit(0)
 # 存在すれば読み込む
 load_dotenv('settings.env')
 
