@@ -14,8 +14,9 @@
 | niconico_monitor.py      | コア         | ニコニコ生放送・動画の監視・通知。                                             | main.py                                   |
 | tunnel.py                | コア         | トンネル通信アプリ（Cloudflare/ngrok/localtunnel/custom）の起動・管理。        | main.py、GUI（tunnel_connection等）       |
 | utils.py                 | ユーティリティ| 各種共通関数（パス変換・日付整形・ファイル操作など）。                         | 各コア・GUI・テスト                       |
-| version_info.py          | ユーティリティ| __version__を一元的に提供（from app_version import __app_version__ as __version__）| main.py、各コア・GUI、テスト             |
+| version_info.py          | ユーティリティ| __version__を一元的に提供                                                 | main.py、各コア・GUI、テスト             |
 | youtube_monitor.py       | コア         | YouTubeLive・動画の監視・通知。                                                | main.py                                   |
+| new_gui/main.py          | コア         | 新しいGUIのエントリーポイント。                                               | new_gui/gui/                              |
 
 ---
 
@@ -24,19 +25,19 @@
 | ファイル名                              | 種類      | 主な用途・役割                                               | 主なインポート先・使われ方                |
 |-----------------------------------------|-----------|-------------------------------------------------------------|-------------------------------------------|
 | account_settings_frame.py               | GUI       | アカウント設定タブ                                           | app_gui.py                                |
-| app_gui.py                             | GUI本体   | メインGUIウィンドウ・各フレームの統括・起動                  | main.py（GUI起動時のエントリーポイント）  |
+| app_gui.py                             | GUI本体   | メインGUIウィンドウ・各フレームの統括・起動                     | main.py（GUI起動時のエントリーポイント）  |
 | bluesky_post_settings_frame.py          | GUI       | Bluesky投稿設定タブ                                          | app_gui.py                                |
-| console_output_viewer.py                | GUI       | コンソール出力表示                                           | app_gui.py                                |
+| bluesky_acc_tab.py                      | GUI       | Blueskyアカウント設定タブ                                    | app_gui.py                                |
 | discord_notification_frame.py           | GUI       | Discord通知設定タブ                                          | app_gui.py                                |
 | log_viewer.py                          | GUI       | ログ・投稿履歴ビューア                                       | app_gui.py                                |
 | logging_console_frame.py                | GUI       | ログ出力・レベル設定                                         | app_gui.py                                |
 | logging_notification_frame.py           | GUI補助   | ログ出力・レベル設定の補助                                   | logging_console_frame.py等                |
 | main_control_frame.py                   | GUI       | メイン操作パネル                                             | app_gui.py                                |
 | niconico_notice_frame.py                | GUI       | ニコニコ通知設定タブ                                         | app_gui.py                                |
-| notification_customization_frame.py     | GUI       | 通知カスタマイズ設定                                         | app_gui.py                                |
+| niconico_acc_tab.py                     | GUI       | ニコニコアカウント設定タブ                                   | app_gui.py                                |
+| notification_customization_frame.py     | GUI補助    | ログ・通知設定のタブ表示                                    | app_gui.py等                               |
 | setting_status.py                       | GUI補助   | 設定状態管理・補助クラス                                     | app_gui.py等                              |
-| settings_editor_dialog.py               | GUI       | 設定ファイル編集ダイアログ                                   | app_gui.py                                |
-| setup_wizard.py                        | GUI       | 初期セットアップウィザード                                   | app_gui.py                                |
+| setup_wizard.py                         | GUI       | 初期セットアップウィザード                                   | app_gui.py                                |
 | timezone_settings.py                    | GUI       | タイムゾーン設定                                             | app_gui.py                                |
 | tunnel_cloudflare_frame.py              | GUI       | Cloudflare Tunnel専用設定フレーム                            | tunnel_connection.py等                    |
 | tunnel_connection.py                    | GUI       | トンネル接続管理・状態表示                                   | app_gui.py                                |
@@ -44,7 +45,11 @@
 | tunnel_localtunnel_frame.py             | GUI       | localtunnel専用設定フレーム                                  | tunnel_connection.py等                    |
 | tunnel_ngrok_frame.py                   | GUI       | ngrok専用設定フレーム                                        | tunnel_connection.py等                    |
 | twitch_notice_frame.py                  | GUI       | Twitch通知設定タブ                                           | app_gui.py                                |
+| twitch_acc_tab.py                       | GUI       | Twitchアカウント設定タブ                                     | app_gui.py                                |
+| webhookurl_acc_tab.py                   | GUI       | Webhook URL設定タブ                                          | app_gui.py                                |
+| webhook_acc_tab.py                      | GUI       | Webhookアカウント設定タブ                                    | app_gui.py                                |
 | youtube_notice_frame.py                 | GUI       | YouTube通知設定タブ                                          | app_gui.py                                |
+| youtube_acc_tab.py                      | GUI       | YouTubeアカウント設定タブ                                    | app_gui.py                                |
 | gui/ユーザーマニュアル_...txt           | ドキュメント| GUI設定エディタのユーザーマニュアル                          | ドキュメント用途                          |
 
 ---
@@ -97,6 +102,12 @@
 | logs/                           | ログ      | 投稿履歴・監査ログ・エラーログ等                   | main.py、GUI、各コア                     |
 | .templates/                     | テンプレート| デフォルトテンプレート（デフォルト・テスト）       | bluesky.py、GUI                          |
 | templates/                      | テンプレート| 投稿文テンプレート（各サービス・デフォルト）       | bluesky.py、GUI                          |
+| templates/nico_new_video_template.txt | テンプレート| ニコニコ新規動画投稿通知テンプレート             | bluesky.py                                |
+| templates/nico_online_template.txt    | テンプレート| ニコニコ配信開始通知テンプレート                 | bluesky.py                                |
+| templates/twitch_offline_template.txt | テンプレート| Twitch配信終了通知テンプレート                  | bluesky.py                                |
+| templates/twitch_online_template.txt  | テンプレート| Twitch配信開始通知テンプレート                  | bluesky.py                                |
+| templates/yt_new_video_template.txt   | テンプレート| YouTube新規動画投稿通知テンプレート             | bluesky.py                                |
+| templates/yt_online_template.txt      | テンプレート| YouTube配信開始通知テンプレート                 | bluesky.py                                |
 ---
 
 ## 6. インポート・利用関係のポイント

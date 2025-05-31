@@ -1,57 +1,58 @@
-import sys
-import os
-# sys.pathの調整（親ディレクトリをパスに追加）
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
+# -*- coding: utf-8 -*-
 """
-テンプレート・画像カスタマイズUI
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
 """
-from gui.timezone_settings import TimeZoneSettings
-import tkinter as tk
-from tkinter import ttk
-from dotenv import load_dotenv
-try:
-    from utils import change_template_file, change_image_file
-except ModuleNotFoundError:
-    # 相対import fallback（パッケージ実行時用）
-    from ..utils import change_template_file, change_image_file
 
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-class NotificationCustomizationFrame(ttk.Frame):
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
+
+from version_info import __version__
+import customtkinter as ctk
+from .timezone_settings import TimezoneSettingsFrame
+
+DEFAULT_FONT = ("Yu Gothic UI", 12, "normal")
+
+class NotificationCustomizationFrame(ctk.CTkFrame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.create_widgets()
-
-    def create_widgets(self):
-        notebook = ttk.Notebook(self)
-        notebook.pack(fill=tk.BOTH, expand=True)
-
-        # --- タイムゾーン設定タブ（最左） ---
-        tz_frame = TimeZoneSettings(notebook)
-        notebook.add(tz_frame, text="タイムゾーン設定")
-
+        tabview = ctk.CTkTabview(self, width=800, height=500)
+        tabview.pack(fill="both", expand=True, padx=10, pady=10)
+        # --- タイムゾーン設定タブ ---
+        tz_frame = TimezoneSettingsFrame(tabview)
+        tabview.add("タイムゾーン設定")
+        tz_frame.pack(fill="both", expand=True, padx=10, pady=10, in_=tabview.tab("タイムゾーン設定"))
         # --- ログ/コンソール設定タブ ---
-        from gui.logging_console_frame import LoggingConsoleFrame
-        log_console_frame = LoggingConsoleFrame(notebook)
-        notebook.add(log_console_frame, text="ログ/コンソール設定")
-
+        from .logging_console_frame import LoggingConsoleFrame
+        log_console_frame = LoggingConsoleFrame(tabview)
+        tabview.add("ログ/コンソール設定")
+        log_console_frame.pack(fill="both", expand=True, padx=10, pady=10, in_=tabview.tab("ログ/コンソール設定"))
         # --- Discordタブ ---
-        from gui.discord_notification_frame import DiscordNotificationFrame
-        discord_frame = DiscordNotificationFrame(notebook)
-        notebook.add(discord_frame, text="Discord通知設定")
-
+        from .discord_notification_frame import DiscordNotificationFrame
+        discord_frame = DiscordNotificationFrame(tabview)
+        tabview.add("Discord通知設定")
+        discord_frame.pack(fill="both", expand=True, padx=10, pady=10, in_=tabview.tab("Discord通知設定"))
         # --- ログビューアタブ ---
-        from gui.log_viewer import LogViewer
-        log_viewer_frame = LogViewer(notebook)
-        notebook.add(log_viewer_frame, text="ログビューア")
-
-        # フォント・ボタンサイズをさらに小さく（2回りダウン）
-        small_font = ("Meiryo", 12)
-        small_btn_style = ttk.Style()
-        small_btn_style.configure("Big.TButton", font=small_font, padding=4)
-        small_lbl_style = ttk.Style()
-        small_lbl_style.configure("Big.TLabel", font=small_font)
-        small_chk_style = ttk.Style()
-        small_chk_style.configure("Big.TCheckbutton", font=small_font)
+        from .log_viewer import LogViewerFrame
+        log_viewer_frame = LogViewerFrame(tabview)
+        tabview.add("ログビューア")
+        log_viewer_frame.pack(fill="both", expand=True, padx=10, pady=10, in_=tabview.tab("ログビューア"))

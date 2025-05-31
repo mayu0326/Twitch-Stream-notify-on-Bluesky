@@ -1,79 +1,99 @@
+
+# -*- coding: utf-8 -*-
+"""
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
+"""
+
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
+
+from version_info import __version__
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import customtkinter as ctk
+import tkinter.messagebox as messagebox
 
-import tkinter as tk
-import tkinter.ttk as ttk
-from dotenv import load_dotenv
+try:
+    import pyperclip
+    _pyperclip_available = True
+except ImportError:
+    _pyperclip_available = False
 
-
-class TunnelCustomFrame(ttk.Frame):
+class TunnelCustomFrame(ctk.CTkFrame):
     def __init__(self, master=None):
         super().__init__(master)
-        # カスタム設定ラベル
-        ttk.Label(self, text="カスタム設定", font=("Meiryo", 12, "bold")).pack(pady=(10, 0))
+        self.font = ("Yu Gothic UI", 15, "normal")
+        self.cmd_var = ctk.StringVar(value=self._load_cmd())
+        # --- 中央寄せ用サブフレーム ---
+        center_frame = ctk.CTkFrame(self, fg_color="transparent")
+        center_frame.pack(expand=True, fill="both")
+        self._create_widgets(center_frame)
 
-        # 説明文ラベル（selfにpackで直後に配置）
-        tk.Label(
-            self,
-            text='本設定GUI対応外のトンネルを使用する場合などは、\n下記のトンネル起動コマンド欄に入力して設定してください。\nなお、カスタムコマンドの実行は動作保証およびサポートの\n対象外であり、対応追加のご要望にもお答えできませんので\nあらかじめご了承ください。',
-            font=(
-                "Meiryo",
-                11,
-                "bold"),
-            anchor="w",
-            justify="left",
-            wraplength=420).pack(
-            fill="x",
-            padx=10,
-            pady=(
-                5,
-                10),
-            anchor="w")
-
-        # .envファイルの読み込み
-        load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
-        tunnel_cmd = os.getenv('CUSTOM_TUNNEL_CMD', '')
-        self.custom_tunnel_cmd = tk.StringVar(value=tunnel_cmd)
-
-        # 入力欄などをまとめるフレーム
-        center_frame = tk.Frame(self)
-        center_frame.pack(expand=True)
-        center_frame.grid_columnconfigure(0, weight=1)
-        center_frame.grid_columnconfigure(1, weight=1)
-
-        # トンネル起動コマンド入力欄
-        ttk.Label(center_frame, text="トンネル起動コマンド:", font=("Meiryo", 12, "bold")).grid(
-            row=0, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
-        entry = ttk.Entry(
-            center_frame, textvariable=self.custom_tunnel_cmd, width=48, font=("Meiryo", 12)
-        )
-        entry.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
-
-        # 保存ボタン（下部中央・大きめに統一）
-        ttk.Button(
-            center_frame,
-            text="保存",
-            command=self.save_tunnel_cmd,
-            style="Large.TButton"
-        ).grid(row=10, column=0, columnspan=2, pady=(30, 20), padx=80, ipadx=30, ipady=10, sticky="ew")
-        style = ttk.Style(self)
-        style.configure("Large.TButton", font=("Meiryo", 11))
-
-    def save_tunnel_cmd(self):
+    def _load_cmd(self):
         env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
+        if not os.path.exists(env_path):
+            return ''
         with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+            for line in f:
+                if line.startswith('CUSTOM_TUNNEL_CMD='):
+                    return line.strip().split('=', 1)[1]
+        return ''
+
+    def _create_widgets(self, parent):
+        ctk.CTkLabel(parent, text="カスタム設定", font=self.font, anchor="w").grid(row=0, column=0, columnspan=3, sticky='w', pady=(10,0), padx=(10,0))
+        ctk.CTkLabel(parent, text='本設定GUI対応外のトンネルを使用する場合などは、下記のトンネル起動コマンド欄に入力して設定してください。\nなお、カスタムコマンドの実行は動作保証およびサポートの対象外であり、対応追加のご要望にもお答えできません。\nあらかじめご了承ください。', font=("Yu Gothic UI", 14, "normal"), anchor="w", justify="left").grid(row=1, column=0, columnspan=3, sticky='w', padx=(10,0), pady=(5,10))
+        ctk.CTkLabel(parent, text="トンネル起動コマンド:", font=self.font, anchor="w").grid(row=2, column=0, sticky='w', pady=(10,0), padx=(10,0))
+        ctk.CTkEntry(parent, textvariable=self.cmd_var, font=self.font, width=320).grid(row=2, column=1, padx=(0,10), pady=(10,0))
+        ctk.CTkButton(parent, text="コマンドコピー", command=self._copy_cmd, font=self.font).grid(row=2, column=2, padx=(0,10), pady=(10,0))
+        ctk.CTkButton(parent, text="保存", command=self._save_cmd, font=self.font).grid(row=3, column=1, pady=(20,0))
+
+    def _save_cmd(self):
+        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
+        cmd = self.cmd_var.get()
+        lines = []
+        if os.path.exists(env_path):
+            with open(env_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
         new_lines = []
         found = False
         for line in lines:
             if line.startswith('CUSTOM_TUNNEL_CMD='):
-                new_lines.append(f'CUSTOM_TUNNEL_CMD={self.custom_tunnel_cmd.get()}\n')
+                new_lines.append(f'CUSTOM_TUNNEL_CMD={cmd}\n')
                 found = True
             else:
                 new_lines.append(line)
         if not found:
-            new_lines.append(f'CUSTOM_TUNNEL_CMD={self.custom_tunnel_cmd.get()}\n')
+            new_lines.append(f'CUSTOM_TUNNEL_CMD={cmd}\n')
         with open(env_path, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
-        tk.messagebox.showinfo("保存完了", "CUSTOM_TUNNEL_CMDを保存しました。")
+        messagebox.showinfo("保存完了", "CUSTOM_TUNNEL_CMDを保存しました。\n\n※コマンドの実行・監視はサポート対象外です。")
+
+    def _copy_cmd(self):
+        cmd = self.cmd_var.get()
+        if not cmd:
+            messagebox.showwarning("コマンド未入力", "コマンドが空です。")
+            return
+        if _pyperclip_available:
+            pyperclip.copy(cmd)
+            messagebox.showinfo("コピー完了", "コマンドをクリップボードにコピーしました。")
+        else:
+            messagebox.showwarning("pyperclip未インストール", "pyperclipが未インストールのためコピーできません。\n\n'pip install pyperclip'でインストールしてください。")

@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.abspath(
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__app_version__ = __version__
+__version__ = __version__
 
 # Stream notify on Bluesky
 # Copyright (C) 2025 mayuneco(mayunya)

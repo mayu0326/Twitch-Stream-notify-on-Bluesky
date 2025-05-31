@@ -1,107 +1,130 @@
-import tkinter as tk
-from tkinter import ttk
+# -*- coding: utf-8 -*-
+"""
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
+"""
+
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
+
+
+from version_info import __version__
+import customtkinter as ctk
 import os
-from dotenv import load_dotenv
-import tkinter.messagebox as messagebox
+import webbrowser
+from tkinter import messagebox  # 追加
+
+DEFAULT_FONT = ("Yu Gothic UI", 15, "normal")
 
 
-class DiscordNotificationFrame(ttk.Frame):
+class DiscordNotificationFrame(ctk.CTkFrame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.create_widgets()
+        self.var_enabled = ctk.BooleanVar()
+        self.var_level = ctk.StringVar()
+        self.var_webhook = ctk.StringVar()
+        self.status_label = None
+        center_frame = ctk.CTkFrame(self, fg_color="transparent")
+        center_frame.pack(expand=True, fill="both")
+        ctk.CTkLabel(center_frame, text="Discord通知設定", font=DEFAULT_FONT).pack(fill="x", pady=(30, 10), padx=40, expand=True)
+        ctk.CTkSwitch(center_frame, text="Discord通知を有効化", variable=self.var_enabled, font=DEFAULT_FONT, onvalue=True, offvalue=False).pack(fill="x", padx=80, pady=5, expand=True)
+        ctk.CTkLabel(center_frame, text="通知レベル:", font=DEFAULT_FONT).pack(fill="x", padx=40, pady=(20, 5), expand=True)
+        ctk.CTkComboBox(
+            center_frame,
+            values=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            variable=self.var_level,
+            font=DEFAULT_FONT,
+            width=320,
+            state="readonly",
+            justify="center"
+        ).pack(fill="x", padx=80, pady=5, expand=True)
+        ctk.CTkLabel(center_frame, text="Webhook URL:", font=DEFAULT_FONT).pack(fill="x", padx=40, pady=(20, 5), expand=True)
+        ctk.CTkEntry(center_frame, width=320, font=DEFAULT_FONT, textvariable=self.var_webhook, justify="center").pack(fill="x", padx=80, pady=5, expand=True)
+        btn_frame = ctk.CTkFrame(center_frame, fg_color="transparent")
+        btn_frame.pack(pady=20, fill="x", expand=True)
+        ctk.CTkButton(btn_frame, text="保存", command=self.save_settings, font=DEFAULT_FONT, width=120).pack(side="left", padx=10, expand=True)
+        ctk.CTkButton(btn_frame, text="設定消去", command=self.clear_settings, font=DEFAULT_FONT, width=120).pack(side="left", padx=10, expand=True)
+        self.status_label = ctk.CTkLabel(center_frame, text="", font=DEFAULT_FONT)
+        self.status_label.pack(pady=10, fill="x", expand=True)
+        self.load_settings()
 
-    def create_widgets(self):
-        load_dotenv(os.path.join(os.path.dirname(__file__), '../settings.env'))
-        discord_url = os.getenv('discord_error_notifier_url', '')
-        discord_level = os.getenv('discord_notify_level', 'CRITICAL')
-        discord_enabled = os.getenv(
-            'DISCORD_NOTIFY_ENABLED', 'True').lower() == 'true'
-        self.var_discord_enabled = tk.BooleanVar(value=discord_enabled)
-        ttk.Checkbutton(
-            self,
-            text="Discord通知を有効化",
-            variable=self.var_discord_enabled,
-            style="Big.TCheckbutton").grid(
-            row=0,
-            column=0,
-            sticky=tk.W,
-            columnspan=2)
-        ttk.Label(self, text="Discord通知レベル:", style="Big.TLabel").grid(
-            row=1, column=0, sticky=tk.W)
-        self.combo_discord_level = ttk.Combobox(self, values=[
-            "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], state="readonly", width=12)
-        self.combo_discord_level.set(discord_level)
-        self.combo_discord_level.grid(row=1, column=1, sticky=tk.W)
-        self.combo_discord_level.configure(font=("Meiryo", 12))
-        ttk.Label(self, text="Discord Webhook URL:", style="Big.TLabel").grid(
-            row=2, column=0, sticky=tk.W, columnspan=2)
-        self.entry_discord_url = ttk.Entry(self, width=70)
-        self.entry_discord_url.insert(0, discord_url)
-        self.entry_discord_url.grid(row=3, column=0, columnspan=2, sticky=tk.W)
-        self.entry_discord_url.configure(font=("Meiryo", 12))
-        ttk.Button(
-            self,
-            text="設定を反映",
-            command=self.save_discord_settings,
-            style="Big.TButton").grid(
-            row=4,
-            column=1,
-            sticky=tk.W,
-            pady=(
-                5,
-                0))
-        ttk.Button(
-            self,
-            text="設定を消去",
-            command=self.clear_discord_settings,
-            style="Big.TButton").grid(
-            row=4,
-            column=0,
-            sticky=tk.W,
-            pady=(
-                5,
-                0))
+    def load_settings(self):
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../settings.env'))
+        enabled = False
+        level = "CRITICAL"
+        webhook = ""
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.startswith('DISCORD_NOTIFY_ENABLED='):
+                        enabled = line.strip().split('=', 1)[1].lower() == 'true'
+                    elif line.startswith('discord_notify_level='):
+                        level = line.strip().split('=', 1)[1]
+                    elif line.startswith('discord_error_notifier_url='):
+                        webhook = line.strip().split('=', 1)[1]
+        self.var_enabled.set(enabled)
+        self.var_level.set(level)
+        self.var_webhook.set(webhook)
 
-    def save_discord_settings(self, show_message=True):
-        url = self.entry_discord_url.get().strip()
-        level = self.combo_discord_level.get().strip()
-        enabled = self.var_discord_enabled.get()
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        new_lines = []
-        found_url = found_level = found_enabled = False
-        for line in lines:
-            if line.startswith('discord_error_notifier_url='):
-                new_lines.append(f'discord_error_notifier_url={url}\n')
-                found_url = True
-            elif line.startswith('discord_notify_level='):
-                new_lines.append(f'discord_notify_level={level}\n')
-                found_level = True
-            elif line.startswith('DISCORD_NOTIFY_ENABLED='):
-                new_lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
-                found_enabled = True
-            else:
-                new_lines.append(line)
-        if not found_url:
-            new_lines.append(f'discord_error_notifier_url={url}\n')
-        if not found_level:
-            new_lines.append(f'discord_notify_level={level}\n')
+    def save_settings(self, show_message=True):
+        enabled = self.var_enabled.get()
+        level = self.var_level.get().strip()
+        webhook = self.var_webhook.get().strip()
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../settings.env'))
+        lines = []
+        found_enabled = found_level = found_webhook = False
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.startswith('DISCORD_NOTIFY_ENABLED='):
+                        lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
+                        found_enabled = True
+                    elif line.startswith('discord_notify_level='):
+                        lines.append(f'discord_notify_level={level}\n')
+                        found_level = True
+                    elif line.startswith('discord_error_notifier_url='):
+                        lines.append(f'discord_error_notifier_url={webhook}\n')
+                        found_webhook = True
+                    else:
+                        lines.append(line)
         if not found_enabled:
-            new_lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
-        with open(env_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        load_dotenv(env_path, override=True)
-        self.entry_discord_url.delete(0, tk.END)
-        self.entry_discord_url.insert(0, url)
-        self.combo_discord_level.set(level)
-        self.var_discord_enabled.set(enabled)
+            lines.append(f'DISCORD_NOTIFY_ENABLED={str(enabled)}\n')
+        if not found_level:
+            lines.append(f'discord_notify_level={level}\n')
+        if not found_webhook:
+            lines.append(f'discord_error_notifier_url={webhook}\n')
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+        # UI値を再セット
+        self.var_enabled.set(enabled)
+        self.var_level.set(level)
+        self.var_webhook.set(webhook)
+        self.status_label.configure(text="保存しました")
         if show_message:
             messagebox.showinfo("保存完了", "Discord通知設定を保存しました。")
 
-    def clear_discord_settings(self):
-        self.entry_discord_url.delete(0, tk.END)
-        self.combo_discord_level.set('CRITICAL')
-        self.var_discord_enabled.set(False)
-        self.save_discord_settings(show_message=False)
+    def clear_settings(self):
+        self.var_enabled.set(False)
+        self.var_level.set("CRITICAL")
+        self.var_webhook.set("")
+        self.save_settings(show_message=False)
+        self.status_label.configure(text="初期化しました")
         messagebox.showinfo("初期化完了", "Discord通知設定を初期化しました。")

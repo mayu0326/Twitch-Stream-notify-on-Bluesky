@@ -1,259 +1,193 @@
+
+# -*- coding: utf-8 -*-
+"""
+Stream notify on Bluesky
+
+このモジュールはTwitch/YouTube/Niconicoの放送と動画投稿の通知をBlueskyに送信するBotの一部です。
+"""
+
+# Stream notify on Bluesky
+# Copyright (C) 2025 mayuneco(mayunya)
+#
+# このプログラムはフリーソフトウェアです。フリーソフトウェア財団によって発行された
+# GNU 一般公衆利用許諾契約書（バージョン2またはそれ以降）に基づき、再配布または
+# 改変することができます。
+#
+# このプログラムは有用であることを願って配布されていますが、
+# 商品性や特定目的への適合性についての保証はありません。
+# 詳細はGNU一般公衆利用許諾契約書をご覧ください。
+#
+# このプログラムとともにGNU一般公衆利用許諾契約書が配布されているはずです。
+# もし同梱されていない場合は、フリーソフトウェア財団までご請求ください。
+# 住所: 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+__author__ = "mayuneco(mayunya)"
+__copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
+__license__ = "GPLv2"
+__version__ = __version__
+
+from version_info import __version__
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import subprocess
-import tkinter as tk
-import tkinter.ttk as ttk
 import threading
-from tkinter import messagebox
+import customtkinter as ctk
+import tkinter.messagebox as messagebox
+
+try:
+    import pyperclip
+    _pyperclip_available = True
+except ImportError:
+    _pyperclip_available = False
 
 SETTINGS_ENV_FILE = os.path.join(os.path.dirname(__file__), '../settings.env')
 LOCALTUNNEL_KEY = "LOCALTUNNEL_CMD"
 
 
-class TunnelLocaltunnelFrame(tk.Frame):
+class TunnelLocalTunnelFrame(ctk.CTkFrame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.process = None
-        self.url_var = tk.StringVar()
-        self.port = tk.StringVar()
-        self.cmd_var = tk.StringVar(value=self.read_localtunnel_cmd())
-        self.status_var = tk.StringVar(value="準備中…")
-        self.port_entry = None
-        self.cmd_entry = None
-        self.start_btn = None
-        self.status_label = None
-        self.url_entry = None
-        self.load_settings()
-        self.create_widgets()
+        self.font = ("Yu Gothic UI", 15, "normal")
+        self.port = ctk.StringVar(value=self._load_port())
+        self.generated_cmd = ctk.StringVar()
+        self.url_var = ctk.StringVar(value=self._load_temporary_url())
+        self.status_var = ctk.StringVar(value="準備中…")
+        # --- 中央寄せ用サブフレーム ---
+        center_frame = ctk.CTkFrame(self, fg_color="transparent")
+        center_frame.pack(expand=True, fill="both")
+        self._create_widgets(center_frame)
+        self._update_cmd()
+        self.port.trace_add('write', lambda *a: self._update_cmd())
 
-    def load_settings(self):
-        """settings.envからlocaltunnel設定を読み込む"""
-        env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-        if not os.path.exists(env_path):
-            return
-        with open(env_path, 'r', encoding='utf-8') as f:
+    def _load_port(self):
+        if not os.path.exists(SETTINGS_ENV_FILE):
+            return ""
+        with open(SETTINGS_ENV_FILE, 'r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith('LOCALTUNNEL_PORT='):
-                    self.port.set(line.strip().split('=', 1)[1])
-                elif line.startswith('LOCALTUNNEL_CMD='):
-                    self.cmd_var.set(line.strip().split('=', 1)[1])
+                    return line.strip().split('=', 1)[1]
+        return ""
 
-    @staticmethod
-    def validate_port(value):
-        # 空欄は許可（削除時のため）
+    def _load_temporary_url(self):
+        if not os.path.exists(SETTINGS_ENV_FILE):
+            return ""
+        with open(SETTINGS_ENV_FILE, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('WEBHOOK_CALLBACK_URL_TEMPORARY='):
+                    return line.strip().split('=', 1)[1]
+        return ""
+
+    def _validate_port(self, value):
         if value == "":
             return True
-        # 数字のみ、最大5桁
         return value.isdigit() and len(value) <= 5
 
-    def create_widgets(self) -> None:
-        # ポート番号の設定
-        ttk.Label(
-            self,
-            text="ポート番号:",
-            font=(
-                "Meiryo",
-                12,
-                "bold")).grid(
-            row=0,
-            column=0,
-            columnspan=3,
-            sticky=tk.W,
-            pady=(
-                10,
-                5),
-            padx=20)
-        # バリデーション関数
-        vcmd = (self.register(self.validate_port), "%P")
-        self.port_entry = ttk.Entry(
-            self, textvariable=self.port, width=50, font=(
-                "Meiryo", 11), validate="key", validatecommand=vcmd)
-        self.port_entry.grid(row=1, column=0, padx=20, pady=(0, 10), columnspan=2, sticky="ew")
+    def _create_widgets(self, parent):
+        ctk.CTkLabel(parent, text="ポート番号:", font=self.font, anchor="w").grid(row=0, column=0, sticky='w', pady=(10,0), padx=(10,0))
+        port_entry = ctk.CTkEntry(parent, textvariable=self.port, font=self.font, width=120)
+        port_entry.grid(row=0, column=1, padx=(0,10), pady=(10,0))
+        port_entry.configure(validate="key", validatecommand=(self.register(self._validate_port), "%P"))
+        ctk.CTkLabel(parent, text="localtunnel起動コマンド:", font=self.font, anchor="w").grid(row=1, column=0, sticky='w', pady=(10,0), padx=(10,0))
+        ctk.CTkEntry(parent, textvariable=self.generated_cmd, font=self.font, width=320, state="readonly").grid(row=1, column=1, padx=(0,10), pady=(10,0))
+        ctk.CTkLabel(parent, text="localtunnel公開URL:", font=self.font, anchor="w").grid(row=2, column=0, sticky='w', pady=(10,0), padx=(10,0))
+        ctk.CTkEntry(parent, textvariable=self.url_var, font=self.font, width=320, state="readonly").grid(row=2, column=1, padx=(0,10), pady=(10,0))
+        ctk.CTkButton(parent, text="URLコピー", command=self._copy_url, font=self.font).grid(row=2, column=2, padx=(0,10), pady=(10,0))
+        ctk.CTkButton(parent, text="保存", command=self._save_cmd, font=self.font).grid(row=3, column=1, pady=(20,0))
+        ctk.CTkButton(parent, text="トンネル開始", command=self._start_localtunnel, font=self.font).grid(row=3, column=2, pady=(20,0))
+        ctk.CTkLabel(parent, textvariable=self.status_var, font=self.font, anchor="w").grid(row=4, column=0, columnspan=3, sticky='w', padx=(10,0), pady=(10,0))
 
-        # コマンド自動生成欄のみ表示
-        self.generated_cmd = tk.StringVar()
-        self.update_cmd()
-        ttk.Label(self, text="localtunnel起動コマンド:", font=("Meiryo", 12, "bold")).grid(
-            row=2, column=0, columnspan=3, sticky=tk.W, padx=20, pady=(10, 0))
-        ttk.Entry(self, textvariable=self.generated_cmd, width=50, font=("Meiryo", 11)).grid(
-            row=3, column=0, columnspan=3, padx=20, pady=(0, 10), sticky="ew")
-
-        # 一時URL表示欄
-        self.url_var = tk.StringVar()
-        ttk.Label(
-            self,
-            text="localtunnel一時URL:",
-            font=("Meiryo", 11, "bold")).grid(
-            row=4,
-            column=0,
-            sticky=tk.W,
-            padx=20)
-        ttk.Entry(
-            self,
-            textvariable=self.url_var,
-            width=50,
-            font=("Meiryo", 11),
-            state="readonly").grid(
-            row=5,
-            column=0,
-            columnspan=2,
-            padx=20,
-            pady=(0, 10),
-            sticky="ew")
-        # ボタン横並びフレーム（最下部に移動）
-        button_frame = ttk.Frame(self)
-        button_frame.grid(row=20, column=0, columnspan=3, pady=(10, 20), padx=20, sticky="ew")
-        button_frame.columnconfigure(0, weight=1)
-        button_frame.columnconfigure(1, weight=1)
-        ttk.Button(
-            button_frame,
-            text="保存",
-            command=self.save_settings,
-            style="Large.TButton").grid(
-            row=0,
-            column=0,
-            padx=(0, 10),
-            ipadx=30,
-            ipady=10,
-            sticky="ew")
-        ttk.Button(
-            button_frame,
-            text="localtunnelトンネル開始",
-            command=self.start_localtunnel,
-            style="Large.TButton").grid(
-            row=0,
-            column=1,
-            padx=(10, 0),
-            ipadx=30,
-            ipady=10,
-            sticky="ew")
-        # ウィンドウサイズ調整（削除）
-        # self.master.geometry("700x600")
-
-    def update_cmd(self):
+    def _update_cmd(self, *args):
         port = self.port.get()
         cmd = f"lt --port {port}" if port else ""
         self.generated_cmd.set(cmd)
 
-    @staticmethod
-    def read_localtunnel_cmd() -> str:
-        try:
-            with open(SETTINGS_ENV_FILE, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip().startswith(f"{LOCALTUNNEL_KEY}="):
-                        return line.strip().split("=", 1)[1]
-        except (FileNotFoundError, IOError):
-            return ""
-        return ""
-
-    def save_localtunnel_cmd(self) -> None:
+    def _save_cmd(self):
         # ltコマンドの存在チェック
-        lt_path = None
         try:
-            lt_path = subprocess.run(["where", "lt"], capture_output=True, text=True, shell=True)
-            if lt_path.returncode != 0:
+            result = subprocess.run(["where", "lt"], capture_output=True, text=True, shell=True)
+            if result.returncode != 0:
                 raise FileNotFoundError
         except Exception:
-            messagebox.showerror(
-                "エラー",
-                "localtunnel (lt) がインストールされていません。\n公式サイトの手順でインストールし、Pathを通してください。\nhttps://github.com/localtunnel/localtunnel")
+            messagebox.showerror("エラー", "localtunnel (lt) がインストールされていません。\n公式サイトの手順でインストールし、Pathを通してください。\nhttps://github.com/localtunnel/localtunnel")
             return
-
-        try:
-            lines = []
-            found_cmd = False
-            found_port = False
-            port_value = self.port.get()  # ←ここを修正
+        port_value = self.port.get()
+        cmd = self.generated_cmd.get()
+        lines = []
+        if os.path.exists(SETTINGS_ENV_FILE):
             with open(SETTINGS_ENV_FILE, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip().startswith(f"{LOCALTUNNEL_KEY}="):
-                        lines.append(f"{LOCALTUNNEL_KEY}={self.cmd_var.get()}\n")
-                        found_cmd = True
-                    elif line.strip().startswith("LOCALTUNNEL_PORT="):
-                        lines.append(f"LOCALTUNNEL_PORT={port_value}\n")
-                        found_port = True
-                    else:
-                        lines.append(line)
-            if not found_cmd:
-                lines.append(f"{LOCALTUNNEL_KEY}={self.cmd_var.get()}\n")
-            if not found_port:
-                lines.append(f"LOCALTUNNEL_PORT={port_value}\n")
-            with open(SETTINGS_ENV_FILE, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            # コマンドも保存
-            cmd = self.generated_cmd.get()
-            found_cmd = False
-            for i, line in enumerate(lines):
-                if line.startswith('LOCALTUNNEL_CMD='):
-                    lines[i] = f'LOCALTUNNEL_CMD={cmd}\n'
-                    found_cmd = True
-            if not found_cmd:
-                lines.append(f'LOCALTUNNEL_CMD={cmd}\n')
-            with open(SETTINGS_ENV_FILE, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            messagebox.showinfo("保存完了", "LocalTunnelの設定とコマンドが保存されました。")
-        except (FileNotFoundError, IOError) as e:
-            messagebox.showerror("エラー", f"保存に失敗しました: {e}")
+                lines = f.readlines()
+        new_lines = []
+        found_cmd = found_port = False
+        for line in lines:
+            if line.startswith('LOCALTUNNEL_CMD='):
+                new_lines.append(f'LOCALTUNNEL_CMD={cmd}\n')
+                found_cmd = True
+            elif line.startswith('LOCALTUNNEL_PORT='):
+                new_lines.append(f'LOCALTUNNEL_PORT={port_value}\n')
+                found_port = True
+            else:
+                new_lines.append(line)
+        if not found_cmd:
+            new_lines.append(f'LOCALTUNNEL_CMD={cmd}\n')
+        if not found_port:
+            new_lines.append(f'LOCALTUNNEL_PORT={port_value}\n')
+        with open(SETTINGS_ENV_FILE, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        messagebox.showinfo("保存完了", "LocalTunnelの設定とコマンドが保存されました。")
 
-    def save_settings(self):
-        import tkinter as tk
-        tk.messagebox.showinfo("保存完了", "localtunnelの設定が保存されました（ダミー実装）")
-
-    def start_localtunnel(self) -> None:
-        port = self.port_entry.get()
+    def _start_localtunnel(self):
+        port = self.port.get()
+        if not port:
+            messagebox.showerror("エラー", "ポート番号を入力してください。")
+            return
         self.status_var.set("LocalTunnel起動中…")
         self.url_var.set("")
-        threading.Thread(target=self.run_localtunnel, args=(port,), daemon=True).start()
+        threading.Thread(target=self._run_localtunnel, args=(port,), daemon=True).start()
 
-    def run_localtunnel(self, port: str) -> None:
-        cmd_text = self.cmd_var.get().strip().replace("{port}", port)
-        cmd = cmd_text.split()
+    def _run_localtunnel(self, port):
+        cmd = self.generated_cmd.get().strip().replace("{port}", port)
+        if not cmd:
+            self.status_var.set("コマンド未設定")
+            return
         try:
-            self.process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if self.process.stdout is not None:
-                for line in self.process.stdout:
+            proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if proc.stdout is not None:
+                for line in proc.stdout:
                     if "your url is:" in line:
                         url = line.strip().split("your url is:")[-1].strip()
                         self.url_var.set(url)
                         self.status_var.set("LocalTunnel稼働中")
-                        self.status_label.configure(font=("Meiryo", 11))
-                        self.status_label.grid(row=5, column=0, pady=3, padx=20, sticky="w")
-                        # LocalTunnel一時URLをsettings.envに保存
-                        if self.url_var.get():
-                            env_path = os.path.join(os.path.dirname(__file__), '../settings.env')
-                            lines = []
-                            if os.path.exists(env_path):
-                                with open(env_path, 'r', encoding='utf-8') as f:
-                                    lines = f.readlines()
-                            new_lines = []
-                            found = False
-                            for line in lines:
-                                if line.startswith('WEBHOOK_CALLBACK_URL_TEMPORARY='):
-                                    new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={self.url_var.get()}\n')
-                                    found = True
-                                else:
-                                    new_lines.append(line)
-                            if not found:
-                                new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={self.url_var.get()}\n')
-                            with open(env_path, 'w', encoding='utf-8') as f:
-                                f.writelines(new_lines)
+                        self._save_temporary_url(url)
                         break
-        except (subprocess.SubprocessError, OSError) as e:
-            self.status_var.set("LocalTunnel起動エラー")
-            self.status_label.configure(font=("Meiryo", 11))
-            self.status_label.grid(row=5, column=0, pady=3, padx=20, sticky="w")
+        except Exception as e:
+            self.status_var.set("起動エラー")
             messagebox.showerror("エラー", f"LocalTunnelの起動に失敗しました: {e}")
 
-    def destroy(self) -> None:
-        if self.process:
-            try:
-                self.process.terminate()
-            except ProcessLookupError:
-                pass
-        super().destroy()
+    def _save_temporary_url(self, url):
+        lines = []
+        if os.path.exists(SETTINGS_ENV_FILE):
+            with open(SETTINGS_ENV_FILE, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+        new_lines = []
+        found = False
+        for line in lines:
+            if line.startswith('WEBHOOK_CALLBACK_URL_TEMPORARY='):
+                new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+                found = True
+            else:
+                new_lines.append(line)
+        if not found:
+            new_lines.append(f'WEBHOOK_CALLBACK_URL_TEMPORARY={url}\n')
+        with open(SETTINGS_ENV_FILE, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
 
-        # ポート番号変更時にコマンド自動更新
-        self.port.trace_add('write', lambda *a: self.update_cmd())
+    def _copy_url(self):
+        url = self.url_var.get()
+        if not url:
+            messagebox.showwarning("URL未入力", "公開URLが空です。")
+            return
+        if _pyperclip_available:
+            pyperclip.copy(url)
+            messagebox.showinfo("コピー完了", "公開URLをクリップボードにコピーしました。")
+        else:
+            messagebox.showwarning("pyperclip未インストール", "pyperclipが未インストールのためコピーできません。\n\n'pip install pyperclip'でインストールしてください。")

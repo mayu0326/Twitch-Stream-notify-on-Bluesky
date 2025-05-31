@@ -71,7 +71,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, module="cherrypy")
 
 # 設定ファイルの存在チェック(一時的なセットアップウィザード回避用)
 if not os.path.exists('settings.env'):
-    print('settings.envが見つかりません。空ファイルを自動生成し設定GUIを起動します。')
+    print('settings.envが見つかりません。空ファイルを自動生成しGUIを起動します。')
     with open('settings.env', 'w', encoding='utf-8') as f:
         pass  # 空ファイル作成
     # --- 一時的なCUI→GUI誘導処理（新GUI完成後はこのブロックを削除/コメントアウト） ---
@@ -82,7 +82,7 @@ if not os.path.exists('settings.env'):
         subprocess.Popen([sys.executable, '-m', 'gui.app_gui'])
     else:
         subprocess.Popen([sys.executable, '-m', 'gui.app_gui'])
-    print('設定GUIを起動しました。CUIアプリは終了します。')
+    print('GUIを起動しました。CUIアプリは終了します。')
     sys.exit(0)
 # 存在すれば読み込む
 load_dotenv('settings.env')
@@ -90,7 +90,7 @@ load_dotenv('settings.env')
 __author__ = "mayuneco(mayunya)"
 __copyright__ = "Copyright (C) 2025 mayuneco(mayunya)"
 __license__ = "GPLv2"
-__app_version__ = __version__
+__version__ = __version__
 
 # Flaskアプリケーションの生成
 app = Flask(__name__)
@@ -197,7 +197,8 @@ def handle_webhook():
             "broadcaster_user_name", broadcaster_user_login_from_event)
         app.logger.info(
             f"通知受信 ({subscription_type}) for {
-                broadcaster_user_name_from_event or broadcaster_user_login_from_event}")
+                broadcaster_user_name_from_event or broadcaster_user_login_from_event}"
+                )
 
         notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True").lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
