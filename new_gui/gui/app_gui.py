@@ -151,8 +151,6 @@ class MainWindow(ctk.CTk):
         # アカウント
         self.account_settings_frame = AccountSettingsFrame(self.tabview.tab("アカウント"))
         self.account_settings_frame.pack(fill="both", expand=True)
-        # 起動直後にappearance反映（サブタブ色も含む）
-        self.account_settings_frame.update_appearance()
         # Bluesky投稿
         self.bluesky_post_settings_frame = BlueskyPostSettingsFrame(self.tabview.tab("Bluesky投稿"))
         self.bluesky_post_settings_frame.pack(fill="both", expand=True)
