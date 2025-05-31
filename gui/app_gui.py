@@ -118,26 +118,22 @@ def is_first_setup():
 
 if __name__ == "__main__":
     if is_first_setup():
-        # --- 一時的な処理: 設定ファイルがなければ空ファイルを作成し、そのままMainWindowを開く ---
-        if not os.path.exists("settings.env"):
-            with open("settings.env", "w", encoding="utf-8") as f:
-                pass  # 空ファイル作成
-        MainWindow().mainloop()
-        # --- 元のウィザード起動処理（新GUI完成後に復活させる） ---
-        # import tkinter.messagebox as messagebox
-        # root = tk.Tk()
-        # root.withdraw()
-        # result = messagebox.askokcancel(
-        #     "初期セットアップ",
-        #     "設定ファイルが見つかりません。\n初期セットアップを実行します。"
-        # )
-        # if result:
-        #     def on_finish():
-        #         root.destroy()
-        #         MainWindow().mainloop()
-        #     SetupWizard(master=root, on_finish=on_finish)
-        #     root.mainloop()
-        # else:
-        #     root.destroy()
+        import tkinter.messagebox as messagebox
+        root = tk.Tk()
+        root.withdraw()
+
+        # ポップアップ表示
+        result = messagebox.askokcancel(
+            "初期セットアップ",
+            "設定ファイルが見つかりません。\n初期セットアップを実行します。"
+        )
+        if result:
+            def on_finish():
+                root.destroy()
+                MainWindow().mainloop()
+            SetupWizard(master=root, on_finish=on_finish)
+            root.mainloop()
+        else:
+            root.destroy()
     else:
         MainWindow().mainloop()
