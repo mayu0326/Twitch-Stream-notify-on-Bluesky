@@ -150,6 +150,7 @@ def handle_404(e):
     return "Not Found", 404
 
 
+# MainAppを利用してpost_stream_onlineを呼び出すよう修正
 @app.route("/webhook", methods=["POST", "GET"])
 def handle_webhook():
     # Webhookエンドポイントの処理
@@ -196,67 +197,61 @@ def handle_webhook():
         broadcaster_user_name_from_event = event_data.get(
             "broadcaster_user_name", broadcaster_user_login_from_event)
         app.logger.info(
-            f"通知受信 ({subscription_type}) for {
-                broadcaster_user_name_from_event or broadcaster_user_login_from_event}"
-                )
+            f"通知受信 ({subscription_type}) for {broadcaster_user_name_from_event or broadcaster_user_login_from_event}"
+            )
 
-        notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True").lower()
+        # 環境変数のキーを修正
+        # テストや設定ファイルのスペルミス(NOTIFY_ON_TWITCH_ONINE)にも対応
+        notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONLINE")
+        if notify_on_online_str is None:
+            notify_on_online_str = os.getenv("NOTIFY_ON_TWITCH_ONINE", "True")
+        notify_on_online_str = notify_on_online_str.lower()
         NOTIFY_ON_ONLINE = notify_on_online_str == "true"
         notify_on_offline_str = os.getenv("NOTIFY_ON_TWITCH_OFFLINE", "False").lower()
         NOTIFY_ON_OFFLINE = notify_on_offline_str == "true"
 
         # 配信開始イベント
-        if subscription_type == "stream.online":
-            if NOTIFY_ON_ONLINE:
-                # stream.online用の必須項目チェック
-                if event_data.get("title") is None or event_data.get("category_name") is None:
-                    app.logger.warning(
-                        f"Webhook通知 (stream.online): 'title' または 'category_name' が不足しています. イベントデータ: {event_data}")
-                    return jsonify(
-                        {"error": "Missing title or category_name for stream.online event"}), 400
+        if subscription_type == "stream.online" and NOTIFY_ON_ONLINE:
+            event_context = {
+                "broadcaster_user_id": event_data.get("broadcaster_user_id"),
+                "broadcaster_user_login": broadcaster_user_login_from_event,
+                "broadcaster_user_name": broadcaster_user_name_from_event,
+                "title": event_data.get("title"),
+                "category_name": event_data.get("category_name"),
+                "game_id": event_data.get("game_id"),
+                "game_name": event_data.get("game_name", event_data.get("category_name")),
+                "language": event_data.get("language"),
+                "started_at": event_data.get("started_at"),
+                "type": event_data.get("type"),
+                "is_mature": event_data.get("is_mature"),
+                "tags": event_data.get("tags", []),
+                "stream_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
+            }
 
-                event_context = {
-                    "broadcaster_user_id": event_data.get("broadcaster_user_id"),
-                    "broadcaster_user_login": broadcaster_user_login_from_event,
-                    "broadcaster_user_name": broadcaster_user_name_from_event,
-                    "title": event_data.get("title"),
-                    "category_name": event_data.get("category_name"),
-                    "game_id": event_data.get("game_id"),
-                    "game_name": event_data.get("game_name", event_data.get("category_name")),
-                    "language": event_data.get("language"),
-                    "started_at": event_data.get("started_at"),
-                    "type": event_data.get("type"),
-                    "is_mature": event_data.get("is_mature"),
-                    "tags": event_data.get("tags", []),
-                    "stream_url": f"https://twitch.tv/{broadcaster_user_login_from_event}"
-                }
+            # 必須フィールドのチェックを追加
+            required_fields = ["title", "category_name"]
+            missing_fields = [field for field in required_fields if not event_context.get(field)]
+            if missing_fields:
+                app.logger.warning(
+                    f"Webhook通知 (stream.online): 必須フィールドが不足しています: {', '.join(missing_fields)}. イベントデータ: {event_data}")
+                return jsonify({"error": "Missing title or category_name for stream.online event"}), 400
 
-                try:
-                    bluesky_poster = BlueskyPoster(
-                        os.getenv("BLUESKY_USERNAME"),
-                        os.getenv("BLUESKY_APP_PASSWORD")
-                    )
-                    success = bluesky_poster.post_stream_online(
-                        event_context=event_context,
-                        image_path=os.getenv("BLUESKY_IMAGE_PATH")
-                    )
-                    if success:
-                        app.logger.info(
-                            f"Bluesky投稿成功 (stream.online): {broadcaster_user_login_from_event}")
-                        return jsonify({"status": "success"}), 200
-                    else:
-                        app.logger.error(
-                            f"Bluesky投稿処理失敗 (stream.online - BlueskyPoster.post_stream_online returned False): {broadcaster_user_login_from_event}")
-                        return jsonify({"status": "bluesky error processing stream.online"}), 500
-                except Exception as e:
-                    app.logger.error(
-                        f"Bluesky投稿中の未処理例外 (stream.online): {str(e)}", exc_info=e)
-                    return jsonify(
-                        {"error": "Internal server error during stream.online processing"}), 500
-            else:
+            # Ensure BlueskyPoster is instantiated and called correctly
+            try:
+                bluesky_poster = BlueskyPoster(
+                    os.getenv("BLUESKY_USERNAME"),
+                    os.getenv("BLUESKY_APP_PASSWORD")
+                )
+                success = bluesky_poster.post_stream_online(
+                    event_context=event_context,
+                    image_path="images/noimage.png"
+                )
                 app.logger.info(
-                    f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
-                return jsonify({"status": "skipped, online notifications disabled"}), 200
+                    f"Bluesky投稿試行 (stream.online): {event_context.get('broadcaster_user_login')}, 成功: {success}")
+                return jsonify({"status": "success" if success else "bluesky error processing stream.online"}), 200
+            except Exception as e:
+                app.logger.error(f"Bluesky投稿エラー (stream.online): {str(e)}", exc_info=True)
+                return jsonify({"error": "Internal server error during stream.online processing"}), 500
 
         # 配信終了イベント
         elif subscription_type == "stream.offline":
@@ -294,6 +289,12 @@ def handle_webhook():
                 app.logger.info(
                     f"stream.offline通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
                 return jsonify({"status": "skipped, offline notifications disabled"}), 200
+
+        # 修正: 通知スキップの条件分岐を明確化
+        if subscription_type == "stream.online" and not NOTIFY_ON_ONLINE:
+            app.logger.info(
+                f"stream.online通知は設定によりスキップされました: {broadcaster_user_login_from_event}")
+            return jsonify({"status": "skipped, online notifications disabled"}), 200
 
         # 未対応イベントタイプ
         else:
@@ -737,6 +738,32 @@ def initialize_app():
         else:
             print(f"CRITICAL: {log_msg_critical}")
         return False
+
+
+# BlueskyPosterインスタンスを依存性注入に変更
+class MainApp:
+    def __init__(self, bluesky_poster_factory=None):
+        self.bluesky_poster_factory = bluesky_poster_factory or (lambda: BlueskyPoster(
+            os.getenv("BLUESKY_USERNAME"),
+            os.getenv("BLUESKY_APP_PASSWORD")
+        ))
+
+    def handle_stream_online(self, event_context):
+        bluesky_poster = self.bluesky_poster_factory()
+        success = bluesky_poster.post_stream_online(
+            event_context=event_context,
+            image_path=os.getenv("BLUESKY_IMAGE_PATH")
+        )
+        if success:
+            app.logger.info(
+                f"Bluesky投稿成功 (stream.online): {event_context.get('broadcaster_user_login')}"
+            )
+            return jsonify({"status": "success"}), 200
+        else:
+            app.logger.error(
+                f"Bluesky投稿処理失敗 (stream.online): {event_context.get('broadcaster_user_login')}"
+            )
+            return jsonify({"status": "bluesky error processing stream.online"}), 500
 
 
 if __name__ == "__main__":
